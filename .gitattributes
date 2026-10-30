@@ -1,0 +1,9 @@
+*.m text eol=lf
+*.md text eol=lf
+*.txt text eol=lf
+*.ini text
+*.fig binary
+*.mat binary
+*.nii binary
+*.exe binary
+dcm2nii* binary
