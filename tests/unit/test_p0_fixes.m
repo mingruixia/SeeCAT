@@ -117,6 +117,8 @@ set(H.OutputDirEntry, 'String', outDir);
 set(H.PrefixEntry, 'String', prefix);
 guidata(h, H);
 SeeCAT_Stat('ComputeButton_Callback', H.ComputeButton, [], H);
+% The viewer reads the degrees of freedom from the header description
+tc.verifyTrue(startsWith(spm_vol(fullfile(outDir, [prefix '.nii'])).descrip, 'CAT{'));
 % Compare in world space: sample the output on the first input's voxel grid
 F = sc_resample_to_ref(fullfile(outDir, [prefix '.nii']), spm_vol(cells{1}{1}));
 F = F(:);

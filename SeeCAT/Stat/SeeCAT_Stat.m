@@ -632,8 +632,8 @@ if Value==6 && numel(RegressorCells)>1
         
         NiiHeader.descrip=sprintf('CAT{T_[%.1f]}{dLh_%f}{FWHMx_%fFWHMy_%fFWHMz_%fmm}',...
             DF_S, dLh, FWHM(1), FWHM(2), FWHM(3));  
-        y_Write(S_Volume, NiiHeader, OutputName);
-        y_Write(R_Volume, NiiHeader, ResName);        
+        sc_write_nii(S_Volume, NiiHeader, OutputName, 'Descrip', NiiHeader.descrip);
+        sc_write_nii(R_Volume, NiiHeader, ResName, 'Descrip', NiiHeader.descrip);        
     end
 else
     [S, R]=Regression(Y_Volume, Regressor, C_Text, C_Volume, Contrast, TFR_Flag);
@@ -662,8 +662,8 @@ else
         NiiHeader.descrip=sprintf('CAT{T_[%.1f]}{dLh_%f}{FWHMx_%fFWHMy_%fFWHMz_%fmm}',...
             DF_S, dLh, FWHM(1), FWHM(2), FWHM(3));        
     end
-    y_Write(S_Volume, NiiHeader, OutputName);
-    y_Write(R_Volume, NiiHeader, ResName);
+    sc_write_nii(S_Volume, NiiHeader, OutputName, 'Descrip', NiiHeader.descrip);
+    sc_write_nii(R_Volume, NiiHeader, ResName, 'Descrip', NiiHeader.descrip);
 end
 
 % --- Executes on button press in HelpButton.

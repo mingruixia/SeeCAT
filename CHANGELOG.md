@@ -48,6 +48,13 @@
 - The log message at the end of realignment said "Started".
 
 ### Added
+- `Utilities/sc_read_nii.m` and `Utilities/sc_write_nii.m`: one NIfTI I/O
+  layer for v2. Images are read in stored orientation (nothing is flipped),
+  `.nii.gz` and file lists are supported, and an optional reference grid
+  resamples in world space. These will replace all DPABI `y_Read*`/`y_Write`
+  calls. Stat already writes through `sc_write_nii`.
+- `Doc/ROADMAP.md`: the v2.0 plan.
+- `tests/unit/test_io.m`: round-trip and orientation tests for the I/O layer.
 - `tests/unit/test_p0_fixes.m`: synthetic-data tests for the fixes above.
 - `tests/legacy_baseline/`: scripts that run the legacy GUIs headlessly on public
   data (OpenNeuro ds000030 subset) and compare outputs between code versions.
