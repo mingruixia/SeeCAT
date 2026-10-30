@@ -30,17 +30,20 @@ See `CHANGELOG.md`.
 
 ## Weeks 2–4 (11/02 – 11/20): core library and preprocessing
 
-- [ ] Unified NIfTI I/O: `sc_read_nii` / `sc_write_nii`. Stored orientation,
-      correct world space, `.nii.gz`, 3D/4D, file lists. Replaces all
-      `y_Read*` / `y_Write` calls.
-- [ ] Core library `sc_*` with a config/batch API.
-- [ ] BIDS input (layout query, sidecar JSON) and BIDS-derivatives output.
+- [x] Unified NIfTI I/O: `seecat.io.read_nii` / `write_nii`. Stored
+      orientation, correct world space, `.nii.gz`, 3D/4D, file lists.
+      (Remaining `y_*` callers are Calculator and `Visual/`, rewritten later.)
+- [x] Batch API design accepted: `Doc/design/batch-api.md`.
+- [x] `seecat.*` package with config defaults, JSON load/save and validation.
+- [ ] `seecat.run` entry point: units, logging, per-unit errors, resume.
+- [x] BIDS input (layout query, sidecar JSON).
+- [ ] BIDS-derivatives output.
 - [ ] DICOM conversion with dcm2niix; TR, SliceTiming and multiband from JSON.
 - [ ] Preprocessing:
   - [ ] SPM batches built in code; remove `PrepfMRI/jobmats`.
-  - [ ] Nuisance masks from the subject's own segmentation, in native space.
-  - [ ] aCompCor, spike regression, import of fMRIPrep confounds.
-  - [ ] Scrubbing as a standalone function, with unit tests.
+  - [ ] Nuisance masks from the subject's own segmentation.
+  - [ ] aCompCor; import of fMRIPrep confounds.
+  - [ ] Censoring (interpolate → filter → regress → drop), with unit tests.
   - [ ] One parallel pattern everywhere; no `cd`.
 - [ ] Rebuild `templates/`: masks generated from SPM TPM by a script in the
       repo; remove DPABI-distributed masks and label files.

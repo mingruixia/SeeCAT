@@ -61,9 +61,14 @@
     configuration as a struct with defaults, JSON load/save, and validation
     that reports every problem at once. Preprocessing defaults in
     `seecat.prep.defaults`.
+  - `seecat.bids.layout`, `query`, `metadata`, `bold_units`: a minimal BIDS
+    reader. Indexes `sub-*/[ses-*]/<datatype>/` (derivatives and other
+    non-raw folders are skipped), merges sidecars by the inheritance
+    principle, and lists the BOLD runs to process with their T1w, TR and
+    metadata. Selection problems are reported together.
 - `Doc/ROADMAP.md`: the v2.0 plan.
-- `tests/unit/test_io.m`, `tests/unit/test_config.m`: tests for the I/O layer
-  and the configuration.
+- `tests/unit/test_io.m`, `test_config.m`, `test_bids.m`: tests for the I/O
+  layer, the configuration and the BIDS reader.
 - `tests/unit/test_p0_fixes.m`: synthetic-data tests for the fixes above.
 - `tests/legacy_baseline/`: scripts that run the legacy GUIs headlessly on public
   data (OpenNeuro ds000030 subset) and compare outputs between code versions.
