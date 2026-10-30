@@ -25,7 +25,7 @@ end
 function testBandFilterMatchesLegacyForTypicalBand(tc)
 rng(1);
 x = randn(150, 40);
-y = sc_bandpass(x, 2, [0.01 0.1]);
+y = seecat.denoise.bandpass(x, 2, [0.01 0.1]);
 yRef = legacyBandFilter(x, 2, [0.01 0.1]);
 tc.verifyEqual(y, yRef, 'AbsTol', 1e-10);
 end
@@ -36,7 +36,7 @@ function testBandFilterHighPassOnly(tc)
 % which the legacy code handled correctly.
 rng(2);
 x = randn(150, 5) + (1:150)' / 50;
-y = sc_bandpass(x, 2, [0.01 0]);
+y = seecat.denoise.bandpass(x, 2, [0.01 0]);
 tc.verifyTrue(isreal(y));
 tc.verifyEqual(y, real(legacyBandFilter(x, 2, [0.01 0.25])), 'AbsTol', 1e-10);
 end
@@ -45,7 +45,7 @@ function testBandFilterLowCutoffZero(tc)
 % Legacy mirror index ran past the end of the mask when the low cutoff was 0.
 rng(3);
 x = randn(150, 5);
-y = sc_bandpass(x, 2, [0 0.1]);
+y = seecat.denoise.bandpass(x, 2, [0 0.1]);
 tc.verifySize(y, size(x));
 tc.verifyTrue(isreal(y));
 end
@@ -120,7 +120,7 @@ SeeCAT_Stat('ComputeButton_Callback', H.ComputeButton, [], H);
 % The viewer reads the degrees of freedom from the header description
 tc.verifyTrue(startsWith(spm_vol(fullfile(outDir, [prefix '.nii'])).descrip, 'CAT{'));
 % Compare in world space: sample the output on the first input's voxel grid
-F = sc_resample_to_ref(fullfile(outDir, [prefix '.nii']), spm_vol(cells{1}{1}));
+F = seecat.io.resample(fullfile(outDir, [prefix '.nii']), spm_vol(cells{1}{1}));
 F = F(:);
 tc.assertNotEmpty(F);
 end

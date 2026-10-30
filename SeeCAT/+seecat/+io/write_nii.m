@@ -1,10 +1,10 @@
-function V = sc_write_nii(Y, ref, fname, varargin)
-% SC_WRITE_NII  Write a 3D or 4D array as NIfTI on the grid of a reference.
-%   sc_write_nii(Y, ref, 'out.nii')
-%   sc_write_nii(Y, ref, 'out.nii.gz', 'Descrip', 'T map', 'DataType', 'int16')
-%   V = sc_write_nii(...)
+function V = write_nii(Y, ref, fname, varargin)
+% WRITE_NII  Write a 3D or 4D array as NIfTI on the grid of a reference.
+%   seecat.io.write_nii(Y, ref, 'out.nii')
+%   seecat.io.write_nii(Y, ref, 'out.nii.gz', 'Descrip', 'T map', 'DataType', 'int16')
+%   V = seecat.io.write_nii(...)
 %
-% Y is in stored voxel order (as returned by sc_read_nii). REF is an spm_vol
+% Y is in stored voxel order (as returned by seecat.io.read_nii). REF is an spm_vol
 % header or a file name; only its affine is used (the first volume's for 4D).
 % The size of Y must match REF's dimensions in x, y and z.
 %
@@ -25,7 +25,7 @@ p.parse(varargin{:});
 opt = p.Results;
 
 if ischar(ref) || isstring(ref)
-    ref = sc_read_header(char(ref));
+    ref = readHeader(char(ref));
 end
 ref = ref(1);
 
@@ -96,9 +96,9 @@ else
 end
 end
 
-function h = sc_read_header(f)
+function h = readHeader(f)
 if endsWith(f, '.gz', 'IgnoreCase', true)
-    [~, h] = sc_read_nii(f, 'Volumes', 1);
+    [~, h] = seecat.io.read_nii(f, 'Volumes', 1);
 else
     h = spm_vol(f);
 end

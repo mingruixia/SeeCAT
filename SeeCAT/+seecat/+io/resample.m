@@ -1,7 +1,7 @@
-function vol = sc_resample_to_ref(img, refHdr, interp)
-% SC_RESAMPLE_TO_REF  Read IMG on the voxel grid of REFHDR.
-%   vol = sc_resample_to_ref(img, refHdr)          % nearest neighbour
-%   vol = sc_resample_to_ref(img, refHdr, interp)  % SPM interpolation order
+function vol = resample(img, refHdr, interp)
+% RESAMPLE  Read IMG on the voxel grid of REFHDR.
+%   vol = seecat.io.resample(img, refHdr)          % nearest neighbour
+%   vol = seecat.io.resample(img, refHdr, interp)  % SPM interpolation order
 %
 % IMG is a file name or spm_vol header; REFHDR is an spm_vol header (only
 % .dim and .mat are used, so a 4D header works too). If the grids already

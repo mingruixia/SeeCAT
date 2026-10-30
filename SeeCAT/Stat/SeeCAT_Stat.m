@@ -588,7 +588,7 @@ DF_S=SumNum-numel(Contrast);
 % Mask
 MaskFile=get(handles.MaskEntry, 'String');
 if ~isempty(MaskFile)
-    MaskData=sc_resample_to_ref(MaskFile, NiiHeader);
+    MaskData=seecat.io.resample(MaskFile, NiiHeader);
     MaskData(isnan(MaskData)) = 0;
     MaskVector=reshape(MaskData, [], 1);
 else
@@ -632,8 +632,8 @@ if Value==6 && numel(RegressorCells)>1
         
         NiiHeader.descrip=sprintf('CAT{T_[%.1f]}{dLh_%f}{FWHMx_%fFWHMy_%fFWHMz_%fmm}',...
             DF_S, dLh, FWHM(1), FWHM(2), FWHM(3));  
-        sc_write_nii(S_Volume, NiiHeader, OutputName, 'Descrip', NiiHeader.descrip);
-        sc_write_nii(R_Volume, NiiHeader, ResName, 'Descrip', NiiHeader.descrip);        
+        seecat.io.write_nii(S_Volume, NiiHeader, OutputName, 'Descrip', NiiHeader.descrip);
+        seecat.io.write_nii(R_Volume, NiiHeader, ResName, 'Descrip', NiiHeader.descrip);        
     end
 else
     [S, R]=Regression(Y_Volume, Regressor, C_Text, C_Volume, Contrast, TFR_Flag);
@@ -662,8 +662,8 @@ else
         NiiHeader.descrip=sprintf('CAT{T_[%.1f]}{dLh_%f}{FWHMx_%fFWHMy_%fFWHMz_%fmm}',...
             DF_S, dLh, FWHM(1), FWHM(2), FWHM(3));        
     end
-    sc_write_nii(S_Volume, NiiHeader, OutputName, 'Descrip', NiiHeader.descrip);
-    sc_write_nii(R_Volume, NiiHeader, ResName, 'Descrip', NiiHeader.descrip);
+    seecat.io.write_nii(S_Volume, NiiHeader, OutputName, 'Descrip', NiiHeader.descrip);
+    seecat.io.write_nii(R_Volume, NiiHeader, ResName, 'Descrip', NiiHeader.descrip);
 end
 
 % --- Executes on button press in HelpButton.
@@ -978,7 +978,7 @@ for i=1:numel(NumOfSamples)
     end
     fprintf('Reading Group-%d Image Sample\n', i);
     cellfun(@(s) fprintf('\t%s\n', s), OneGroup);
-    Y_Cell(1, 1, 1, B:E)=cellfun(@(s) sc_resample_to_ref(s, NiiHeader, 1), OneGroup, 'UniformOutput', false);
+    Y_Cell(1, 1, 1, B:E)=cellfun(@(s) seecat.io.resample(s, NiiHeader, 1), OneGroup, 'UniformOutput', false);
 end
 Y_Volume=cell2mat(Y_Cell);
 
@@ -1002,7 +1002,7 @@ if ~isempty(CovImageCells)
         OneImageCov=CovImageCells{i};
         fprintf('Reading Group-%d Image Covarites\n', i);
         cellfun(@(s) fprintf('\t%s\n', s), OneImageCov);
-        C_Cell(1, 1, 1, B:E)=cellfun(@(s) sc_resample_to_ref(s, NiiHeader, 1), OneImageCov, 'UniformOutput', false);
+        C_Cell(1, 1, 1, B:E)=cellfun(@(s) seecat.io.resample(s, NiiHeader, 1), OneImageCov, 'UniformOutput', false);
     end
     C_Volume=cell2mat(C_Cell);  
 end

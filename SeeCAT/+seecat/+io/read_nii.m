@@ -1,9 +1,9 @@
-function [Y, V] = sc_read_nii(img, varargin)
-% SC_READ_NII  Read a NIfTI image, a 4D series or a list of images.
-%   [Y, V] = sc_read_nii(f)
-%   [Y, V] = sc_read_nii(f, 'Volumes', idx)
-%   [Y, V] = sc_read_nii(f, 'Ref', refHdr, 'Interp', 1)
-%   [Y, V] = sc_read_nii(f, 'Class', 'single')
+function [Y, V] = read_nii(img, varargin)
+% READ_NII  Read a NIfTI image, a 4D series or a list of images.
+%   [Y, V] = seecat.io.read_nii(f)
+%   [Y, V] = seecat.io.read_nii(f, 'Volumes', idx)
+%   [Y, V] = seecat.io.read_nii(f, 'Ref', refHdr, 'Interp', 1)
+%   [Y, V] = seecat.io.read_nii(f, 'Class', 'single')
 %
 % F is a file name (.nii or .nii.gz) or a cell array of file names; 3D and 4D
 % files can be mixed, and their volumes are stacked in order.
@@ -87,7 +87,7 @@ if ~isempty(opt.Ref)
     Y = zeros([dim numel(sel)], opt.Class);
     for k = 1:numel(sel)
         h = spm_vol(local{fileOf(k)});
-        Y(:, :, :, k) = sc_resample_to_ref(h(volOf(k)), ref, opt.Interp);
+        Y(:, :, :, k) = seecat.io.resample(h(volOf(k)), ref, opt.Interp);
     end
     R = rmfield(ref, intersect(fieldnames(ref), {'private'}));
     R.n = [1 1];

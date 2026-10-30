@@ -92,7 +92,7 @@ every folder has to be on the path and name clashes are on us.
   to its default. No classes: easy to inspect, edit, save and diff.
 - Saved and loaded as JSON (`jsonencode`/`jsondecode`); field names are
   `snake_case` so the JSON is readable by other tools.
-- `seecat.config.validate(cfg)` runs before any work starts: unknown fields
+- `seecat.check_config(cfg)` runs before any work starts: unknown fields
   are an error (catches typos), types and ranges are checked, files exist,
   SPM version is supported. All problems are reported together.
 - Each pipeline's defaults live in one file (`+prep/defaults.m`, …), which is

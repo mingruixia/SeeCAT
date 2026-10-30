@@ -184,7 +184,7 @@ set(hObject,'Enable','off');
 set(hObject,'String','running...');
 tic
 if get(handles.Parallel_checkbox,'Value') == 1
-    sc_start_pool;
+    seecat.util.start_pool;
 end
 if ispc
     filesep = '\';
@@ -253,7 +253,7 @@ hdr_mask = spm_vol([FirstData(1).folder,filesep,FirstData(1).name]);
 hdr_mask = hdr_mask(1);
 hdr_mask.n = [1 1];
 hdr_mask.pinfo = [1;0;0];
-vol_mask = sc_resample_to_ref(MaskName, hdr_mask);
+vol_mask = seecat.io.resample(MaskName, hdr_mask);
 [gx,gy,gz] = ndgrid(1:hdr_mask.dim(1),1:hdr_mask.dim(2),1:hdr_mask.dim(3));
 XYZ = hdr_mask.mat(1:3,:) * [gx(:)';gy(:)';gz(:)';ones(1,numel(gx))];
 clear gx gy gz

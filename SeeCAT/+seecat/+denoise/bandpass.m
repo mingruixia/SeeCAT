@@ -1,6 +1,6 @@
-function Data_Filtered = sc_bandpass(Data, SamplePeriod, Band)
-% SC_BANDPASS  Ideal FFT band-pass filter applied to each column of DATA.
-%   Y = sc_bandpass(X, TR, [low high])   % Hz; high = 0 or >= Nyquist: high-pass only
+function Data_Filtered = bandpass(Data, SamplePeriod, Band)
+% BANDPASS  Ideal FFT band-pass filter applied to each column of DATA.
+%   Y = seecat.denoise.bandpass(X, TR, [low high])   % Hz; high = 0 or >= Nyquist: high-pass only
 % Columns are demeaned; data are zero-padded to the next power of two.
 sampleFreq 	 = 1/SamplePeriod;
 sampleLength = size(Data,1);

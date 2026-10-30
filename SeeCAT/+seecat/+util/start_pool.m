@@ -1,5 +1,5 @@
-function sc_start_pool()
-% SC_START_POOL  Start the default parallel pool if none is running.
+function start_pool()
+% START_POOL  Start the default parallel pool if none is running.
 % Falls back silently to serial execution when the Parallel Computing
 % Toolbox is unavailable.
 

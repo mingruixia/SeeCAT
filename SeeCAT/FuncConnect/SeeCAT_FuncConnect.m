@@ -316,7 +316,7 @@ set(hObject,'Enable','off');
 set(hObject,'String','running...');
 tic
 if get(handles.Parallel_checkbox,'Value') == 1
-    sc_start_pool;
+    seecat.util.start_pool;
 end
 if ispc
     filesep = '\';
@@ -359,7 +359,7 @@ DataFiles = cellfun(@(s) FindSubjectImage([WorkDir,filesep,StartFolder,filesep,s
 % calculation mask and mask-type seeds are resampled to it if needed.
 hdr_ref = spm_vol(DataFiles{1});
 hdr_ref = hdr_ref(1);
-vol_mask = sc_resample_to_ref(MaskName, hdr_ref);
+vol_mask = seecat.io.resample(MaskName, hdr_ref);
 [gx,gy,gz] = ndgrid(1:hdr_ref.dim(1),1:hdr_ref.dim(2),1:hdr_ref.dim(3));
 XYZ = hdr_ref.mat(1:3,:) * [gx(:)';gy(:)';gz(:)';ones(1,numel(gx))];
 clear gx gy gz
@@ -372,7 +372,7 @@ for i = 1:nSeed
             distance = sqrt(sum((XYZ - CoordMat(1:3)').^2,1));
             seed_ind{i} = distance<=CoordMat(4);
         case 'M'
-            seed_ind{i} = reshape(sc_resample_to_ref(SeedList{i}(7:end), hdr_ref)>0,1,[]);
+            seed_ind{i} = reshape(seecat.io.resample(SeedList{i}(7:end), hdr_ref)>0,1,[]);
     end
     if ~any(seed_ind{i})
         errordlg(sprintf('Seed %d contains no voxels on the data grid: %s', i, SeedList{i}));
