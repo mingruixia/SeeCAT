@@ -127,6 +127,7 @@ function Visual_pushbutton_Callback(hObject, eventdata, handles)
 % hObject    handle to Visual_pushbutton (see GCBO)
 % eventdata  reserved - to be defined in a future version of MATLAB
 % handles    structure with handles and user data (see GUIDATA)
+sc_check_dpabi;
 SeeCAT_Viewer;
 
 

@@ -549,10 +549,15 @@ switch Value
             M_Regressor(:, i)=GroupLabel==i;
         end
 
+        if any(NumOfSamples~=NumOfSamples(1))
+            errordlg('Repeated measures require the same number of subjects in every condition.');
+            return
+        end
+        % One dummy per subject; subject n is row n of every condition block
         S_Regressor=zeros(SumNum, NumOfSamples(1));
         for n=1:NumOfSamples(1)
-            S_Regressor(i:n:SumNum, i) = 1;
-        end   
+            S_Regressor(n:NumOfSamples(1):SumNum, n) = 1;
+        end
         Regressor=[M_Regressor, S_Regressor];
         
         % Contrast
@@ -583,7 +588,7 @@ DF_S=SumNum-numel(Contrast);
 % Mask
 MaskFile=get(handles.MaskEntry, 'String');
 if ~isempty(MaskFile)
-    MaskData=y_ReadRPI(MaskFile);
+    MaskData=sc_resample_to_ref(MaskFile, NiiHeader);
     MaskData(isnan(MaskData)) = 0;
     MaskVector=reshape(MaskData, [], 1);
 else
@@ -964,11 +969,16 @@ for i=1:numel(NumOfSamples)
     % Put Data into Cell
     OneGroup=SampleCells{i};
     if isempty(NiiHeader)
+        % All images are read on the grid of the first one, in their stored
+        % orientation (y_ReadRPI mirrored the affine of RAS images, which
+        % flipped results left-right when the field of view is not centred)
         NiiHeader=spm_vol(OneGroup{1});
+        NiiHeader=NiiHeader(1);
+        NiiHeader.dt=[16 0];   % float32 output regardless of input type
     end
     fprintf('Reading Group-%d Image Sample\n', i);
     cellfun(@(s) fprintf('\t%s\n', s), OneGroup);
-    Y_Cell(1, 1, 1, B:E)=cellfun(@(s) y_ReadRPI(s), OneGroup, 'UniformOutput', false);
+    Y_Cell(1, 1, 1, B:E)=cellfun(@(s) sc_resample_to_ref(s, NiiHeader, 1), OneGroup, 'UniformOutput', false);
 end
 Y_Volume=cell2mat(Y_Cell);
 
@@ -984,15 +994,15 @@ if ~isempty(CovImageCells)
         if i==1
             B=1;
         else
-            B=NumOfSamples(i-1)+1;
+            B=sum(NumOfSamples(1:i-1))+1;
         end
         E=sum(NumOfSamples(1:i));
-    
+
         % Put Data into Cell
         OneImageCov=CovImageCells{i};
         fprintf('Reading Group-%d Image Covarites\n', i);
         cellfun(@(s) fprintf('\t%s\n', s), OneImageCov);
-        C_Cell(1, 1, 1, B:E)=cellfun(@(s) y_ReadRPI(s), OneImageCov, 'UniformOutput', false);
+        C_Cell(1, 1, 1, B:E)=cellfun(@(s) sc_resample_to_ref(s, NiiHeader, 1), OneImageCov, 'UniformOutput', false);
     end
     C_Volume=cell2mat(C_Cell);  
 end

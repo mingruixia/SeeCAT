@@ -70,18 +70,9 @@ if ispc
 else
     filesep = '/';
 end
-list = dir([get(handles.WorkDir_edit,'String'),filesep,get(handles.StartFolder_edit,'String')]);
-if ~isempty(list)
-    if strcmpi(list(3).name,'.DS_Store')
-        list(1:3) = [];
-    else
-        list(1:2) = [];
-    end
-    list_string = cell(1,length(list));
-    for i = 1:length(list);
-        list_string{i} = list(i).name;
-    end
-    set(handles.SubList_listbox,'String',list_string);
+list_string = sc_list_subjects([get(handles.WorkDir_edit,'String'),filesep,get(handles.StartFolder_edit,'String')]);
+if ~isempty(list_string)
+    set(handles.SubList_listbox,'String',list_string,'Value',1);
 end
 
 
@@ -130,18 +121,9 @@ if isequal(folder_name,0)
 else
     set(handles.WorkDir_edit,'String',folder_name);
 end
-list = dir([folder_name,filesep,get(handles.StartFolder_edit,'String')]);
-if ~isempty(list)
-    if strcmpi(list(3).name,'.DS_Store')
-        list(1:3) = [];
-    else
-        list(1:2) = [];
-    end
-    list_string = cell(1,length(list));
-    for i = 1:length(list);
-        list_string{i} = list(i).name;
-    end
-    set(handles.SubList_listbox,'String',list_string);
+list_string = sc_list_subjects([folder_name,filesep,get(handles.StartFolder_edit,'String')]);
+if ~isempty(list_string)
+    set(handles.SubList_listbox,'String',list_string,'Value',1);
 end
 
 
@@ -158,22 +140,12 @@ if ispc
 else
     filesep = '/';
 end
-list = dir([get(handles.WorkDir_edit,'String'),filesep,get(hObject,'String')]);
-if isempty(list)
+SubFolder = [get(handles.WorkDir_edit,'String'),filesep,get(hObject,'String')];
+if ~exist(SubFolder,'dir')
     warndlg(['There is no ',get(hObject,'String'),' folder under working directory'],'Warning');
-    list_string = [];
-    set(handles.SubList_listbox,'String',list_string);
+    set(handles.SubList_listbox,'String',{},'Value',1);
 else
-    if strcmpi(list(3).name,'.DS_Store')
-        list(1:3) = [];
-    else
-        list(1:2) = [];
-    end
-    list_string = cell(1,length(list));
-    for i = 1:length(list);
-        list_string{i} = list(i).name;
-    end
-    set(handles.SubList_listbox,'String',list_string);
+    set(handles.SubList_listbox,'String',sc_list_subjects(SubFolder),'Value',1);
 end
 
 
@@ -310,15 +282,7 @@ set(hObject,'String','running...');
 tic
 
 if get(handles.Parallel_checkbox,'Value') == 1
-    if exist('gcp.m','file')
-        try
-            gcp;
-        end
-    elseif  parpool('size') == 0
-        try
-            parpool;
-        end
-    end
+    sc_start_pool;
 end
 if ispc
     filesep = '\';
@@ -751,7 +715,7 @@ if get(handles.Realign_checkbox,'Value') == 1
     fid = fopen([WorkDir,filesep,'HeadMotionParameter',filesep,'SubExcludingMaxHM.txt'],'at+');
     fprintf(fid,'%s',ExcludeSub_Text);
     fclose(fid);
-    fprintf('Realign Started.\n');
+    fprintf('Realign Finished.\n');
     StartFolder = [StartFolder,'R'];
     cd(WorkDir);
 end
@@ -890,6 +854,8 @@ if get(handles.Normalize_checkbox,'Value') == 1
                         MatFilename = dir([WorkDir,filesep,'T1ImgSegment',filesep,Sublist{i},filesep,'y_*.nii']);
                         spmjob.matlabbatch{1,1}.spm.spatial.normalise.write.subj.def = {[WorkDir,filesep,'T1ImgSegment',filesep,Sublist{i},filesep,MatFilename.name]};
                         spmjob.matlabbatch{1,1}.spm.spatial.normalise.write.subj.resample = [FileList;{MeanFilename}];
+                        spmjob.matlabbatch{1,1}.spm.spatial.normalise.write.woptions.bb = [-90,-126,-72;90,90,108];
+                        spmjob.matlabbatch{1,1}.spm.spatial.normalise.write.woptions.vox = VoxSize;
                     else
                         spmjob = load([ProgramPath,filesep,'jobmats',filesep,'Normalize_Write.mat']);
                         MatFilename = dir([WorkDir,filesep,'T1ImgSegment',filesep,Sublist{i},filesep,'*seg_sn.mat']);
@@ -969,6 +935,8 @@ if get(handles.Normalize_checkbox,'Value') == 1
                         MatFilename = dir([WorkDir,filesep,'T1ImgSegment',filesep,Sublist{i},filesep,'y_*.nii']);
                         spmjob.matlabbatch{1,1}.spm.spatial.normalise.write.subj.def = {[WorkDir,filesep,'T1ImgSegment',filesep,Sublist{i},filesep,MatFilename.name]};
                         spmjob.matlabbatch{1,1}.spm.spatial.normalise.write.subj.resample = [FileList;{MeanFilename}];
+                        spmjob.matlabbatch{1,1}.spm.spatial.normalise.write.woptions.bb = [-90,-126,-72;90,90,108];
+                        spmjob.matlabbatch{1,1}.spm.spatial.normalise.write.woptions.vox = VoxSize;
                     else
                         spmjob = load([ProgramPath,filesep,'jobmats',filesep,'Normalize_Write.mat']);
                         MatFilename = dir([WorkDir,filesep,'T1ImgSegment',filesep,Sublist{i},filesep,'*seg_sn.mat']);
@@ -1229,18 +1197,15 @@ if get(handles.Regress_checkbox,'Value') == 1
             Nii = nifti(Filename.name);
             tmpCourse = reshape(double(Nii.dat),[Nii.dat.dim(1,1) * Nii.dat.dim(1,2) * Nii.dat.dim(1,3),Nii.dat.dim(1,4)])';
             if isWM == 1
-                WM_hdr = spm_vol([ProgramPath,filesep,'..',filesep,'templates',filesep,'WhiteMask_09_61x73x61.nii']);
-                WM_vol = spm_read_vols(WM_hdr);
+                WM_vol = sc_resample_to_ref([ProgramPath,filesep,'..',filesep,'templates',filesep,'WhiteMask_09_61x73x61.nii'],spm_vol(Filename.name));
                 WMCov = mean(tmpCourse(:,reshape(WM_vol>0,1,[])),2);
             end
             if isCSF == 1
-                CSF_hdr = spm_vol([ProgramPath,filesep,'..',filesep,'templates',filesep,'CsfMask_07_61x73x61.nii']);
-                CSF_vol = spm_read_vols(CSF_hdr);
+                CSF_vol = sc_resample_to_ref([ProgramPath,filesep,'..',filesep,'templates',filesep,'CsfMask_07_61x73x61.nii'],spm_vol(Filename.name));
                 CSFCov = mean(tmpCourse(:,reshape(CSF_vol>0,1,[])),2);
             end
             if isGS == 1
-                GS_hdr = spm_vol([ProgramPath,filesep,'..',filesep,'templates',filesep,'BrainMask_05_61x73x61.nii']);
-                GS_vol = spm_read_vols(GS_hdr);
+                GS_vol = sc_resample_to_ref([ProgramPath,filesep,'..',filesep,'templates',filesep,'BrainMask_05_61x73x61.nii'],spm_vol(Filename.name));
                 GSCov = mean(tmpCourse(:,reshape(GS_vol>0,1,[])),2);
             end
             AllCov = [ones(Nii.dat.dim(1,4),1),HMCov,WMCov,CSFCov,GSCov];
@@ -1287,18 +1252,15 @@ if get(handles.Regress_checkbox,'Value') == 1
             Nii = nifti(Filename.name);
             tmpCourse = reshape(double(Nii.dat),[Nii.dat.dim(1,1) * Nii.dat.dim(1,2) * Nii.dat.dim(1,3),Nii.dat.dim(1,4)])';
             if isWM == 1
-                WM_hdr = spm_vol([ProgramPath,filesep,'..',filesep,'templates',filesep,'WhiteMask_09_61x73x61.nii']);
-                WM_vol = spm_read_vols(WM_hdr);
+                WM_vol = sc_resample_to_ref([ProgramPath,filesep,'..',filesep,'templates',filesep,'WhiteMask_09_61x73x61.nii'],spm_vol(Filename.name));
                 WMCov = mean(tmpCourse(:,reshape(WM_vol>0,1,[])),2);
             end
             if isCSF == 1
-                CSF_hdr = spm_vol([ProgramPath,filesep,'..',filesep,'templates',filesep,'CsfMask_07_61x73x61.nii']);
-                CSF_vol = spm_read_vols(CSF_hdr);
+                CSF_vol = sc_resample_to_ref([ProgramPath,filesep,'..',filesep,'templates',filesep,'CsfMask_07_61x73x61.nii'],spm_vol(Filename.name));
                 CSFCov = mean(tmpCourse(:,reshape(CSF_vol>0,1,[])),2);
             end
             if isGS == 1
-                GS_hdr = spm_vol([ProgramPath,filesep,'..',filesep,'templates',filesep,'BrainMask_05_61x73x61.nii']);
-                GS_vol = spm_read_vols(GS_hdr);
+                GS_vol = sc_resample_to_ref([ProgramPath,filesep,'..',filesep,'templates',filesep,'BrainMask_05_61x73x61.nii'],spm_vol(Filename.name));
                 GSCov = mean(tmpCourse(:,reshape(GS_vol>0,1,[])),2);
             end
             AllCov = [ones(Nii.dat.dim(1,4),1),HMCov,WMCov,CSFCov,GSCov];
@@ -1350,7 +1312,7 @@ if get(handles.Filter_checkbox,'Value') == 1
                 else
                     ind = ceil(VoxelNum/DataSegNum)*(j-1)+1:VoxelNum;
                 end
-                FilteredCourse(:,ind) = BandFilter(tmpCourse(:,ind),TR,[FilterLow,FilterHigh]);
+                FilteredCourse(:,ind) = sc_bandpass(tmpCourse(:,ind),TR,[FilterLow,FilterHigh]);
             end
             FilteredCourse = reshape(FilteredCourse',[Nii.dat.dim(1,1),Nii.dat.dim(1,2),Nii.dat.dim(1,3),Nii.dat.dim(1,4)]);
             Nii.dat.fname = ['f',Filename.name];
@@ -1376,7 +1338,7 @@ if get(handles.Filter_checkbox,'Value') == 1
                 else
                     ind = ceil(VoxelNum/DataSegNum)*(j-1)+1:VoxelNum;
                 end
-                FilteredCourse(:,ind) = BandFilter(tmpCourse(:,ind),TR,[FilterLow,FilterHigh]);
+                FilteredCourse(:,ind) = sc_bandpass(tmpCourse(:,ind),TR,[FilterLow,FilterHigh]);
             end
             FilteredCourse = reshape(FilteredCourse',[Nii.dat.dim(1,1),Nii.dat.dim(1,2),Nii.dat.dim(1,3),Nii.dat.dim(1,4)]);
             Nii.dat.fname = ['f',Filename.name];
@@ -1415,20 +1377,20 @@ if get(handles.Scrubbing_checkbox,'Value') == 1
             FDPower(:,4:6) = FDPower(:,4:6)*50;
             FDPower = sum(abs(FDPower),2);
             ind = find(FDPower>FDThr);
-            Scrub_percent(i) = length(ind)/Nii.dat.dim(1,4);
             Scrub_meanFD(i) = mean(FDPower);
             FDIndex = ones(Nii.dat.dim(1,4),1);
             FDIndex(ind) = 0;
             for j = 1:TpsBefore
                 indtmp = ind - j;
-                indtmp(indtmp<1) = 1;
+                indtmp(indtmp<1) = [];
                 FDIndex(indtmp) = 0;
             end
             for j = 1:TpsAfter
                 indtmp = ind + j;
-                indtmp(indtmp>Nii.dat.dim(1,4)) = Nii.dat.dim(1,4);
+                indtmp(indtmp>Nii.dat.dim(1,4)) = [];
                 FDIndex(indtmp) = 0;
             end
+            Scrub_percent(i) = mean(FDIndex==0);   % flagged frames plus their neighbours
             ScrubbingCourse = tmpCourse(FDIndex>0,:);
             xi = 1:Nii.dat.dim(1,4);
             x = xi(FDIndex>0);
@@ -1468,20 +1430,20 @@ if get(handles.Scrubbing_checkbox,'Value') == 1
             FDPower(:,4:6) = FDPower(:,4:6)*50;
             FDPower = sum(abs(FDPower),2);
             ind = find(FDPower>FDThr);
-            Scrub_percent(i) = length(ind)/Nii.dat.dim(1,4);
             Scrub_meanFD(i) = mean(FDPower);
             FDIndex = ones(Nii.dat.dim(1,4),1);
             FDIndex(ind) = 0;
             for j = 1:TpsBefore
                 indtmp = ind - j;
-                indtmp(indtmp<1) = 1;
+                indtmp(indtmp<1) = [];
                 FDIndex(indtmp) = 0;
             end
             for j = 1:TpsAfter
                 indtmp = ind + j;
-                indtmp(indtmp>Nii.dat.dim(1,4)) = Nii.dat.dim(1,4);
+                indtmp(indtmp>Nii.dat.dim(1,4)) = [];
                 FDIndex(indtmp) = 0;
             end
+            Scrub_percent(i) = mean(FDIndex==0);   % flagged frames plus their neighbours
             ScrubbingCourse = tmpCourse(FDIndex>0,:);
             xi = 1:Nii.dat.dim(1,4);
             x = xi(FDIndex>0);
@@ -1535,34 +1497,6 @@ switch meth
         Data_Scrubbed = interp1(x,Data,xi,'spline','extrap');
 end
 
-
-function Data_Filtered = BandFilter(Data, SamplePeriod, Band)
-sampleFreq 	 = 1/SamplePeriod;
-sampleLength = size(Data,1);
-paddedLength = 2^nextpow2(sampleLength);
-LowCutoff_HighPass = Band(1);
-HighCutoff_LowPass = Band(2);
-if (LowCutoff_HighPass >= sampleFreq/2)
-    idxLowCutoff_HighPass = paddedLength/2 + 1;
-else
-    idxLowCutoff_HighPass = ceil(LowCutoff_HighPass * paddedLength * SamplePeriod + 1);
-end
-
-if (HighCutoff_LowPass>=sampleFreq/2)||(HighCutoff_LowPass==0)s
-    idxHighCutoff_LowPass = paddedLength/2 + 1;
-else
-    idxHighCutoff_LowPass = fix(HighCutoff_LowPass * paddedLength * SamplePeriod + 1);
-end
-FrequencyMask = zeros(paddedLength,1);
-FrequencyMask(idxLowCutoff_HighPass:idxHighCutoff_LowPass,1) = 1;
-FrequencyMask(paddedLength-idxLowCutoff_HighPass+2:-1:paddedLength-idxHighCutoff_LowPass+2,1) = 1;
-FrequencySetZero_Index = FrequencyMask==0;
-Data = Data - repmat(mean(Data),size(Data,1),1);
-Data = [Data;zeros(paddedLength -sampleLength,size(Data,2))];
-Data = fft(Data);
-Data(FrequencySetZero_Index,:) = 0;
-Data = ifft(Data);
-Data_Filtered = Data(1:sampleLength,:);
 
 function r = RegressCov(y,X)
 [n,ncolX] = size(X);

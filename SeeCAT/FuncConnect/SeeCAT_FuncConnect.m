@@ -316,15 +316,7 @@ set(hObject,'Enable','off');
 set(hObject,'String','running...');
 tic
 if get(handles.Parallel_checkbox,'Value') == 1
-    if exist('gcp.m','file')
-        try
-            gcp;
-        end
-    elseif  parpool('size') == 0
-        try
-            parpool;
-        end
-    end
+    sc_start_pool;
 end
 if ispc
     filesep = '\';
@@ -353,106 +345,57 @@ fclose(fid);
 
 fprintf('Calculating Functional Connectivity Started.\n');
 
-hdr_mask = spm_vol(MaskName);
-[vol_mask,XYZ] = spm_read_vols(hdr_mask);
+Sublist = sc_list_subjects([WorkDir,filesep,StartFolder]);
+nSub = numel(Sublist);
+if nSub == 0
+    errordlg(['No subject folders found in ',WorkDir,filesep,StartFolder]);
+    set(hObject,'Enable','on');
+    set(hObject,'String','RUN');
+    return
+end
+DataFiles = cellfun(@(s) FindSubjectImage([WorkDir,filesep,StartFolder,filesep,s]), Sublist, 'UniformOutput', false);
 
-vol_seed = cell(nSeed,1);
+% All maps are computed on the voxel grid of the functional data; the
+% calculation mask and mask-type seeds are resampled to it if needed.
+hdr_ref = spm_vol(DataFiles{1});
+hdr_ref = hdr_ref(1);
+vol_mask = sc_resample_to_ref(MaskName, hdr_ref);
+[gx,gy,gz] = ndgrid(1:hdr_ref.dim(1),1:hdr_ref.dim(2),1:hdr_ref.dim(3));
+XYZ = hdr_ref.mat(1:3,:) * [gx(:)';gy(:)';gz(:)';ones(1,numel(gx))];
+clear gx gy gz
+
+seed_ind = cell(nSeed,1);
 for i = 1:nSeed
     switch SeedList{i}(1)
         case 'S'
             CoordMat = str2num(SeedList{i}(8:end));
-            distance = pdist2(CoordMat(1:3),XYZ');
-            vol_seed{i} = zeros(hdr_mask.dim);
-            vol_seed{i}(distance<=CoordMat(4)) = 1;
+            distance = sqrt(sum((XYZ - CoordMat(1:3)').^2,1));
+            seed_ind{i} = distance<=CoordMat(4);
         case 'M'
-            hdr_tmp = spm_vol(SeedList{i}(7:end));
-            vol_seed{i} = spm_read_vols(hdr_tmp);
+            seed_ind{i} = reshape(sc_resample_to_ref(SeedList{i}(7:end), hdr_ref)>0,1,[]);
+    end
+    if ~any(seed_ind{i})
+        errordlg(sprintf('Seed %d contains no voxels on the data grid: %s', i, SeedList{i}));
+        set(hObject,'Enable','on');
+        set(hObject,'String','RUN');
+        return
     end
 end
 
-Sublist = dir([WorkDir,filesep,StartFolder]);
-if strcmpi(Sublist(3).name,'.DS_Store')
-    Sublist(1:3) = [];
-else
-    Sublist(1:2) = [];
-end
 mask_ind = reshape(vol_mask>0,1,[]);
-mkdir([WorkDir,filesep,'Results',filesep,'FC_',StartFolder]);
-if get(handles.Parallel_checkbox,'Value') == 1
-    parfor i = 1:length(Sublist)
-        cd([WorkDir,filesep,StartFolder,filesep,Sublist(i).name]);
-        Filename = dir('*.nii');
-        Nii = nifti(Filename.name);
-        volCourse = reshape(double(Nii.dat),[Nii.dat.dim(1,1) * Nii.dat.dim(1,2) * Nii.dat.dim(1,3),Nii.dat.dim(1,4)])';
-        maskCourse = volCourse(:,mask_ind);
-        seedCourse = zeros(Nii.dat.dim(1,4),nSeed);
-        for j = 1:nSeed
-            seedCourse(:,j) = mean(volCourse(:,reshape(vol_seed{j}>0,1,[])),2);
-        end
-        seedCourse = seedCourse - repmat(mean(seedCourse),Nii.dat.dim(1,4),1);
-        seedCourse = seedCourse./repmat(std(seedCourse,0,1),Nii.dat.dim(1,4),1);
-        maskCourse = maskCourse - repmat(mean(maskCourse),Nii.dat.dim(1,4),1);
-        maskCourse = maskCourse./repmat(std(maskCourse,0,1),Nii.dat.dim(1,4),1);
-        r = seedCourse' * maskCourse ./(Nii.dat.dim(1,4)-1);
-        z = FisherTrans(r);
-        cd([WorkDir,filesep,'Results',filesep,'FC_',StartFolder]);
-        for j = 1:nSeed
-            hdr_fc = hdr_mask;
-            Num = ['00',num2str(j)];
-            Num = Num(end-1:end);
-            hdr_fc.fname = ['FC_Seed',Num,'_',Sublist(i).name,'.nii'];
-            hdr_fc.dt(1) = 16;
-            vol_fc = zeros(hdr_fc.dim);
-            vol_fc(mask_ind) = r(j,:);
-            spm_write_vol(hdr_fc,vol_fc);
-            hdr_zfc = hdr_fc;
-            hdr_zfc.fname = ['z',hdr_zfc.fname];
-            vol_zfc = zeros(hdr_zfc.dim);
-            vol_zfc(mask_ind) = z(j,:);
-            spm_write_vol(hdr_zfc,vol_zfc);
-        end
-    end
-else
-    for i = 1:length(Sublist)
-        cd([WorkDir,filesep,StartFolder,filesep,Sublist(i).name]);
-        Filename = dir('*.nii');
-        Nii = nifti(Filename.name);
-        volCourse = reshape(double(Nii.dat),[Nii.dat.dim(1,1) * Nii.dat.dim(1,2) * Nii.dat.dim(1,3),Nii.dat.dim(1,4)])';
-        maskCourse = volCourse(:,mask_ind);
-        seedCourse = zeros(Nii.dat.dim(1,4),nSeed);
-        for j = 1:nSeed
-            seedCourse(:,j) = mean(volCourse(:,reshape(vol_seed{j}>0,1,[])),2);
-        end
-        seedCourse = seedCourse - repmat(mean(seedCourse),Nii.dat.dim(1,4),1);
-        seedCourse = seedCourse./repmat(std(seedCourse,0,1),Nii.dat.dim(1,4),1);
-        maskCourse = maskCourse - repmat(mean(maskCourse),Nii.dat.dim(1,4),1);
-        maskCourse = maskCourse./repmat(std(maskCourse,0,1),Nii.dat.dim(1,4),1);
-        r = seedCourse' * maskCourse ./(Nii.dat.dim(1,4)-1);
-        z = FisherTrans(r);
-        cd([WorkDir,filesep,'Results',filesep,'FC_',StartFolder]);
-        for j = 1:nSeed
-            hdr_fc = hdr_mask;
-            Num = ['00',num2str(j)];
-            Num = Num(end-1:end);
-            hdr_fc.fname = ['FC_Seed',Num,'_',Sublist(i).name,'.nii'];
-            hdr_fc.dt(1) = 16;
-            vol_fc = zeros(hdr_fc.dim);
-            vol_fc(mask_ind) = r(j,:);
-            spm_write_vol(hdr_fc,vol_fc);
-            hdr_zfc = hdr_fc;
-            hdr_zfc.fname = ['z',hdr_zfc.fname];
-            vol_zfc = zeros(hdr_zfc.dim);
-            vol_zfc(mask_ind) = z(j,:);
-            spm_write_vol(hdr_zfc,vol_zfc);
-        end
-    end
+OutDir = [WorkDir,filesep,'Results',filesep,'FC_',StartFolder];
+for j = 1:nSeed
+    SeedTag = sprintf('%02d',j);
+    if ~exist([OutDir,filesep,'FC_Seed',SeedTag],'dir'), mkdir([OutDir,filesep,'FC_Seed',SeedTag]); end
+    if ~exist([OutDir,filesep,'zFC_Seed',SeedTag],'dir'), mkdir([OutDir,filesep,'zFC_Seed',SeedTag]); end
 end
-cd([WorkDir,filesep,'Results',filesep,'FC_',StartFolder]);
-for i = 1:nSeed
-    Num = ['00',num2str(i)];
-    Num = Num(end-1:end);
-    movefile(['zFC_Seed',Num,'*.nii'],[WorkDir,filesep,'Results',filesep,'FC_',StartFolder,filesep,'zFC_Seed',Num]);
-    movefile(['FC_Seed',Num,'*.nii'],[WorkDir,filesep,'Results',filesep,'FC_',StartFolder,filesep,'FC_Seed',Num]);
+if get(handles.Parallel_checkbox,'Value') == 1
+    nWorker = Inf;
+else
+    nWorker = 0;
+end
+parfor (i = 1:nSub, nWorker)
+    sc_seed_fc_subject(DataFiles{i}, Sublist{i}, hdr_ref, mask_ind, seed_ind, OutDir);
 end
 cd(WorkDir);
 fprintf('Calculating Functional Connectivity Finished.\n');
@@ -463,6 +406,16 @@ set(hObject,'String','RUN');
 
 function z = FisherTrans(r)
 z = 0.5*log((1+r)./(1-r));
+
+
+function Filename = FindSubjectImage(SubDir)
+% The single 4D NIfTI image in a subject folder
+f = dir([SubDir,filesep,'*.nii']);
+f = f(~startsWith({f.name},'.'));
+if numel(f) ~= 1
+    error('SeeCAT:FC:input','Expected exactly one 4D .nii image in %s, found %d.',SubDir,numel(f));
+end
+Filename = [SubDir,filesep,f.name];
 
 
 % --- Executes on button press in Quit_pushbutton.

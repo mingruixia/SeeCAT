@@ -184,15 +184,7 @@ set(hObject,'Enable','off');
 set(hObject,'String','running...');
 tic
 if get(handles.Parallel_checkbox,'Value') == 1
-    if exist('gcp.m','file')
-        try
-            gcp;
-        end
-    elseif  parpool('size') == 0
-        try
-            parpool;
-        end
-    end
+    sc_start_pool;
 end
 if ispc
     filesep = '\';
@@ -247,16 +239,24 @@ fclose(fid);
 
 fprintf('Calculating Voxel-based Degree Started.\n');
 
-hdr_mask = spm_vol(MaskName);
-[vol_mask,XYZ] = spm_read_vols(hdr_mask);
-
-
-Sublist = dir([WorkDir,filesep,StartFolder]);
-if strcmpi(Sublist(3).name,'.DS_Store')
-    Sublist(1:3) = [];
-else
-    Sublist(1:2) = [];
+Sublist = cell2struct(sc_list_subjects([WorkDir,filesep,StartFolder]),'name',2);
+if isempty(Sublist)
+    errordlg(['No subject folders found in ',WorkDir,filesep,StartFolder]);
+    set(hObject,'Enable','on');
+    set(hObject,'String','RUN');
+    return
 end
+% Output maps live on the voxel grid of the functional data; the mask is
+% resampled to it when the grids differ.
+FirstData = dir([WorkDir,filesep,StartFolder,filesep,Sublist(1).name,filesep,'*.nii']);
+hdr_mask = spm_vol([FirstData(1).folder,filesep,FirstData(1).name]);
+hdr_mask = hdr_mask(1);
+hdr_mask.n = [1 1];
+hdr_mask.pinfo = [1;0;0];
+vol_mask = sc_resample_to_ref(MaskName, hdr_mask);
+[gx,gy,gz] = ndgrid(1:hdr_mask.dim(1),1:hdr_mask.dim(2),1:hdr_mask.dim(3));
+XYZ = hdr_mask.mat(1:3,:) * [gx(:)';gy(:)';gz(:)';ones(1,numel(gx))];
+clear gx gy gz
 mask_ind = reshape(vol_mask>0,1,[]);
 mask_ind2 = find(mask_ind);
 mkdir([WorkDir,filesep,'Results',filesep,'VoxelDeg_',StartFolder]);
