@@ -35,9 +35,9 @@ See `CHANGELOG.md`.
       (Remaining `y_*` callers are Calculator and `Visual/`, rewritten later.)
 - [x] Batch API design accepted: `Doc/design/batch-api.md`.
 - [x] `seecat.*` package with config defaults, JSON load/save and validation.
-- [ ] `seecat.run` entry point: units, logging, per-unit errors, resume.
+- [x] `seecat.run` entry point: units, logging, per-unit errors, resume.
 - [x] BIDS input (layout query, sidecar JSON).
-- [ ] BIDS-derivatives output.
+- [x] BIDS-derivatives naming and `dataset_description.json`.
 - [ ] DICOM conversion with dcm2niix; TR, SliceTiming and multiband from JSON.
 - [ ] Preprocessing:
   - [ ] SPM batches built in code; remove `PrepfMRI/jobmats`.

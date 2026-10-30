@@ -66,9 +66,20 @@
     non-raw folders are skipped), merges sidecars by the inheritance
     principle, and lists the BOLD runs to process with their T1w, TR and
     metadata. Selection problems are reported together.
+  - `seecat.bids.deriv_name`, `parse_name`, `write_description`:
+    BIDS-derivatives file names in entity order, and the derivatives'
+    `dataset_description.json`.
+  - `seecat.run`: runs any pipeline (`defaults`/`plan`/`run_unit`) over its
+    units, serially or in a parfor; per-unit logs and error isolation; a
+    summary TSV; skips units finished with the same options. Steps go
+    through `seecat.util.run_step`, which resumes a failed unit after its
+    last finished step.
+  - `seecat.prep.plan`: resolves folders and BOLD runs; checks SPM
+    (`seecat.util.check_spm`). The preprocessing steps are next.
 - `Doc/ROADMAP.md`: the v2.0 plan.
-- `tests/unit/test_io.m`, `test_config.m`, `test_bids.m`: tests for the I/O
-  layer, the configuration and the BIDS reader.
+- `tests/unit/test_io.m`, `test_config.m`, `test_bids.m`, `test_run.m`: tests
+  for the I/O layer, the configuration, the BIDS reader and the run framework
+  (with a test-only `demo` pipeline in `tests/fixtures`).
 - `tests/unit/test_p0_fixes.m`: synthetic-data tests for the fixes above.
 - `tests/legacy_baseline/`: scripts that run the legacy GUIs headlessly on public
   data (OpenNeuro ds000030 subset) and compare outputs between code versions.

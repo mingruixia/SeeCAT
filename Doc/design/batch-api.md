@@ -217,29 +217,43 @@ VoxDeg did).
 
 ## 7. Execution model
 
+A pipeline is a package `seecat.<name>` with three functions:
+
+| function | role |
+|---|---|
+| `[cfg, spec] = defaults()` | every option with its default, and the validation spec |
+| `[units, cfg] = plan(cfg)` | resolve folder defaults, check prerequisites, list the units of work (struct array with an `id` field) |
+| `result = run_unit(unit, cfg, log)` | process one unit; return a struct of scalars/text for the summary; throw on failure |
+
 ```
 seecat.run(cfg)
-  ├─ validate cfg, check SPM, resolve BIDS selection → list of units (subject × session × run)
-  ├─ write config JSON + dataset_description.json, open log
-  ├─ parfor (unit, n_workers)                     only parallel loop in the code
-  │     ctx = seecat.prep.run_subject(unit, cfg)  try/catch per unit
-  │        ctx = step_x(ctx, cfg.x)  …            each step: inputs in ctx → outputs in ctx
-  └─ summary TSV + console table (OK / failed with message / skipped)
+  ├─ seecat.config (fill) → seecat.check_config → seecat.<p>.plan
+  ├─ logs/<p>_<time>_config.json, logs/<p>_<time>.log (MATLAB, SPM, SeeCAT versions)
+  ├─ parfor (unit, n_workers)                      the only parallel loop
+  │     skip if logs/done/<p>_<unit>.json has the same config hash
+  │     result = seecat.<p>.run_unit(unit, cfg, log)   try/catch per unit
+  │        ctx = seecat.util.run_step(ctx, 'realign', @step, cfg.realign, log) …
+  │     on success: write the done marker; delete work_dir/<p>/<unit> unless keep_work
+  │     on failure: full error report in logs/<p>_<time>/<unit>.log; work folder kept
+  └─ reports/<p>_<time>_summary.tsv: unit, status, seconds, message, result fields
 ```
 
-- `ctx` is a struct carrying file paths and metadata (TR, slice times,
-  current BOLD file, masks, confounds) from step to step. Steps are pure
-  functions of `(ctx, options)` and never change directory.
-- Skipping finished work: each step writes a small `*.done.json` in
-  `work_dir` with a hash of its options and inputs; the step is skipped when
-  the hash matches and outputs exist.
-- SPM is run with `spm_jobman('run', job)` with jobs built in code (no
-  `jobmats`). `spm('defaults','fmri')` and `spm_jobman('initcfg')` are called
+- **Unit-level resume.** The config hash covers every option except
+  `n_workers`, `overwrite` and `keep_work`. `overwrite` ignores markers and
+  clears the unit's work folder.
+- **Step-level resume** (`seecat.util.run_step`), used after a failure when the
+  work folder still exists. A step is skipped when its key matches: step
+  name, its options, the whole `ctx` before it, and size/date of every file
+  in `ctx.files`. On skip, only the fields the step added or changed are
+  applied to `ctx`. Conventions: a step's settings come in `opt`, never in
+  `ctx`; `ctx` holds state only (paths, metadata) and is JSON-encodable.
+- `ctx` carries `work_dir`, `files` (paths) and metadata (TR, slice times,
+  confounds) from step to step. Steps never change directory.
+- SPM runs through `spm_jobman('run', job)` with jobs built in code (no
+  `jobmats`); `spm('defaults','fmri')` and `spm_jobman('initcfg')` are called
   once per worker.
-- Errors: a failing unit records its error and stack in the log and the
-  summary; others continue. `seecat.run` returns the summary table.
-- Group-level pipelines (`stat`) run once, not per subject; their heavy
-  parts are vectorised instead of parallelised.
+- Group-level pipelines (`stat`) plan a single unit; their heavy parts are
+  vectorised instead of parallelised.
 
 ## 8. BIDS handling
 

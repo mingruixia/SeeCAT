@@ -1,0 +1,154 @@
+function summary = run(cfg)
+% RUN  Run a SeeCAT pipeline.
+%   summary = seecat.run(cfg)            % config struct from seecat.config
+%   summary = seecat.run('study.json')   % saved config
+%
+% Steps:
+%   1. Fill and validate the config (seecat.config, seecat.check_config).
+%   2. seecat.<pipeline>.plan(cfg) lists the units of work (BOLD runs for
+%      per-subject pipelines, one unit for group pipelines) and resolves
+%      folder defaults.
+%   3. Each unit runs through seecat.<pipeline>.run_unit, in a parfor over
+%      units when cfg.n_workers > 0. A failing unit is logged and the others
+%      continue.
+%   4. Writes, under <output_dir>/logs: the config, a run log and one log
+%      per unit; and <output_dir>/reports/<run>_summary.tsv.
+%
+% A unit that finished before with the same options (all fields except
+% n_workers, overwrite and keep_work) is skipped unless cfg.overwrite is
+% true. Its working folder is deleted on success unless cfg.keep_work is
+% true; after a failure it is kept, so finished steps are not redone.
+%
+% SUMMARY is a table: unit, status ('ok', 'skipped' or 'failed'), seconds,
+% message, then the fields each unit reports (e.g. mean FD).
+
+cfg = seecat.config(cfg);
+seecat.check_config(cfg);
+p = cfg.pipeline;
+[units, cfg] = feval(['seecat.' p '.plan'], cfg);
+
+runId = [p '_' char(datetime('now', 'Format', 'yyyyMMdd''T''HHmmss'))];
+logDir = fullfile(cfg.output_dir, 'logs');
+if ~exist(logDir, 'dir')
+    mkdir(logDir);
+end
+seecat.save_config(cfg, fullfile(logDir, [runId '_config.json']));
+mainLog = fullfile(logDir, [runId '.log']);
+log = @(varargin) seecat.util.log_msg(mainLog, varargin{:});
+log('SeeCAT %s, pipeline "%s", %d unit(s)', seecat.version(), p, numel(units));
+log('MATLAB %s; %s', version, spmVersion());
+log('Output: %s', cfg.output_dir);
+
+nWorkers = seecat.util.start_pool(cfg.n_workers);
+hashCfg = rmfield(cfg, {'n_workers', 'overwrite', 'keep_work'});
+cfgHash = seecat.util.hash(hashCfg);
+n = numel(units);
+status = cell(n, 1);
+message = cell(n, 1);
+seconds = nan(n, 1);
+results = cell(n, 1);
+parfor (i = 1:n, nWorkers)
+    [status{i}, message{i}, seconds(i), results{i}] = runUnit(units(i), cfg, cfgHash, logDir, runId);
+end
+
+summary = table({units.id}', status, seconds, message, 'VariableNames', {'unit', 'status', 'seconds', 'message'});
+summary = [summary, resultColumns(results)];
+seecat.io.write_tsv(summary, fullfile(cfg.output_dir, 'reports', [runId '_summary.tsv']));
+for i = 1:n
+    if strcmp(status{i}, 'failed')
+        log('%s: FAILED: %s', units(i).id, message{i});
+    else
+        log('%s: %s', units(i).id, status{i});
+    end
+end
+log('Done: %d ok, %d skipped, %d failed. Logs in %s', nnz(strcmp(status, 'ok')), ...
+    nnz(strcmp(status, 'skipped')), nnz(strcmp(status, 'failed')), logDir);
+end
+
+function [status, message, seconds, result] = runUnit(unit, cfg, cfgHash, logDir, runId)
+p = cfg.pipeline;
+marker = fullfile(logDir, 'done', [p '_' unit.id '.json']);
+unitLog = fullfile(logDir, runId, [unit.id '.log']);
+log = @(varargin) seecat.util.log_msg(unitLog, ['[' unit.id '] ' varargin{1}], varargin{2:end});
+unit.work_dir = fullfile(cfg.work_dir, p, unit.id);
+message = '';
+seconds = 0;
+result = struct();
+
+if ~cfg.overwrite && exist(marker, 'file')
+    m = jsondecode(fileread(marker));
+    if strcmp(m.config_hash, cfgHash)
+        status = 'skipped';
+        result = m.result;
+        log('finished on %s with the same options; skipped', m.finished);
+        return
+    end
+end
+if exist(marker, 'file')
+    delete(marker);
+end
+if cfg.overwrite && exist(unit.work_dir, 'dir')
+    rmdir(unit.work_dir, 's');
+end
+
+t = tic;
+try
+    result = feval(['seecat.' p '.run_unit'], unit, cfg, log);
+    if isempty(result)
+        result = struct();
+    end
+    status = 'ok';
+    seconds = toc(t);
+    m = struct('unit', unit.id, 'pipeline', p, 'config_hash', cfgHash, ...
+        'seecat_version', seecat.version(), ...
+        'finished', char(datetime('now', 'Format', 'yyyy-MM-dd HH:mm:ss')), ...
+        'seconds', seconds, 'result', result);
+    seecat.util.write_json(marker, m);
+    if ~cfg.keep_work && exist(unit.work_dir, 'dir')
+        rmdir(unit.work_dir, 's');
+    end
+    log('finished (%.1f s)', seconds);
+catch err
+    status = 'failed';
+    seconds = toc(t);
+    message = strtok(err.message, newline);
+    log('FAILED: %s', getReport(err, 'extended', 'hyperlinks', 'off'));
+end
+end
+
+function T = resultColumns(results)
+% One column per field reported by any unit; numeric scalars stay numeric
+names = {};
+for i = 1:numel(results)
+    names = union(names, fieldnames(results{i}), 'stable');
+end
+T = table();
+for j = 1:numel(names)
+    k = names{j};
+    vals = cell(numel(results), 1);
+    for i = 1:numel(results)
+        if isfield(results{i}, k)
+            vals{i} = results{i}.(k);
+        end
+    end
+    if all(cellfun(@(v) isempty(v) || (isnumeric(v) && isscalar(v)) || (islogical(v) && isscalar(v)), vals))
+        col = nan(numel(vals), 1);
+        has = ~cellfun(@isempty, vals);
+        col(has) = cellfun(@double, vals(has));
+        T.(k) = col;
+    else
+        T.(k) = vals;
+    end
+end
+end
+
+function v = spmVersion()
+v = 'SPM not on the path';
+if exist('spm', 'file')
+    try
+        [name, rel] = spm('Ver');
+        v = [name ' ' rel];
+    catch
+    end
+end
+end

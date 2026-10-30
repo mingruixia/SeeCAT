@@ -95,24 +95,10 @@ json = recs(isJson);
 end
 
 function r = parse(d, name, datatype)
-% sub-01_ses-1_task-rest_run-1_bold.nii.gz -> entities + suffix + extension
 r = [];
-dot = find(name == '.', 1);
-if isempty(dot)
-    return
-end
-stem = name(1:dot-1);
-parts = strsplit(stem, '_');
-ent = struct();
-for i = 1:numel(parts) - 1
-    kv = regexp(parts{i}, '^([a-zA-Z0-9]+)-([a-zA-Z0-9]+)$', 'tokens', 'once');
-    if isempty(kv)
-        return                     % not a BIDS name
-    end
-    ent.(kv{1}) = kv{2};
-end
-if isempty(regexp(parts{end}, '^[a-zA-Z0-9]+$', 'once'))
-    return
+[ent, suffix, ext] = seecat.bids.parse_name(name);
+if isempty(ent)
+    return                         % not a BIDS name
 end
 if ~isempty(datatype) && ~isfield(ent, 'sub')
     return                         % files in a datatype folder must start with sub-
@@ -123,8 +109,8 @@ r.name = name;
 r.sub = field(ent, 'sub');
 r.ses = field(ent, 'ses');
 r.datatype = datatype;
-r.suffix = parts{end};
-r.ext = name(dot:end);
+r.suffix = suffix;
+r.ext = ext;
 r.ent = ent;
 end
 
