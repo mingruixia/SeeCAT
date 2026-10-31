@@ -50,6 +50,10 @@
   float32 (was the input type, e.g. int16).
 - Smoothing: SPM kernel applied in memory, 4D written once (identical output;
   152 volumes 63–124 s → 10 s).
+- Full ds002785 rerun with these changes (`overwrite`): 405–501 s per subject
+  (was 1040–1159 s), 15 min for 5 subjects on 4 workers (was 35). Motion, FD and
+  censor flags bit-identical to the earlier run; tissue signals and aCompCor
+  r = 1.0000; PCC seed correlations unchanged.
 - A `.mat` affine file left by an interrupted realign could give a re-made work
   copy stale affines; `work_copy` now removes it.
 
