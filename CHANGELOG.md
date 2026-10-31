@@ -63,7 +63,19 @@
   parameters r ≥ 0.92 for trans_z, rot_x, rot_y, and consistently negative r for
   trans_x and rot_z (axis sign convention, SPM vs FSL). PCC–mPFC r = 0.55–0.86.
 
+- 2 mm output (`normalise.voxel_size = 2`; ds000030 sub-11061, sub-50048;
+  ds002785 sub-0001, sub-0002; `tests/validation/compare_resolution.m`): names
+  `res-2`, grid 91×109×91; brain-mask Dice with mask_ICV equal to 3 mm
+  (0.92–0.98); FD identical. Seed-map spatial r between 2 mm and 3 mm: 0.99 on
+  ds002785, 0.80 and 0.93 on ds000030. ds002785 2 mm: ~13 min per subject,
+  ~2.5 min of it gzip of the 4D outputs.
+
 ### Known issues
+- WM/CSF masks are thresholded and eroded on the output grid, so they depend on
+  the output resolution: CSF mask 35 voxels at 3 mm vs 389 at 2 mm
+  (ds000030 sub-11061); CSF signal r = 0.84 and 0.80 between grids. Swapping in
+  the 3 mm confounds moves the 2 mm PCC–V1 correlation from 0.41 to 0.30, so
+  much of the 2 mm vs 3 mm FC difference on ds000030 comes from this.
 - At 3 mm the eroded CSF mask is small (35 voxels in the first ds000030
   subject).
 
