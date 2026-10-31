@@ -109,10 +109,22 @@ already has (nothing bundled or downloaded):
 | AAL, Brodmann | BrainNet Viewer 2.0 lookup files, with its provenance notice | BrainNet 2.0 on the path |
 | user atlas | NIfTI + TSV (`index`, `name`) | given by the user |
 
-Underlays: SPM's `canonical/avg152T1.nii` (default) and
-`canonical/single_subj_T1.nii`, or any image (e.g. a subject's T1w). The
-1.0 files in `templates/` (`aal`, `brodmann`, `Brodmann_YCG` with label
-MAT files, `ch2*`, `mni_icbm152_*`) are removed.
+Underlays (G5, decided): chosen by the space of the first overlay, so
+anatomy and data line up —
+
+| data space | default underlay |
+|---|---|
+| `IXI549Space` (SeeCAT prep), or unknown | `ch2` (Colin27, 1 mm) |
+| `MNI152NLin2009cAsym` (fMRIPrep) | MNI ICBM152 2009c asym (1 mm) |
+
+Also selectable: `ch2better` (Colin27, 0.5 mm, skull-stripped), SPM's
+canonical images, or any image (e.g. a subject's T1w). The three underlays
+stay in `templates/` as `.nii.gz`, with their licences in
+`THIRD_PARTY_NOTICES` (checked against the original terms at release);
+`ch2bet` and the 2009c face mask are removed. The 1.0 atlas files
+(`aal`, `brodmann`, `Brodmann_YCG` with label MAT files) are removed (G4).
+Comparison of the candidates: 2026-10-31, six underlays at x = −4, y = −18,
+z = 10 mm; the SPM canonical images (2 mm) were too coarse.
 
 ## 4. BrainNet hook
 
@@ -130,7 +142,7 @@ map so the figure can be reproduced.
 `dcm2nii`), `FuncConnect/`, `VoxDeg/`, `Stat/`, `Visual/`,
 `Utilities/SeeCAT_Calculator.*` (calculator: v2.1, roadmap),
 `Utilities/sc_check_dpabi.m`, `Utilities/sc_list_subjects.m`, and the atlas
-and underlay files in `templates/`. `tests/legacy_baseline` keeps running the
+files and the unused underlays (`ch2bet`, 2009c face mask) in `templates/`. `tests/legacy_baseline` keeps running the
 1.0 export outside the repository. The 1.0 tests that drive the old Stat code
 (`test_p0_fixes`) move to that export too.
 
@@ -153,6 +165,6 @@ and underlay files in `templates/`. `tests/legacy_baseline` keeps running the
 | G2 | forms | generated from `seecat.<p>.gui()` descriptions | one hand-written panel per pipeline |
 | G3 | running from the GUI | in a background process (`parfeval` on a process pool) when the Parallel Computing Toolbox is present, so the window stays responsive and Stop works; otherwise in the foreground with the log updating | always in the foreground |
 | G4 | atlases | installed sources only (SPM Neuromorphometrics, BrainNet 2.0 AAL/Brodmann, user atlases); remove the bundled ones | download Schaefer/AAL3 etc. at first use |
-| G5 | underlays | SPM canonical images (avg152T1 default) + any user image; remove ch2 and MNI 2009c | keep ch2/MNI 2009c in the repository with their notices |
+| G5 | underlays | **decided:** by data space — `ch2` for IXI549Space, MNI 2009c asym for MNI152NLin2009cAsym; `ch2better`, SPM canonical images and any image selectable (section 3) | — |
 | G6 | display convention | neurological (left on the left) by default, radiological as a toggle | radiological by default |
 | G7 | legacy windows | remove all 1.0 GUIs now (section 5) | keep them as a "classic" menu until 2.1 |
