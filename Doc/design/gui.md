@@ -163,7 +163,7 @@ files and the unused underlays (`ch2bet`, 2009c face mask) in `templates/`. `tes
 |---|---|---|---|
 | G1 | UI toolkit | `uifigure` + `uigridlayout` (resizes cleanly, the current MATLAB UI; available since R2018b, so fine for R2020b) | classic `figure` + `uicontrol` (the earlier plan; manual layout, older look) |
 | G2 | forms | generated from `seecat.<p>.gui()` descriptions | one hand-written panel per pipeline |
-| G3 | running from the GUI | in a background process (`parfeval` on a process pool) when the Parallel Computing Toolbox is present, so the window stays responsive and Stop works; otherwise in the foreground with the log updating | always in the foreground |
+| G3 | running from the GUI (implemented as a separate `matlab -batch` process rather than `parfeval`: inside a pool worker, seecat.run's own parfor would run serially; the separate process opens its own pool, works without the Parallel Computing Toolbox, and Stop ends it) | in a background process (`parfeval` on a process pool) when the Parallel Computing Toolbox is present, so the window stays responsive and Stop works; otherwise in the foreground with the log updating | always in the foreground |
 | G4 | atlases | installed sources only (SPM Neuromorphometrics, BrainNet 2.0 AAL/Brodmann, user atlases); remove the bundled ones | download Schaefer/AAL3 etc. at first use |
 | G5 | underlays | **decided:** by data space — `ch2` for IXI549Space, MNI 2009c asym for MNI152NLin2009cAsym; `ch2better`, SPM canonical images and any image selectable (section 3) | — |
 | G6 | display convention | neurological (left on the left) by default, radiological as a toggle | radiological by default |

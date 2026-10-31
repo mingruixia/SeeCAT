@@ -24,9 +24,16 @@ They replace the DPABI-distributed `BrainMask_05`, `GreyMask_02`,
 those masks came from: the GM mask has 52,276 voxels at 3 mm (was 67,541;
 Dice 0.87), the brain mask 69,937 (was 70,831; Dice 0.96).
 
-## Atlases and underlays (legacy viewer)
+## Underlays (viewer)
 
-`aal`, `brodmann`, `Brodmann_YCG` (+ `_Labels.mat`), `ch2*` and
-`mni_icbm152_*` are used only by the legacy viewer (`Visual/`). They go with
-it in the viewer rewrite (roadmap weeks 7–8), where atlases are fetched at
-install time with their own licences.
+| file | what | default for |
+|---|---|---|
+| `ch2.nii.gz` | Colin27 single-subject T1, 1 mm (MRIcron distribution) | IXI549Space (SeeCAT prep) |
+| `ch2better.nii.gz` | Colin27, 0.5 mm, skull-stripped (MRIcroGL distribution) | (selectable) |
+| `mni_icbm152_t1_tal_nlin_asym_09c.nii.gz` | MNI ICBM152 2009c asymmetric average, 1 mm | MNI152NLin2009cAsym (fMRIPrep) |
+
+Licences and credits go in `THIRD_PARTY_NOTICES` at release (to be checked
+against the original terms). SPM's canonical images and any other image can
+also be used. Atlas labels come from installed sources only (SPM's
+Neuromorphometrics; AAL and Brodmann from BrainNet Viewer 2.0); the 1.0
+atlas files were removed (design gui.md, G4/G5).

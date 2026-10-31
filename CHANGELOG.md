@@ -206,6 +206,30 @@
   old code (found when a confounds step from before the shared-step refactor
   was reused and the outputs step failed).
 
+- New GUI (design gui.md, accepted): `SeeCAT` opens the main window
+  (`seecat.gui.launcher`) with a form per pipeline generated from
+  `seecat.<pipeline>.gui()` (a test checks every option is covered),
+  Load/Save config, Run in a separate MATLAB process with a live log, the
+  summary and the QC page; DICOM-to-BIDS and QC panels.
+- Viewer (`seecat.viewer`, model `seecat.view.Model`): orthogonal views or
+  montage, layers with threshold by statistic or p, voxel/cluster FWE and FDR
+  through `seecat.stat.inference` (same clusters as the stat pipeline;
+  checked), cluster table with atlas labels, 1.0 header fallback, underlay by
+  data space (ch2 / MNI 2009c), neurological or radiological display,
+  export PNG and thresholded map. Atlases: SPM Neuromorphometrics, BrainNet
+  2.0 AAL/Brodmann, user atlases.
+- BrainNet Viewer 2.0 hook (`seecat.view.surface`): writes a Scene JSON
+  (ICBM152 smoothed surface, thresholded map, trilinear projection) and opens
+  it in BrainNet or renders a PNG.
+- Removed: every 1.0 GUIDE window (`SeeCAT.fig`, PrepfMRI, FuncConnect,
+  VoxDeg, Stat, Visual, Calculator — calculator returns in 2.1),
+  `sc_check_dpabi.m`, `jobmats`, `dcm2nii`, the 1.0 atlas and label files, and
+  unused underlays; ch2, ch2better and MNI 2009c are now `.nii.gz`. The 1.0
+  phase-0 tests of removed code are dropped (band-pass tests kept in
+  `test_bandpass.m`).
+- Tests: `test_gui.m`, `test_view.m`; desktop smoke script `tests/gui/smoke.m`
+  (all windows open, form round trip, screenshots).
+
 ### Known issues
 
 ## Unreleased: phase 0 fixes on top of 1.0 beta

@@ -56,8 +56,8 @@ See `CHANGELOG.md`.
   - [x] One parallel pattern everywhere; no `cd`.
 - [x] Rebuild `templates/` masks from SPM TPM (`seecat.util.make_templates`, 2 and
       3 mm); DPABI-distributed masks removed.
-- [ ] Atlases, label files and underlays (legacy viewer only): replace with the
-      viewer rewrite (weeks 7–8), fetched at install time.
+- [x] Atlases from installed sources (SPM Neuromorphometrics, BrainNet AAL/Brodmann);
+      underlays ch2 / ch2better / MNI 2009c kept (gzip), chosen by data space.
 - [x] End-to-end on ds002785 (multiband, TR 0.75 s, 5 subjects): non-steady-state
       counts, motion and FD checked against its fMRIPrep confounds.
 - [x] End-to-end test at 2 mm output (2 + 2 subjects).
@@ -89,11 +89,12 @@ See `CHANGELOG.md`.
 
 ## Weeks 7–8 (12/07 – 12/18): GUI and viewer
 
-- [ ] Code-built GUI: launcher and module panels over the batch API.
-- [ ] Own slice viewer: overlays, thresholding, cluster report, atlas labels,
+- [x] Code-built GUI (`SeeCAT`): launcher with forms generated from
+      `seecat.<p>.gui()`, config load/save, runs in a background MATLAB process.
+- [x] Own slice viewer (`seecat.viewer`): overlays, thresholding, cluster report, atlas labels,
       montage and export.
-- [ ] BrainNet Viewer hook.
-- [ ] Remove `Visual/` and `sc_check_dpabi.m`.
+- [x] BrainNet Viewer 2.0 hook (Scene JSON; app or `BrainNetRender`).
+- [x] Remove all 1.0 GUIs, `Visual/`, `sc_check_dpabi.m`, `jobmats`, `dcm2nii`, atlas files.
 
 ## Week 9 (12/21 – 12/31): release
 
