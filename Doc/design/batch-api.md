@@ -316,3 +316,7 @@ a `.m` script; "Load" reads a JSON. No computation lives in GUI callbacks.
 | D5 | File format | final derivatives `.nii.gz`; work files `.nii`, deleted after success |
 | D6 | BIDS reader | in-house minimal reader |
 | D7 | Default output resolution | 3 mm |
+| D8 | Interpolation of censored frames (2026-10-31) | `spectral` (joint ridge fit up to the low-pass edge), not spline: better in 9/9 (TR 2 s) and 5/5 (TR 0.75 s) subjects on real held-out frames (section 5.2) |
+| D9 | WM/CSF nuisance masks (2026-10-31) | built in native space (WM p > 0.99, CSF p > 0.95, 2 mm erosion), then resampled, so they do not depend on the output voxel size |
+| D10 | dcm2niix in releases (2026-10-31) | bundled for win/mac/lnx (v1.0.20260724), not in git |
+| D11 | Default GM analysis mask (2026-10-31) | SPM TPM GM > 0.2 (as 1.0's threshold); 52,276 voxels at 3 mm vs 1.0's 67,541, stated in the release notes |
