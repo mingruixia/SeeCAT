@@ -40,20 +40,35 @@ tc.verifyEqual(z(1:2), [y(3); y(3)]);      % edges: nearest good frame
 tc.verifyEqual(z(100), y(99));
 end
 
-function testLombScargleKeepsGoodFrames(tc)
-% Only the contract is tested. The quality of the gap fill is not: with
-% frequencies up to the Nyquist rate the reconstruction kernel is about one
-% TR wide, so gaps of several frames come back close to the mean (open
-% question, see CHANGELOG).
+function testSpectralRecoversInBandSignal(tc)
 tr = 2;
 t = (0:149)' * tr;
 y = sin(2 * pi * 0.03 * t) + 0.5 * cos(2 * pi * 0.05 * t);
 bad = false(150, 1);
 bad([30:33 80:82]) = true;
-z = seecat.denoise.interpolate(y + 10 * bad, bad, tr, 'lombscargle');
+z = seecat.denoise.interpolate(y + 10 * bad, bad, tr, 'spectral', 0.1);
 tc.verifyEqual(z(~bad), y(~bad));
-tc.verifyTrue(all(isfinite(z(bad))));
-tc.verifyLessThan(max(abs(z(bad))), 2);
+tc.verifyLessThan(max(abs(z(bad) - y(bad))), 0.3);   % ridge shrinks a little
+% A large offset (BOLD is ~1000) must not change the fill: the mean is not
+% shrunk, or the filled frames would form a step the band-pass spreads
+z2 = seecat.denoise.interpolate(y + 1000, bad, tr, 'spectral', 0.1);
+tc.verifyEqual(z2(bad) - 1000, z(bad), 'AbsTol', 1e-8);
+end
+
+function testSpectralBeatsMeanWithNoise(tc)
+% In-band signal plus broadband noise, interior gaps: the fill must be
+% closer to the signal than the mean is (Lomb-Scargle was not).
+rng(4);
+tr = 2;
+T = 150;
+bad = false(T, 1);
+bad([30:33 70 100:104]) = true;
+s = seecat.denoise.bandpass(randn(T, 200), tr, [0.01 0.1]);
+s = s ./ std(s);
+z = seecat.denoise.interpolate(s + 0.5 * randn(T, 200), bad, tr, 'spectral', 0.1);
+errFill = sqrt(mean((z(bad, :) - s(bad, :)) .^ 2, 'all'));
+errMean = sqrt(mean((mean(s(~bad, :)) - s(bad, :)) .^ 2, 'all'));
+tc.verifyLessThan(errFill, 0.9 * errMean);
 end
 
 function testCleanRemovesConfoundsInBand(tc)

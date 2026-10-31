@@ -47,7 +47,8 @@ See `CHANGELOG.md`.
   - [x] aCompCor (CSF and WM separately).
   - [ ] Denoise from fMRIPrep outputs (confounds table already compatible).
   - [x] Censoring (interpolate → filter → regress → drop), with unit tests.
-  - [ ] Lomb–Scargle gap fill: check against the published implementation.
+  - [x] Spectral gap fill (replaces Lomb–Scargle, which cannot fill gaps on a
+        regular grid).
   - [x] One parallel pattern everywhere; no `cd`.
 - [ ] Rebuild `templates/`: masks generated from SPM TPM by a script in the
       repo; remove DPABI-distributed masks and label files.

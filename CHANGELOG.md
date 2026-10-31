@@ -14,16 +14,23 @@
   BIDS-derivative outputs with JSON sidecars. Anatomical outputs are written by
   one unit per T1w.
 - `seecat.denoise`: `fd_power`, `flag_frames`, `interpolate` (spline,
-  Lomb–Scargle), `clean` (interpolate → band-pass data and regressors → fit on
+  spectral), `clean` (interpolate → band-pass data and regressors → fit on
   good frames), `compcor`, `motion_regressors`, `select_regressors`,
   `poly_trend`. `seecat.io.read_tsv`; `seecat.util.spm_run`.
 - Tests: `tests/unit/test_denoise.m` (10), including that values on censored
   frames cannot change the residuals of good frames.
 
+### Changed
+- `censor.interp = 'lombscargle'` is replaced by `'spectral'`. On a regular TR
+  grid, Lomb–Scargle reconstruction (fitting each frequency separately, up to
+  Nyquist, as in Power et al. 2014 and in xcpEngine) is a sinc kernel that is 0
+  at every other sample, so gaps came back as the series mean (checked for
+  both the τ-shifted and the xcpEngine variant). `spectral` fits all sinusoids
+  jointly up to the low-pass edge, with a ridge penalty. In simulations
+  (in-band signal plus broadband noise) it beats spline and the mean in
+  interior gaps; at the series edges no method beats the mean.
+
 ### Known issues
-- Lomb–Scargle interpolation fills gaps of several frames with values close to
-  the series mean (reconstruction kernel about one TR wide). Spline is the
-  default; the Lomb–Scargle option needs checking against Power et al. (2014).
 - At 3 mm the eroded CSF mask is small (35 voxels in the first ds000030
   subject).
 

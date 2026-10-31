@@ -8,7 +8,7 @@ function [E, info] = clean(Y, R, opt)
 %   detrend_order  polynomial order (0 = mean only)
 %   band           [low high] in Hz, or [] for no filter
 %   bad            T x 1 logical, frames flagged for censoring (or empty)
-%   interp         'spline' or 'lombscargle'
+%   interp         'spline' or 'spectral' (fitted up to the low-pass edge)
 %
 % Order of operations (Doc/design/batch-api.md, 5.2):
 %   1. flagged frames of Y and of every regressor are replaced by
@@ -29,8 +29,12 @@ good = ~bad;
 R = double(R);
 sd = std(R, 0, 1);
 R = (R(:, sd > 0) - mean(R(:, sd > 0), 1)) ./ sd(sd > 0);   % scale does not change the fit
+fmax = [];
+if ~isempty(opt.band) && opt.band(2) > 0
+    fmax = opt.band(2);
+end
 if any(bad)
-    R = seecat.denoise.interpolate(R, bad, opt.tr, opt.interp);
+    R = seecat.denoise.interpolate(R, bad, opt.tr, opt.interp, fmax);
 end
 X = [seecat.denoise.poly_trend(T, opt.detrend_order), R];
 filtering = ~isempty(opt.band);
@@ -50,7 +54,7 @@ for v0 = 1:block:size(Y, 2)
     v = v0:min(v0 + block - 1, size(Y, 2));
     y = double(Y(:, v));
     if any(bad)
-        y = seecat.denoise.interpolate(y, bad, opt.tr, opt.interp);
+        y = seecat.denoise.interpolate(y, bad, opt.tr, opt.interp, fmax);
     end
     if filtering
         y = seecat.denoise.bandpass(y, opt.tr, opt.band);
