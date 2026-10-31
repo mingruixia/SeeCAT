@@ -18,7 +18,7 @@ classdef Model < handle
         underlay = struct()              % name, file, img (display grid)
         layers = struct('name', {}, 'file', {}, 'data', {}, 'hdr', {}, 'stat', {}, ...
             'threshold', {}, 'colormap', {}, 'alpha', {}, 'visible', {}, 'frame', {}, ...
-            'shown', {}, 'index', {}, 'result', {})
+            'shown', {}, 'index', {}, 'result', {}, 'range', {})
         grid = struct()                  % dim, mat (display grid, axis aligned)
         atlases = struct([])
     end
@@ -75,6 +75,7 @@ classdef Model < handle
             L.shown = [];
             L.index = nearestIndex(hdr, m.grid);
             L.result = struct();
+            L.range = [];
             m.layers(end+1) = L;
             i = numel(m.layers);
             m.refresh(i);
@@ -160,6 +161,11 @@ classdef Model < handle
             shown(keep) = y(keep);
             m.layers(i).shown = shown;
             m.layers(i).result = R;
+            a = abs(shown(shown ~= 0));
+            m.layers(i).range = [];                   % colour scale of every view
+            if ~isempty(a)
+                m.layers(i).range = [min(a) max(a)];
+            end
         end
 
         function T = clusters(m, i)
@@ -271,9 +277,11 @@ classdef Model < handle
             mm = (m.grid.mat(1:3, :) * [v(:); 1])';
         end
 
-        function rgb = montage(m, view, n)
-            % N slices of VIEW spread over the brain, in one image
+        function rgb = montage(m, view, n, cols)
+            % N slices of VIEW spread over the brain, in one image of COLS
+            % columns (default one row)
             if nargin < 3, n = 8; end
+            if nargin < 4, cols = n; end
             dimIdx = struct('sagittal', 1, 'coronal', 2, 'axial', 3).(view);
             nz = find(any(any(m.underlay.img > 0, otherDims(dimIdx, 1)), otherDims(dimIdx, 2)));
             pos = round(linspace(nz(1) + 0.2 * numel(nz), nz(end) - 0.15 * numel(nz), n));
@@ -284,7 +292,9 @@ classdef Model < handle
                 mm = m.grid.mat(1:3, :) * [v(1:3); 1];
                 tiles{k} = m.slice(view, mm');
             end
-            rgb = cat(2, tiles{:});
+            rows = ceil(n / cols);
+            tiles(end+1:rows * cols) = {zeros(size(tiles{1}))};
+            rgb = cell2mat(reshape(tiles, cols, rows)');
         end
 
         function saveShown(m, i, file)
@@ -451,9 +461,14 @@ neg = s < 0;
 if ~any(pos(:)) && ~any(neg(:))
     return
 end
-hi = max(abs(s(:)));
-lo = min(abs(s(s ~= 0)));
-t = (abs(s) - lo) / max(hi - lo, eps);
+if isempty(L.range)
+    hi = max(abs(s(:)));
+    lo = min(abs(s(s ~= 0)));
+else
+    lo = L.range(1);
+    hi = L.range(2);
+end
+t = min(max((abs(s) - lo) / max(hi - lo, eps), 0), 1);
 cmap = L.colormap;
 parts = {pos, neg};
 for side = 1:2

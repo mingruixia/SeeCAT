@@ -1,6 +1,7 @@
 function smoke(outDir, statMap)
 % SMOKE  Open every SeeCAT window and save screenshots (needs a desktop
-% session; -batch cannot draw windows).
+% session; -batch cannot draw windows). exportapp leaves out the uihtml
+% parts (side bar, section links); check those on screen.
 %   smoke('C:/tmp/shots', 'group/x/x_contrast-pos_stat-t_statmap.nii.gz')
 if ~exist(outDir, 'dir'), mkdir(outDir); end
 app = SeeCAT();
@@ -18,8 +19,14 @@ end
 fprintf('launcher ok (%s)\n', cfg.pipeline);
 v = seecat.viewer(statMap);
 v.model.setThreshold(1, struct('mode', 'p', 'value', 0.001, 'sign', 'pos', 'correction', 'cluster_fwe', 'alpha', 0.025));
+v.refresh();
 drawnow; pause(1);
 exportapp(v.fig, fullfile(outDir, 'viewer.png'));
+for layout = {'single', 'mosaic'}
+    v.setLayout(layout{1});
+    drawnow; pause(1);
+    exportapp(v.fig, fullfile(outDir, ['viewer_' layout{1} '.png']));
+end
 fprintf('viewer ok\n');
 delete(v.fig);
 delete(app.fig);

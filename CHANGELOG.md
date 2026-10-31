@@ -221,6 +221,13 @@
 - BrainNet Viewer 2.0 hook (`seecat.view.surface`): writes a Scene JSON
   (ICBM152 smoothed surface, thresholded map, trilinear projection) and opens
   it in BrainNet or renders a PNG.
+- GUI restyle (gui.md, "Visual style"): one theme and SeeCAT's own icons and
+  logo for both windows. Main window: grouped side bar, section links that
+  scroll the card form, help column for the option being edited, run status
+  with progress, Log | Summary drawer. Viewer: Orthogonal / Single / Mosaic
+  layouts, cursor read-out with p value and atlas label, colour bar on one
+  scale for all views (the overlay was scaled per slice before), Threshold
+  and Go to cards, cluster table docked and numbered by size.
 - Removed: every 1.0 GUIDE window (`SeeCAT.fig`, PrepfMRI, FuncConnect,
   VoxDeg, Stat, Visual, Calculator — calculator returns in 2.1),
   `sc_check_dpabi.m`, `jobmats`, `dcm2nii`, the 1.0 atlas and label files, and

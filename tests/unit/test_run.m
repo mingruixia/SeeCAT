@@ -71,7 +71,7 @@ tc.verifyEqual(S.status, {'ok'; 'failed'; 'ok'});
 tc.verifySubstring(S.message{2}, 'Unit u2 failed on purpose');
 tc.verifyTrue(exist(fullfile(cfg.work_dir, 'demo', 'u2', 'step1.done.mat'), 'file') == 2);
 log = dir(fullfile(cfg.output_dir, 'logs', 'demo_*', 'u2.log'));
-tc.verifySubstring(fileread(fullfile(log.folder, log.name)), 'run_unit>step2 (line');   % stack kept
+tc.verifySubstring(fileread(fullfile(log.folder, log.name)), 'run_unit>step2');   % stack kept (any MATLAB language)
 % Fix the cause: u2 resumes at step 2. fail_units is part of the options,
 % so u1/u3 run again too; but step 1 of u2 is reused from its work folder.
 cfg.fail_units = {};

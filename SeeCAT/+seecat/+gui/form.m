@@ -1,43 +1,61 @@
-function H = form(parent, F, cfg, advanced)
+function H = form(parent, F, cfg, advanced, onHelp)
 % FORM  Controls for a pipeline's form description, filled from CFG.
-%   H = seecat.gui.form(parent, seecat.prep.gui(), cfg, showAdvanced)
+%   H = seecat.gui.form(parent, seecat.prep.gui(), cfg, showAdvanced, @(f) ...)
 %   cfg = H.get(cfg)          % read the controls back into a config
+%   H.sections                % section names, in order
+%   H.scrollTo('Censoring')   % scroll the form to that section's card
+%   H.fit()                   % refit the cards to the panel's width
 %
-% PARENT is a container (uipanel/uigridlayout). Entries are grouped by
-% section; advanced entries are left out unless ADVANCED. Values are turned
-% back into the type of the option's current value (numbers, vectors,
-% matrices, keywords such as 'auto', lists), see seecat.gui.parse.
+% PARENT is a uipanel, which becomes the scrolling area (numeric scroll
+% works on panels in R2020b, not on grid layouts). Each section is a card in
+% one column; advanced entries are left out unless ADVANCED.
+% ONHELP(f) is called with the form entry the user is working on (editing,
+% or clicking its info icon). Values are turned back into the type of the
+% option's current value (numbers, vectors, matrices, keywords such as
+% 'auto', lists), see seecat.gui.parse.
 
 if nargin < 4
     advanced = false;
 end
+if nargin < 5
+    onHelp = @(f) [];
+end
+T = seecat.gui.theme();
 F = F(advanced | ~[F.advanced]);
 secs = unique({F.section}, 'stable');
-nRows = numel(F) + numel(secs);
-g = uigridlayout(parent, [nRows 3], 'ColumnWidth', {170, '1x', 70}, ...
-    'RowHeight', repmat({26}, 1, nRows), 'Scrollable', 'on', 'RowSpacing', 4);
+pad = [16 14 16 14];                              % left bottom right top
+parent.Scrollable = 'on';
+content = uipanel(parent, 'BorderType', 'none', 'BackgroundColor', T.page);
+g = uigridlayout(content, [numel(secs) 1], 'Padding', pad, 'RowSpacing', 12, 'BackgroundColor', T.page);
 ctl = cell(numel(F), 1);
-r = 0;
-for s = secs
-    r = r + 1;
-    h = uilabel(g, 'Text', s{1}, 'FontWeight', 'bold');
-    h.Layout.Row = r;
+heights = zeros(1, numel(secs));
+for s = 1:numel(secs)
+    k = find(strcmp({F.section}, secs{s}));
+    rows = [22, arrayfun(@(i) rowHeight(F(i)), k)];
+    card = uigridlayout(g, [1 1], 'Padding', [1 1 1 1], 'BackgroundColor', T.border);   % 1 px outline
+    cg = uigridlayout(card, [numel(rows) 3], 'ColumnWidth', {T.label, '1x', 18}, ...
+        'RowHeight', num2cell(rows), 'RowSpacing', 6, 'ColumnSpacing', 10, ...
+        'Padding', [14 12 12 10], 'BackgroundColor', T.panel);
+    h = uilabel(cg, 'Text', secs{s}, 'FontSize', T.size.card, 'FontWeight', 'bold', 'FontColor', T.text);
+    h.Layout.Row = 1;
     h.Layout.Column = [1 3];
-    for k = find(strcmp({F.section}, s{1}))
-        r = r + 1;
-        f = F(k);
-        lab = uilabel(g, 'Text', f.label, 'Tooltip', tip(f));
-        lab.Layout.Row = r;
-        lab.Layout.Column = 1;
-        v = getPath(cfg, f.path);
-        [ctl{k}, tall] = makeControl(g, f, v, r);
-        if tall > 0
-            g.RowHeight{r} = tall;
-        end
+    for r = 1:numel(k)
+        f = F(k(r));
+        ctl{k(r)} = makeRow(cg, f, getPath(cfg, f.path), r + 1, T, @() onHelp(f));
     end
+    heights(s) = sum(rows) + 6 * (numel(rows) - 1) + 22 + 2;
 end
+g.RowHeight = num2cell(heights);
+total = pad(2) + pad(4) + sum(heights) + g.RowSpacing * (numel(heights) - 1);
+parent.SizeChangedFcn = @(~, ~) fit();
+drawnow;                                          % the panel gets its size from the layout
+fit();
 H.get = @readBack;
 H.fields = F;
+H.sections = secs;
+H.scrollTo = @scrollTo;
+H.fit = @fit;                                     % after the window has its final size
+H.grid = g;
 
     function cfg = readBack(cfg)
         for k2 = 1:numel(F)
@@ -45,6 +63,117 @@ H.fields = F;
             cfg = setPath(cfg, F(k2).path, readControl(F(k2), ctl{k2}, old));
         end
     end
+
+    function fit()
+        % Content as wide as the visible area (less the scroll bar), top aligned
+        if ~isvalid(content), return, end
+        v = parent.InnerPosition;
+        w = v(3);
+        if total > v(4)
+            w = w - 18;
+        end
+        content.Position = [1, max(0, v(4) - total) + 1, max(w, 100), total];
+    end
+
+    function scrollTo(name)
+        s2 = find(strcmp(secs, name), 1);
+        if isempty(s2), return, end
+        top = sum(heights(1:s2 - 1)) + g.RowSpacing * (s2 - 1);   % the card's top, below the padding
+        fit();
+        view = parent.InnerPosition(4);
+        top = min(top, max(0, total - view));     % the last cards cannot reach the top
+        scroll(parent, 0, total - view - top);    % y counts from the bottom of the contents
+    end
+end
+
+function h = rowHeight(f)
+switch f.widget
+    case 'seeds'
+        h = 132;
+    case 'contrasts'
+        h = 110;
+    otherwise
+        h = seecat.gui.theme().row;
+end
+end
+
+function c = makeRow(cg, f, v, r, T, help)
+tipText = tip(f);
+if any(strcmp(f.widget, {'seeds', 'contrasts'}))
+    lg = uigridlayout(cg, [3 1], 'RowHeight', {T.row, 26, '1x'}, 'Padding', [0 0 0 0], ...
+        'RowSpacing', 4, 'BackgroundColor', T.panel);
+    uilabel(lg, 'Text', f.label, 'FontColor', T.text2, 'Tooltip', tipText);
+    add = uibutton(lg, 'Text', 'Add row', 'Icon', seecat.gui.icon('plus'), 'BackgroundColor', T.panel, ...
+        'FontColor', T.text2);
+    lg.Layout.Row = r;
+    lg.Layout.Column = 1;
+else
+    lab = uilabel(cg, 'Text', f.label, 'FontColor', T.text2, 'Tooltip', tipText);
+    lab.Layout.Row = r;
+    lab.Layout.Column = 1;
+end
+info = uiimage(cg, 'ImageSource', seecat.gui.icon('info', T.hex.muted), 'Tooltip', 'About this option', ...
+    'ImageClickedFcn', @(~, ~) help());
+info.Layout.Row = r;
+info.Layout.Column = 3;
+edit = {'BackgroundColor', T.panel, 'FontColor', T.text, 'Tooltip', tipText, ...
+    'ValueChangingFcn', @(~, ~) help(), 'ValueChangedFcn', @(~, ~) help()};
+holder = [];
+switch f.widget
+    case 'flag'
+        c = uicheckbox(cg, 'Text', '', 'Value', logical(v), 'Tooltip', tipText, 'ValueChangedFcn', @(~, ~) help());
+    case 'choice'
+        holder = row(cg, {220, '1x'}, T);
+        c = uidropdown(holder, 'Items', f.choices, 'Value', char(v), 'BackgroundColor', T.panel, ...
+            'FontColor', T.text, 'Tooltip', tipText, 'ValueChangedFcn', @(~, ~) help());
+    case 'number'
+        holder = row(cg, {90, '1x'}, T);
+        c = uieditfield(holder, 'text', 'Value', seecat.gui.format(v, 'number'), edit{:});
+    case 'range'
+        holder = row(cg, {80, 22, 80, '1x'}, T);
+        parts = strsplit(seecat.gui.format(v, 'range'));
+        parts(end+1:2) = {''};
+        a = uieditfield(holder, 'text', 'Value', parts{1}, edit{:});
+        uilabel(holder, 'Text', 'to', 'FontColor', T.muted, 'HorizontalAlignment', 'center');
+        b = uieditfield(holder, 'text', 'Value', parts{2}, edit{:});
+        c = [a b];
+    case 'multi'
+        holder = row(cg, [num2cell(30 + 7.5 * cellfun(@numel, f.choices)), {'1x'}], T);
+        c = gobjects(1, numel(f.choices));
+        for i = 1:numel(f.choices)
+            c(i) = uicheckbox(holder, 'Text', f.choices{i}, 'Value', any(strcmp(cellstr(v), f.choices{i})), ...
+                'FontColor', T.text, 'Tooltip', tipText, 'ValueChangedFcn', @(~, ~) help());
+        end
+    case {'folder', 'file'}
+        holder = row(cg, {'1x', 30}, T);
+        c = uieditfield(holder, 'text', 'Value', char(v), edit{:});
+        uibutton(holder, 'Text', '', 'Icon', seecat.gui.icon('folder'), 'BackgroundColor', T.panel, ...
+            'Tooltip', 'Browse', 'ButtonPushedFcn', @(~, ~) browse(c, f.widget));
+    case 'seeds'
+        c = uitable(cg, 'Data', seedTable(v), 'ColumnEditable', true, 'RowName', {}, ...
+            'ColumnName', {'Name', 'x', 'y', 'z', 'Radius', 'File'}, 'Tooltip', tipText, ...
+            'ColumnWidth', {110, 50, 50, 50, 56, 'auto'}, 'CellEditCallback', @(~, ~) help());
+        add.ButtonPushedFcn = @(~, ~) set(c, 'Data', [c.Data; {'', 0, 0, 0, 6, ''}]);
+    case 'contrasts'
+        c = uitable(cg, 'Data', contrastTable(v), 'ColumnEditable', true, 'RowName', {}, ...
+            'ColumnName', {'Name', 'Type', 'Weights'}, 'Tooltip', tipText, ...
+            'ColumnWidth', {140, 60, 'auto'}, 'CellEditCallback', @(~, ~) help());
+        add.ButtonPushedFcn = @(~, ~) set(c, 'Data', [c.Data; {'', 't', ''}]);
+    otherwise                                     % text, labels, maps
+        c = uieditfield(cg, 'text', 'Value', seecat.gui.format(v, f.widget), edit{:});
+end
+if isempty(holder)
+    c(1).Layout.Row = r;
+    c(1).Layout.Column = 2;
+else
+    holder.Layout.Row = r;
+    holder.Layout.Column = 2;
+end
+end
+
+function h = row(cg, widths, T)
+h = uigridlayout(cg, [1 numel(widths)], 'ColumnWidth', widths, 'Padding', [0 0 0 0], ...
+    'ColumnSpacing', 6, 'BackgroundColor', T.panel);
 end
 
 function t = tip(f)
@@ -52,51 +181,6 @@ t = sprintf('%s (batch: %s)', f.help, f.path);
 if isempty(f.help)
     t = sprintf('batch: %s', f.path);
 end
-end
-
-function [c, tall] = makeControl(g, f, v, r)
-tall = 0;
-switch f.widget
-    case 'flag'
-        c = uicheckbox(g, 'Text', '', 'Value', logical(v));
-    case 'choice'
-        c = uidropdown(g, 'Items', f.choices, 'Value', char(v));
-    case 'multi'
-        c = uigridlayout(g, [1 numel(f.choices)], 'Padding', [0 0 0 0]);
-        for i = 1:numel(f.choices)
-            uicheckbox(c, 'Text', f.choices{i}, 'Value', any(strcmp(cellstr(v), f.choices{i})));
-        end
-    case {'folder', 'file'}
-        c = uieditfield(g, 'text', 'Value', char(v));
-        b = uibutton(g, 'Text', '…', 'ButtonPushedFcn', @(~, ~) browse(c, f.widget));
-        b.Layout.Row = r;
-        b.Layout.Column = 3;
-    case 'seeds'
-        c = uitable(g, 'Data', seedTable(v), 'ColumnEditable', true, ...
-            'ColumnName', {'name', 'x', 'y', 'z', 'radius', 'file'});
-        tall = 120;
-        addRows(g, c, r, {'', 0, 0, 0, 6, ''});
-    case 'contrasts'
-        c = uitable(g, 'Data', contrastTable(v), 'ColumnEditable', true, ...
-            'ColumnName', {'name', 'type', 'weights'});
-        tall = 100;
-        addRows(g, c, r, {'', 't', ''});
-    otherwise                                     % text, labels, number, range, maps
-        c = uieditfield(g, 'text', 'Value', seecat.gui.format(v, f.widget));
-end
-c.Layout.Row = r;
-if ~any(strcmp(f.widget, {'folder', 'file', 'seeds', 'contrasts'}))
-    c.Layout.Column = [2 3];
-else
-    c.Layout.Column = 2;
-end
-c.Tooltip = tip(f);
-end
-
-function addRows(g, t, r, blank)
-b = uibutton(g, 'Text', '+ row', 'ButtonPushedFcn', @(~, ~) set(t, 'Data', [t.Data; blank]));
-b.Layout.Row = r;
-b.Layout.Column = 3;
 end
 
 function browse(c, kind)
@@ -111,14 +195,13 @@ end
 
 function v = readControl(f, c, old)
 switch f.widget
-    case 'flag'
-        v = c.Value;
-    case 'choice'
+    case {'flag', 'choice'}
         v = c.Value;
     case 'multi'
-        boxes = c.Children;
-        on = {boxes([boxes.Value]).Text};
-        v = f.choices(ismember(f.choices, on));    % in the listed order, whatever the child order
+        on = {c([c.Value]).Text};
+        v = f.choices(ismember(f.choices, on));    % in the listed order
+    case 'range'
+        v = seecat.gui.parse(strtrim([c(1).Value ' ' c(2).Value]), 'range', old);
     case {'folder', 'file'}
         v = strtrim(c.Value);
     case 'seeds'

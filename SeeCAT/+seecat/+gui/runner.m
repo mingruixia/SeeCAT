@@ -33,6 +33,7 @@ pb.redirectErrorStream(true);
 pb.redirectOutput(java.io.File(logFile));
 proc = pb.start();
 pos = 0;
+enc = feature('DefaultCharacterSet');
 R.config = cfgFile;
 R.log = logFile;
 R.read = @readNew;
@@ -43,12 +44,13 @@ R.exitCode = @exitCode;
     function txt = readNew()
         txt = '';
         if ~exist(logFile, 'file'), return, end
-        fid = fopen(logFile, 'r', 'n', 'UTF-8');
+        fid = fopen(logFile, 'r', 'n', enc);      % the child writes in the system encoding
         if fid < 0, return, end
         fseek(fid, pos, 'bof');
         txt = fread(fid, Inf, '*char')';
         pos = ftell(fid);
         fclose(fid);
+        txt(txt < 32 & ~ismember(txt, [9 10 13])) = [];   % MATLAB's backspace marks around warnings
     end
 
     function c = exitCode()

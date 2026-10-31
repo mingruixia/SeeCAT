@@ -1,0 +1,44 @@
+<!DOCTYPE html>
+<!-- Section links above a SeeCAT form (seecat.gui.launcher). Data from MATLAB:
+     {font, active, sections: ["Input", ...]}. A click sets Data.clicked (and Data.n). -->
+<html>
+<head>
+<meta charset="utf-8">
+<style>
+  html, body { margin: 0; height: 100%; background: #FFFFFF; overflow: hidden; user-select: none; }
+  body { display: flex; align-items: flex-end; padding: 0 2px; box-sizing: border-box;
+         color: #64748B; font-size: 12.5px; white-space: nowrap; }
+  .tab { margin-right: 22px; padding: 0 1px 7px; border-bottom: 2px solid transparent; cursor: pointer; }
+  .tab:hover { color: #0F172A; }
+  .tab.on { color: #3B5BDB; border-bottom-color: #3B5BDB; }
+</style>
+</head>
+<body>
+<script>
+let data = {};
+let n = 0;
+function list(x) { return x === undefined || x === null ? [] : (Array.isArray(x) ? x : [x]); }
+function render(comp) {
+  document.body.innerHTML = '';
+  if (data.font) document.body.style.fontFamily = '"' + data.font + '", "Segoe UI", Helvetica, Arial, sans-serif';
+  for (const s of list(data.sections)) {
+    const e = document.createElement('div');
+    e.className = 'tab' + (s === data.active ? ' on' : '');
+    e.textContent = s;
+    e.onclick = () => {
+      data.active = s;
+      render(comp);
+      n += 1;
+      comp.Data = Object.assign({}, data, { clicked: s, n: n });
+    };
+    document.body.appendChild(e);
+  }
+}
+function setup(comp) {
+  data = comp.Data || {};
+  render(comp);
+  comp.addEventListener('DataChanged', () => { data = comp.Data || {}; render(comp); });
+}
+</script>
+</body>
+</html>

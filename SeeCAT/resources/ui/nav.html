@@ -1,0 +1,74 @@
+<!DOCTYPE html>
+<!-- SeeCAT side bar (seecat.gui.launcher). Data from MATLAB:
+     {logo, version, font, selected, groups: [{title, items: [{id, label, icon, iconOn}]}], footer: [...]}
+     A click sets Data.clicked (and Data.n, so repeated clicks still change Data). -->
+<html>
+<head>
+<meta charset="utf-8">
+<style>
+  html, body { margin: 0; height: 100%; background: #FFFFFF; overflow: hidden; user-select: none; }
+  body { display: flex; flex-direction: column; padding: 14px 10px 10px; box-sizing: border-box;
+         color: #334155; font-size: 12.5px; }
+  .brand { display: flex; align-items: center; padding: 0 8px 14px; }
+  .brand > span { margin-right: 10px; display: inline-flex; }
+  .brand .name { font-size: 17px; font-weight: 600; color: #0F172A; line-height: 1.1; letter-spacing: .01em; }
+  .brand .ver { font-size: 11px; color: #94A3B8; }
+  .group { font-size: 10.5px; color: #94A3B8; letter-spacing: .06em; margin: 12px 10px 4px; }
+  .item { display: flex; align-items: center; height: 30px; padding: 0 10px; border-radius: 6px;
+          cursor: pointer; }
+  .item:hover { background: #F1F5F9; }
+  .item.on { background: #EDF2FF; color: #3B5BDB; font-weight: 500; }
+  .item svg { width: 17px; height: 17px; flex: none; margin-right: 10px; }
+  .item .off-icon { display: inline-flex; } .item .on-icon { display: none; }
+  .item.on .off-icon { display: none; } .item.on .on-icon { display: inline-flex; }
+  .spacer { flex: 1; }
+  .footer .item { color: #64748B; }
+</style>
+</head>
+<body>
+<div id="root" style="display:contents"></div>
+<script>
+let data = {};
+let n = 0;
+function el(tag, cls, html) { const e = document.createElement(tag); if (cls) e.className = cls; if (html !== undefined) e.innerHTML = html; return e; }
+function item(it, comp) {
+  const e = el('div', 'item' + (it.id === data.selected ? ' on' : ''));
+  e.appendChild(el('span', 'off-icon', it.icon));
+  e.appendChild(el('span', 'on-icon', it.iconOn || it.icon));
+  e.appendChild(el('span', '', it.label));
+  e.onclick = () => {
+    if (!it.action) { data.selected = it.id; render(comp); }
+    n += 1;
+    comp.Data = Object.assign({}, data, { clicked: it.id, n: n });
+  };
+  return e;
+}
+function list(x) { return x === undefined || x === null ? [] : (Array.isArray(x) ? x : [x]); }
+function render(comp) {
+  const root = document.getElementById('root');
+  root.innerHTML = '';
+  if (data.font) document.body.style.fontFamily = '"' + data.font + '", "Segoe UI", Helvetica, Arial, sans-serif';
+  const b = el('div', 'brand');
+  b.appendChild(el('span', '', data.logo || ''));
+  const t = el('div');
+  t.appendChild(el('div', 'name', 'SeeCAT'));
+  t.appendChild(el('div', 'ver', data.version || ''));
+  b.appendChild(t);
+  root.appendChild(b);
+  for (const g of list(data.groups)) {
+    root.appendChild(el('div', 'group', g.title));
+    for (const it of list(g.items)) root.appendChild(item(it, comp));
+  }
+  root.appendChild(el('div', 'spacer'));
+  const f = el('div', 'footer');
+  for (const it of list(data.footer)) f.appendChild(item(Object.assign({ action: true }, it), comp));
+  root.appendChild(f);
+}
+function setup(comp) {
+  data = comp.Data || {};
+  render(comp);
+  comp.addEventListener('DataChanged', () => { data = comp.Data || {}; render(comp); });
+}
+</script>
+</body>
+</html>

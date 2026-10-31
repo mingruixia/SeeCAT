@@ -64,6 +64,39 @@ Widgets: `folder`, `file`, `text`, `labels` (comma list), `number`,
 `defaults()` appears in `gui()` (or is listed as batch-only), so a new
 option cannot silently miss the GUI.
 
+### Visual style (revised 2026-10-31, after the first trial)
+
+The first version worked but looked plain. The user chose option "A + V1"
+from several mock-ups, with these additions: the main window takes the help
+column, run status and log drawer of the other options; the viewer takes
+the single-view layout, docked cluster table and colour bar; both windows
+share one style; all text is English; the main window carries a logo.
+
+- One theme (`seecat.gui.theme`): white cards with a 1 px outline on a
+  light grey page, slate text, one accent (#3B5BDB), Segoe UI (Helvetica on
+  macOS/Linux). `seecat.gui.icon` holds SeeCAT's own line icons (SVG) and the
+  mark; `resources/logo_*.png` (from `tools/make_logo.py`) is the window icon.
+- Main window: side bar with logo and grouped pages (Prepare, Analyse,
+  Results), drawn by `resources/ui/nav.html` in a `uihtml`; header with the
+  pipeline's name, one-line description, section links
+  (`resources/ui/tabs.html`) and Load/Save; the form as one scrolling
+  column of cards (the links only scroll to a card, nothing is hidden);
+  right column with help on the option being edited (description, default,
+  batch name; shown on editing or on its info icon) and the run status
+  (lamp, elapsed time, units done/failed, Run/Stop, QC report); a Log |
+  Summary drawer at the bottom.
+- Viewer: tool bar (Open, Orthogonal | Single | Mosaic, underlay,
+  Neuro | Radio, Surface, Save image, Save map); views on black with
+  orientation and coordinate tags and L/R marks; cursor read-out (MNI,
+  voxel, value, p, atlas label, cluster); colour bar with the shown range
+  and the threshold; side cards Layers, Threshold, Go to (with Peak); the
+  cluster table docked at the bottom.
+- R2020b limits met on the way: panel border colours cannot be set (cards
+  are a 1 px padded grid instead); numeric `scroll` works on panels, not on
+  grid layouts (the form is a fixed-height panel inside a scrollable panel);
+  the uihtml browser has no flex `gap`; read-only text areas are greyed;
+  the child process writes its log in the system encoding.
+
 ## 3. Viewer (`seecat.view`)
 
 ```
