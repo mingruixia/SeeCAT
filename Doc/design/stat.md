@@ -17,7 +17,7 @@ DPABI-derived code.
   thresholds in JSON sidecars, not in the 80-character header.
 
 Not in 2.0: non-parametric permutation inference (v2.x), mixed models,
-non-sphericity correction for repeated measures (see S6), surface data.
+surface data.
 
 ## 2. What a user writes
 
@@ -42,7 +42,7 @@ Other designs change three lines:
 | `paired` | `factor` = `session` (or a column), 2 `levels` | condition + one dummy per subject | `A>B`, `B>A` |
 | `anova1` | `factor`, ≥ 3 `levels` | one mean per level | F: all equal |
 | `anova1_rm` | `factor` = `session`/condition, ≥ 3 levels | condition + subject dummies | F: all equal |
-| `regression` | `regressor` (column) | regressor + mean | `pos`, `neg` |
+| `regression` | `regressors` (one or more columns) | all regressors + mean, one model (S8) | `<reg>pos`, `<reg>neg` per regressor |
 | `custom` | `design_tsv` (one row per map) | the given columns | as given |
 
 - `contrasts` can always be given instead of the defaults:
@@ -89,6 +89,20 @@ the field of view. (2) is what SPM does with its implicit mask.
   squares for the contrast's null space, df = [rank(c), n − rank(X)].
 - With image covariates the design differs per voxel; voxels are solved in
   chunks with the same formulas (n is small; ~50k voxels take seconds).
+- **Non-sphericity (S6).** `anova1_rm` (and, on request, `paired`,
+  `two_sample`, `anova1` via `variance = 'unequal'`) estimates the error
+  covariance as SPM does: covariance components for unequal variance per
+  level and, for repeated measures, correlation between levels; the
+  hyperparameters are estimated by ReML (`spm_reml`) on the covariance of
+  voxels pooled over the mask that pass an omnibus F at p < 0.001 (SPM's
+  `spm_spm` first pass), scaled to a correlation matrix; data and design are
+  whitened with it; df use the Satterthwaite approximation (`trRV`,
+  `trRVRV`), so they can be fractional. Default `variance`: `unequal` for
+  `anova1_rm`, `equal` otherwise (classic t-tests and 1.0 numbers). When too
+  few voxels pass the first pass, the model falls back to sphericity and the
+  log and JSON say so.
+- Collinearity: the variance inflation factor of every non-constant column is
+  reported in the JSON; VIF > 5 is a warning in the log.
 - Written: effect map (contrast estimate) per T contrast, T or F map, the
   equivalent **Z map** (same p), and −log10(p). Residuals are kept in the
   work folder for the smoothness estimate and deleted afterwards unless
@@ -146,9 +160,14 @@ derivatives/seecat/group/<name>/
 ```
 
 JSON of a stat map: `Statistic`, `DegreesOfFreedom`, `Contrast` (name,
-weights), `DesignColumns`, `FWHMmm`, `Resels`, `ReselsPerVoxel`, `Software`,
-`Sources`. The 1.0 header string (`CAT{T_[df]}{dLh_…}`) is not written; the
-viewer reads the JSON (and the 1.0 header as a fallback for old maps).
+weights), `DesignColumns`, `FWHMmm`, `Resels`, `ReselsPerVoxel`,
+`NonSphericity`, `VIF`, `Software`, `Sources`.
+
+T and F maps also carry the 1.0 header string (S7), so 1.0 tools and DPABI
+read them: `CAT{T_[df]}{dLh_<dLh>}{FWHMx_<x>FWHMy_<y>FWHMz_<z>mm}` (F:
+`CAT{F_[df1,df2]}…`), with dLh = (4 ln 2)^(3/2) / (FWHMx FWHMy FWHMz in
+voxels), as 1.0 wrote it; fractional df keep one decimal. The JSON stays the
+primary source; the viewer reads it first.
 
 ## 9. Code layout
 
@@ -169,6 +188,8 @@ Group pipelines plan one unit; heavy parts are vectorised (batch-api §7).
 | check | reference | pass |
 |---|---|---|
 | β, T, F maps for each design (no image covariates) | SPM `spm_spm` + `spm_contrasts` on the same images, design and mask | max rel. difference < 1e-6 |
+| non-sphericity (`anova1_rm`, unequal variance) | SPM flexible/full factorial with the same independence and variance settings: hyperparameters, whitened df, F map | rel. difference < 1e-6 |
+| 1.0 header string | parse back; dLh and FWHM equal to the JSON | exact |
 | FWHM, resels | `spm_est_smoothness`, `spm_resels_vol` | equal to 1e-8 |
 | voxel FWE threshold, cluster p, cluster table | SPM results (`spm_uc`, `spm_list`) at the same CDT | equal (same clusters, sizes, p to 1e-6) |
 | FDR | own BH vs `spm_uc_FDR` (voxel FDR) | equal threshold |
@@ -189,15 +210,18 @@ synthetic data with known effects for the unit tests.
 | S3 | cluster connectivity | 18 (SPM; makes the SPM check exact) | 26 (1.0 and FSL) |
 | S4 | mask rule | in `mask` and non-zero in **every** map (SPM) | 1.0 rule (any map) |
 | S5 | covariate coding | numeric centred, text → centred dummies | uncentred (1.0) |
-| S6 | repeated measures | subject dummies, no non-sphericity correction (as 1.0); documented | add SPM-style ReML non-sphericity (large; v2.x) |
-| S7 | outputs | t/F + Z + −log10 p + effect; JSON metadata; no 1.0 header string | also write the 1.0 header for old tools |
-| S8 | 1.0 `regression` with several regressors at once (one model each) | one model per regressor via `regressor` list, as 1.0 | one model with all regressors |
+| S6 | repeated measures | **decided:** SPM-style ReML non-sphericity (section 5) | — |
+| S7 | outputs | **decided:** t/F + Z + −log10 p + effect; JSON metadata **and** the 1.0 header string (section 8) | — |
+| S8 | `regression` with several regressors | **recommended:** one model with all regressors (partial effects, one family of tests; standard in SPM/FSL); VIF reported. A marginal test = an analysis with that regressor alone | one model per regressor (1.0): confounded effects when regressors correlate, and the extra models are not corrected for |
 
 ## 12. Differences users will see from 1.0
 
 - Mask: all subjects, not any (S4); the default GM mask is smaller (D11).
 - Covariates centred (S5): group-mean contrasts change meaning slightly
   (adjusted means); group differences are unchanged.
+- `regression` with several regressors: one model (partial effects), not one
+  model per regressor (S8).
+- Repeated-measures ANOVA: non-sphericity corrected, fractional df (S6).
 - GRF: RFT cluster p for T and F fields from SPM instead of the Gaussian
   approximation on a Z threshold; 18- not 26-connectivity; CDT 0.001 by
   default; AlphaSim removed.
