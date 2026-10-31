@@ -40,7 +40,7 @@ for f = fieldnames(s)'
     path = [prefix k];
     if ~isfield(def, k)
         msgs{end+1} = sprintf('%s is not a known option.', path); %#ok<AGROW>
-    elseif isstruct(def.(k)) && isstruct(s.(k))
+    elseif isscalar(def) && isscalar(s) && isstruct(def.(k)) && isstruct(s.(k))
         msgs = [msgs, unknownFields(s.(k), def.(k), [path '.'])]; %#ok<AGROW>
     end
 end

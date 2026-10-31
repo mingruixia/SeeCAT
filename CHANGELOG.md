@@ -149,6 +149,20 @@
     are unchanged by the refactor (difference 0, confounds byte-identical).
   - `tests/unit/test_fmriprep.m` (4 tests, synthetic fMRIPrep folder).
 
+- `fc` and `degree` pipelines (`seecat.config('fc')`, `seecat.config('degree')`)
+  on SeeCAT derivatives from prep or fmriprep, censored frames dropped.
+  `seecat.conn.degree` computes the correlation network in blocks, all signs,
+  metrics and distance bins in one pass; `seecat.conn.seed_fc`;
+  `seecat.conn.load_series`; `seecat.bids.derivative_units`.
+  - Same results as SeeCAT 1.0 on the legacy baseline input (sub-11061,
+    67,541 voxels): degree and strength equal within float32 storage, z maps
+    within 1.2e-7, seed FC within 6e-8. Degree takes 35 s instead of ~20 min.
+  - ds000030, 9 subjects: FC 37 s, degree 2 min in total on 4 workers.
+  - Config lists of records (e.g. `seeds`) merge correctly, from structs and
+    from JSON with different fields per record.
+  - `tests/unit/test_conn.m` (4 tests; degree against a brute-force loop over
+    signs, metrics, local exclusion and distance bins).
+
 ### Known issues
 
 ## Unreleased: phase 0 fixes on top of 1.0 beta

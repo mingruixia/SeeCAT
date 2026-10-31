@@ -39,7 +39,9 @@ for f = fieldnames(in)'
     val = in.(k);
     if isfield(def, k)
         d = def.(k);
-        if isstruct(d) && isstruct(val) && isscalar(val)
+        if isstruct(d) && ~isscalar(d)                % a list of records (e.g. seeds)
+            val = records(d, val);
+        elseif isstruct(d) && isstruct(val) && isscalar(val)
             val = merge(d, val);
         elseif iscell(d) && isnumeric(val) && isempty(val)
             val = {};                                  % JSON [] for an empty list
@@ -54,5 +56,35 @@ for f = fieldnames(in)'
         end
     end
     out.(k) = val;
+end
+end
+
+function out = records(def, val)
+% A list of records: JSON gives a struct array, or a cell array when the
+% records have different fields. Missing fields are filled with [].
+if isempty(val)
+    out = def;
+    return
+end
+if isstruct(val)
+    val = num2cell(val);
+end
+if ~iscell(val) || ~all(cellfun(@isstruct, val))
+    out = val;                                   % left for check_config to report
+    return
+end
+names = fieldnames(def)';
+for i = 1:numel(val)
+    names = union(names, fieldnames(val{i})', 'stable');
+end
+out = repmat(cell2struct(cell(numel(names), 1), names, 1), 1, numel(val));
+for i = 1:numel(val)
+    for f = fieldnames(val{i})'
+        v = val{i}.(f{1});
+        if isnumeric(v) && iscolumn(v)
+            v = v';
+        end
+        out(i).(f{1}) = v;
+    end
 end
 end

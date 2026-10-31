@@ -215,6 +215,25 @@ several exist.
 - Check (2026-10-31): fed SeeCAT's own prep outputs (same naming), the
   fmriprep pipeline reproduces prep's denoised and smoothed series exactly.
 
+### 5.6 Seed FC and voxel-wise degree (`fc`, `degree` pipelines)
+
+Both read a SeeCAT derivatives folder (`input_dir`, from prep or fmriprep):
+`desc-<input>_bold` (default `denoised`), the brain mask and the confounds
+table; frames with `censor = 1` are dropped (D3).
+
+- `fc`: `seeds` = struct array of name + center (mm) + radius (mm), or name +
+  file. A seed's series is the mean of its voxels with signal; maps (r and
+  Fisher z) cover the subject brain mask. `desc-<seed>_stat-{r,z}_connectivity`.
+- `degree`: analysis mask `gm` (TPM GM > 0.2 at the data's resolution,
+  resampled to the grid; D11), `brain`, or a file. Definition as in 1.0's
+  VoxDeg (`seecat.conn.degree`): signs positive/absolute/negative, binary
+  (degree) or weighted (strength), r >= threshold (default 0.2), optional
+  local exclusion and distance bins (lo, hi]. Raw and within-mask z maps,
+  then smoothed maps (D2). Name `desc-deg<Pos|Abs|Neg><Bin|Wei>R<thr>
+  [D<lo>to<hi>][Sm<fwhm>]_stat-{raw,z}_connectivity`.
+- The correlation matrix is computed in blocks of 1000 voxels (memory
+  block x V); every map comes from the same pass.
+
 ## 6. Output layout (BIDS derivatives)
 
 Space label for SPM's TPM: `IXI549Space` (BIDS template identifier for SPM12).
@@ -237,7 +256,9 @@ derivatives/seecat/
       sub-10159_task-rest_space-IXI549Space_res-3_desc-denoisedSm6_bold.nii.gz  denoised + smoothed
       sub-10159_task-rest_space-…_desc-PCC_stat-r_connectivity.nii.gz           (fc)
       sub-10159_task-rest_space-…_desc-PCC_stat-z_connectivity.nii.gz
-      sub-10159_task-rest_space-…_desc-degPosBinR02_stat-z_connectivity.nii.gz  (degree)
+      sub-10159_task-rest_space-…_desc-degPosBinR0p2_stat-raw_connectivity.nii.gz  (degree)
+      sub-10159_task-rest_space-…_desc-degPosBinR0p2_stat-z_connectivity.nii.gz    (z within the mask)
+      sub-10159_task-rest_space-…_desc-degPosWeiR0p2Sm6_stat-z_connectivity.nii.gz (strength, map smoothed)
   group/
     <analysis-name>/
       <analysis-name>_stat-t_statmap.nii.gz (+ .json: df, FWHM, dLh, contrast, design)

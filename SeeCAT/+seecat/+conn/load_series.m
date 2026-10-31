@@ -1,0 +1,58 @@
+function S = load_series(unit, maskSpec)
+% LOAD_SERIES  A run's BOLD series, masks and kept frames, for analyses.
+%   S = seecat.conn.load_series(unit, 'gm')     % or 'brain', or a mask file
+%
+% UNIT has bold, mask (subject brain mask) and confounds (from
+% seecat.bids.derivative_units). Frames with censor = 1 in the confounds
+% table are dropped (decision D3). Fields of S:
+%   Y      T x V series of the subject-mask voxels (single), kept frames only
+%   brain  V x 1 true (the columns of Y are the subject-mask voxels)
+%   in     V x 1 logical: voxels of the analysis mask (MASKSPEC) among them
+%   xyz    3 x V voxel coordinates (mm)
+%   index  V x 1 linear indices into the volume
+%   hdr    spm_vol header of the first volume (the output grid)
+%   n_frames, n_kept
+% MASKSPEC: 'brain' = the subject mask; 'gm' = SeeCAT's TPM GM mask
+% (templates/tpl-IXI549Space_res-<2|3>_label-GM_mask.nii, the resolution
+% nearest the data), resampled to the data grid; or a mask file. The
+% analysis mask is always limited to the subject mask.
+
+T = seecat.io.read_tsv(unit.confounds);
+keep = true(height(T), 1);
+if ismember('censor', T.Properties.VariableNames)
+    keep = T.censor == 0;
+end
+[Y, V] = seecat.io.read_nii(unit.bold, 'Class', 'single');
+if size(Y, 4) ~= height(T)
+    error('SeeCAT:conn', '%s has %d frames but its confounds table %d.', unit.bold, size(Y, 4), height(T));
+end
+hdr = V(1);
+brain = logical(seecat.io.read_nii(unit.mask, 'Ref', hdr));
+idx = find(brain(:));
+Y = reshape(Y, [], size(Y, 4))';
+S.Y = Y(keep, idx);
+S.index = idx;
+S.hdr = hdr;
+[i, j, k] = ind2sub(hdr.dim, idx);
+S.xyz = hdr.mat(1:3, :) * [i j k ones(numel(idx), 1)]';
+switch maskSpec
+    case 'brain'
+        m = true(size(idx));
+    case 'gm'
+        vox = mean(sqrt(sum(hdr.mat(1:3, 1:3) .^ 2)));
+        res = 3;
+        if abs(vox - 2) < abs(vox - 3)
+            res = 2;
+        end
+        here = fileparts(fileparts(fileparts(mfilename('fullpath'))));
+        f = fullfile(here, 'templates', sprintf('tpl-IXI549Space_res-%d_label-GM_mask.nii', res));
+        g = seecat.io.read_nii(f, 'Ref', hdr, 'Interp', 0) > 0;
+        m = g(idx);
+    otherwise
+        g = seecat.io.read_nii(maskSpec, 'Ref', hdr, 'Interp', 0) > 0;
+        m = g(idx);
+end
+S.in = m(:);
+S.n_frames = height(T);
+S.n_kept = nnz(keep);
+end

@@ -66,8 +66,10 @@ See `CHANGELOG.md`.
 
 ## Weeks 5–6 (11/23 – 12/04): computation and statistics
 
-- [ ] Vectorise seed FC and voxel-wise degree (degree: ~20 min → < 2 min on
-      the 10-subject baseline).
+- [x] Vectorise seed FC and voxel-wise degree: `fc` and `degree` pipelines on
+      SeeCAT derivatives. Degree equals SeeCAT 1.0 on the legacy baseline input
+      (float32 precision) and takes 35 s instead of ~20 min per subject; all 9
+      ds000030 subjects in 2 min on 4 workers.
 - [ ] Rewrite Stat with no DPABI-derived code:
   - [ ] QR-based GLM with T and F contrasts.
   - [ ] Own FWHM (smoothness) estimation from residuals.
