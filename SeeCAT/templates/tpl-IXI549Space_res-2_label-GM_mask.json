@@ -1,0 +1,14 @@
+{
+  "Type": "GM",
+  "Threshold": 0.2,
+  "Description": "GM probability > 0.2, mean over each voxel",
+  "Sources": [
+    "spm/tpm/TPM.nii"
+  ],
+  "SPMVersion": "25.01.02",
+  "GeneratedBy": {
+    "Name": "SeeCAT",
+    "Version": "2.0.0-dev",
+    "Code": "seecat.util.make_templates"
+  }
+}

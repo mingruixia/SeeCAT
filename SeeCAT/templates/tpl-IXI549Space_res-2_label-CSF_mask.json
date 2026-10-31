@@ -1,0 +1,14 @@
+{
+  "Type": "CSF",
+  "Threshold": 0.7,
+  "Description": "CSF probability > 0.7, mean over each voxel",
+  "Sources": [
+    "spm/tpm/TPM.nii"
+  ],
+  "SPMVersion": "25.01.02",
+  "GeneratedBy": {
+    "Name": "SeeCAT",
+    "Version": "2.0.0-dev",
+    "Code": "seecat.util.make_templates"
+  }
+}

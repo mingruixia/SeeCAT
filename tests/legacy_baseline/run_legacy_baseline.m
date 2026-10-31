@@ -82,7 +82,7 @@ switch lower(stage)
         set(H.WorkDir_edit, 'String', opt.WorkDir);
         set(H.StartFolder_edit, 'String', 'FunImgARWSDCF');
         set(H.Seed_listbox, 'String', {'Sphere: 0  -53   26   6'; 'Sphere: 0   52   -6   6'}, 'Value', 1);
-        set(H.Mask_edit, 'String', fullfile(seecatRoot, 'templates', 'GreyMask_02_61x73x61.nii'));
+        set(H.Mask_edit, 'String', gmMask(seecatRoot));
         set(H.Parallel_checkbox, 'Value', opt.Parallel);
         SeeCAT_FuncConnect('Run_pushbutton_Callback', H.Run_pushbutton, [], H);
         delete(h);
@@ -93,7 +93,7 @@ switch lower(stage)
         H = guidata(h);
         set(H.WorkDir_edit, 'String', opt.WorkDir);
         set(H.StartFolder_edit, 'String', 'FunImgARWSDCF');
-        set(H.Mask_edit, 'String', fullfile(seecatRoot, 'templates', 'GreyMask_02_61x73x61.nii'));
+        set(H.Mask_edit, 'String', gmMask(seecatRoot));
         set(H.Threshold_edit, 'String', '0.2');
         set(H.Local_checkbox, 'Value', 0);
         set(H.Positive_checkbox, 'Value', 1);
@@ -127,7 +127,7 @@ switch lower(stage)
         H = guidata(h);
         H.SampleCells = {g1; g2};
         set(H.SampleListbox, 'String', {'G1'; 'G2'});
-        set(H.MaskEntry, 'String', fullfile(seecatRoot, 'templates', 'GreyMask_02_61x73x61.nii'));
+        set(H.MaskEntry, 'String', gmMask(seecatRoot));
         set(H.OutputDirEntry, 'String', outDir);
         set(H.PrefixEntry, 'String', 'T2_zFCSeed01_CONvsSCHZ');
         guidata(h, H);
@@ -143,4 +143,13 @@ function subs = list_subjects(d)
 l = dir(d);
 l = l([l.isdir] & ~startsWith({l.name}, '.'));
 subs = {l.name}';
+end
+
+function f = gmMask(root)
+% SeeCAT 1.0's grey-matter mask; the repository has the TPM-based one since
+% the DPABI masks were removed (seecat.util.make_templates)
+f = fullfile(root, 'templates', 'GreyMask_02_61x73x61.nii');
+if ~exist(f, 'file')
+    f = fullfile(root, 'templates', 'tpl-IXI549Space_res-3_label-GM_mask.nii');
+end
 end

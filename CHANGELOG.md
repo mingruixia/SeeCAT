@@ -121,6 +121,18 @@
   WipMemBlock, which dcm2niix v1.0.20260724 itself writes differently.
   `tests/unit/test_dicom.m` (6 tests; skipped without dcm2niix or the data).
 
+- Group masks rebuilt from SPM's TPM (`seecat.util.make_templates`): brain, GM,
+  WM and CSF at 2 and 3 mm, `tpl-IXI549Space_res-*_mask.nii` with JSON
+  sidecars, thresholds as in 1.0 (brain 0.5, GM 0.2, WM 0.9, CSF 0.7). The
+  DPABI-distributed masks (`BrainMask_05`, `GreyMask_02`, `WhiteMask_09`,
+  `CsfMask_07`, `GMwithoutCER`) are removed; Stat, VoxDeg, FuncConnect and the
+  legacy PrepfMRI use the new files. The default GM analysis mask is smaller
+  than 1.0's (52,276 vs 67,541 voxels at 3 mm, Dice 0.87; brain mask Dice
+  0.96, and 0.99 with SPM's mask_ICV), because SPM12/25's TPM is sharper, so
+  voxel-wise degree and group statistics within the default mask differ from
+  1.0. `tests/unit/test_templates.m` checks that regenerating gives the
+  committed files.
+
 ### Known issues
 
 ## Unreleased: phase 0 fixes on top of 1.0 beta

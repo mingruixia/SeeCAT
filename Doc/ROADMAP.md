@@ -53,8 +53,10 @@ See `CHANGELOG.md`.
   - [x] Spectral gap fill (replaces Lomb–Scargle, which cannot fill gaps on a
         regular grid).
   - [x] One parallel pattern everywhere; no `cd`.
-- [ ] Rebuild `templates/`: masks generated from SPM TPM by a script in the
-      repo; remove DPABI-distributed masks and label files.
+- [x] Rebuild `templates/` masks from SPM TPM (`seecat.util.make_templates`, 2 and
+      3 mm); DPABI-distributed masks removed.
+- [ ] Atlases, label files and underlays (legacy viewer only): replace with the
+      viewer rewrite (weeks 7–8), fetched at install time.
 - [x] End-to-end on ds002785 (multiband, TR 0.75 s, 5 subjects): non-steady-state
       counts, motion and FD checked against its fMRIPrep confounds.
 - [x] End-to-end test at 2 mm output (2 + 2 subjects).

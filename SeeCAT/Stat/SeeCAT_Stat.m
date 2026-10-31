@@ -78,7 +78,7 @@ if ispc
 else
     filesep = '/';
 end
-set(handles.MaskEntry, 'String',[ProgramPath,filesep,'templates',filesep,'GreyMask_02_61x73x61.nii']);
+set(handles.MaskEntry, 'String',[ProgramPath,filesep,'templates',filesep,'tpl-IXI549Space_res-3_label-GM_mask.nii']);
 
 function [Lim, Value]=SwitchType(Flag)
 switch upper(Flag)

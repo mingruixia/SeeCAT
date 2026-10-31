@@ -1,0 +1,14 @@
+{
+  "Type": "WM",
+  "Threshold": 0.9,
+  "Description": "WM probability > 0.9, mean over each voxel",
+  "Sources": [
+    "spm/tpm/TPM.nii"
+  ],
+  "SPMVersion": "25.01.02",
+  "GeneratedBy": {
+    "Name": "SeeCAT",
+    "Version": "2.0.0-dev",
+    "Code": "seecat.util.make_templates"
+  }
+}

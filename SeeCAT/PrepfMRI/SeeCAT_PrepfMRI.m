@@ -1197,15 +1197,15 @@ if get(handles.Regress_checkbox,'Value') == 1
             Nii = nifti(Filename.name);
             tmpCourse = reshape(double(Nii.dat),[Nii.dat.dim(1,1) * Nii.dat.dim(1,2) * Nii.dat.dim(1,3),Nii.dat.dim(1,4)])';
             if isWM == 1
-                WM_vol = seecat.io.resample([ProgramPath,filesep,'..',filesep,'templates',filesep,'WhiteMask_09_61x73x61.nii'],spm_vol(Filename.name));
+                WM_vol = seecat.io.resample([ProgramPath,filesep,'..',filesep,'templates',filesep,'tpl-IXI549Space_res-3_label-WM_mask.nii'],spm_vol(Filename.name));
                 WMCov = mean(tmpCourse(:,reshape(WM_vol>0,1,[])),2);
             end
             if isCSF == 1
-                CSF_vol = seecat.io.resample([ProgramPath,filesep,'..',filesep,'templates',filesep,'CsfMask_07_61x73x61.nii'],spm_vol(Filename.name));
+                CSF_vol = seecat.io.resample([ProgramPath,filesep,'..',filesep,'templates',filesep,'tpl-IXI549Space_res-3_label-CSF_mask.nii'],spm_vol(Filename.name));
                 CSFCov = mean(tmpCourse(:,reshape(CSF_vol>0,1,[])),2);
             end
             if isGS == 1
-                GS_vol = seecat.io.resample([ProgramPath,filesep,'..',filesep,'templates',filesep,'BrainMask_05_61x73x61.nii'],spm_vol(Filename.name));
+                GS_vol = seecat.io.resample([ProgramPath,filesep,'..',filesep,'templates',filesep,'tpl-IXI549Space_res-3_desc-brain_mask.nii'],spm_vol(Filename.name));
                 GSCov = mean(tmpCourse(:,reshape(GS_vol>0,1,[])),2);
             end
             AllCov = [ones(Nii.dat.dim(1,4),1),HMCov,WMCov,CSFCov,GSCov];
@@ -1252,15 +1252,15 @@ if get(handles.Regress_checkbox,'Value') == 1
             Nii = nifti(Filename.name);
             tmpCourse = reshape(double(Nii.dat),[Nii.dat.dim(1,1) * Nii.dat.dim(1,2) * Nii.dat.dim(1,3),Nii.dat.dim(1,4)])';
             if isWM == 1
-                WM_vol = seecat.io.resample([ProgramPath,filesep,'..',filesep,'templates',filesep,'WhiteMask_09_61x73x61.nii'],spm_vol(Filename.name));
+                WM_vol = seecat.io.resample([ProgramPath,filesep,'..',filesep,'templates',filesep,'tpl-IXI549Space_res-3_label-WM_mask.nii'],spm_vol(Filename.name));
                 WMCov = mean(tmpCourse(:,reshape(WM_vol>0,1,[])),2);
             end
             if isCSF == 1
-                CSF_vol = seecat.io.resample([ProgramPath,filesep,'..',filesep,'templates',filesep,'CsfMask_07_61x73x61.nii'],spm_vol(Filename.name));
+                CSF_vol = seecat.io.resample([ProgramPath,filesep,'..',filesep,'templates',filesep,'tpl-IXI549Space_res-3_label-CSF_mask.nii'],spm_vol(Filename.name));
                 CSFCov = mean(tmpCourse(:,reshape(CSF_vol>0,1,[])),2);
             end
             if isGS == 1
-                GS_vol = seecat.io.resample([ProgramPath,filesep,'..',filesep,'templates',filesep,'BrainMask_05_61x73x61.nii'],spm_vol(Filename.name));
+                GS_vol = seecat.io.resample([ProgramPath,filesep,'..',filesep,'templates',filesep,'tpl-IXI549Space_res-3_desc-brain_mask.nii'],spm_vol(Filename.name));
                 GSCov = mean(tmpCourse(:,reshape(GS_vol>0,1,[])),2);
             end
             AllCov = [ones(Nii.dat.dim(1,4),1),HMCov,WMCov,CSFCov,GSCov];

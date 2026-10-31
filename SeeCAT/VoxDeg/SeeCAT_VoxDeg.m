@@ -67,7 +67,7 @@ if ispc
 else
     filesep = '/';
 end
-set(handles.Mask_edit,'String',[ProgramPath,filesep,'templates',filesep,'GreyMask_02_61x73x61.nii']);
+set(handles.Mask_edit,'String',[ProgramPath,filesep,'templates',filesep,'tpl-IXI549Space_res-3_label-GM_mask.nii']);
 
 
 % --- Outputs from this function are returned to the command line.
