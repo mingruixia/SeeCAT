@@ -4,44 +4,21 @@ function ctx = step_outputs(ctx, opt, log)
 % Anatomical derivatives are written by one unit per T1w (unit.write_anat),
 % so parallel units never write the same file.
 
-space = {'space', 'IXI549Space', 'res', num2label(opt.voxel_size)};
+space = {'space', 'IXI549Space', 'res', seecat.util.number_label(opt.voxel_size)};
 bold = ctx.files.bold_src;
 src = bidsUri(bold, opt.bids_dir);
 boldMeta = struct('RepetitionTime', ctx.tr, 'SkullStripped', false, 'Sources', {{src}});
 if isfield(opt.meta, 'TaskName')
     boldMeta.TaskName = opt.meta.TaskName;
 end
-put = @(file, rel, meta) publish(file, rel, meta, opt.output_dir, ctx.work_dir, opt.manifest);
+put = @(file, rel, meta) seecat.util.publish_output(file, rel, meta, ...
+    struct('output_dir', opt.output_dir, 'work_dir', ctx.work_dir, 'manifest', opt.manifest));
 
 put(ctx.files.wbold, name(bold, space{:}, 'desc', 'preproc'), boldMeta);
 put(ctx.files.mask_brain, name(bold, space{:}, 'desc', 'brain', 'suffix', 'mask'), ...
     struct('Type', 'Brain', 'Sources', {{src}}));
-
-conf = fullfile(opt.output_dir, name(bold, 'desc', 'confounds', 'suffix', 'timeseries', 'ext', '.tsv'));
-confJson = regexprep(conf, '\.tsv$', '.json');
-seecat.util.record_output(opt.manifest, opt.output_dir, conf);
-seecat.util.record_output(opt.manifest, opt.output_dir, confJson);
-copyTo(ctx.files.confounds, conf);
-seecat.util.write_json(confJson, confoundsMeta(opt.censor));
-
-if isfield(ctx.files, 'denoised')
-    dm = boldMeta;
-    dm.Denoising = struct('Regressors', {opt.denoise.regressors}, 'Columns', {ctx.denoise_columns}, ...
-        'DetrendOrder', opt.denoise.detrend_order, 'BandPass', opt.denoise.band, ...
-        'CensorMode', opt.censor.mode, 'Interpolation', opt.censor.interp, ...
-        'MeanAdded', true, 'Software', ['SeeCAT ' seecat.version()]);
-    put(ctx.files.denoised, name(bold, space{:}, 'desc', 'denoised'), dm);
-end
-if isfield(ctx.files, 'smoothed')
-    sm = boldMeta;
-    sm.SmoothingFWHM = opt.smooth.fwhm;
-    base = 'preproc';
-    if isfield(ctx.files, 'denoised')
-        base = 'denoised';
-        sm.Denoising = dm.Denoising;
-    end
-    put(ctx.files.smoothed, name(bold, space{:}, 'desc', [base 'Sm' num2label(opt.smooth.fwhm)]), sm);
-end
+put(ctx.files.confounds, name(bold, 'desc', 'confounds', 'suffix', 'timeseries', 'ext', '.tsv'), ctx.confounds_meta);
+seecat.steps.publish_denoised(ctx, bold, space, boldMeta, opt);
 
 xfmMeta = struct('Sources', {{src}}, 'Software', spm('Ver'));
 if ~isempty(ctx.files.t1w)
@@ -68,53 +45,7 @@ function rel = name(src, varargin)
 rel = seecat.bids.deriv_name(src, varargin{:});
 end
 
-function publish(file, rel, meta, outDir, workDir, manifest)
-% Compress in the unit's own work folder, then move into place
-dst = fullfile(outDir, rel);
-json = regexprep(dst, '\.nii\.gz$', '.json');
-seecat.util.record_output(manifest, outDir, dst);
-seecat.util.record_output(manifest, outDir, json);
-tmp = fullfile(workDir, 'gz');
-if ~exist(tmp, 'dir')
-    mkdir(tmp);
-end
-g = gzip(file, tmp);
-copyTo(g{1}, dst);
-delete(g{1});
-seecat.util.write_json(json, meta);
-end
-
-function copyTo(src, dst)
-d = fileparts(dst);
-if ~exist(d, 'dir')
-    mkdir(d);
-end
-copyfile(src, dst, 'f');
-end
-
 function u = bidsUri(f, root)
 rel = strrep(f(numel(root) + 2:end), '\', '/');
 u = ['bids:raw:' rel];
-end
-
-function s = num2label(v)
-% 3 -> '3', [2 2 2] -> '2', 2.5 -> '2p5', [2 2 3] -> '2x2x3'
-if ~isscalar(v) && all(v == v(1))
-    v = v(1);
-end
-if isscalar(v)
-    s = strrep(sprintf('%g', v), '.', 'p');
-else
-    s = strjoin(arrayfun(@num2label, v, 'UniformOutput', false), 'x');
-end
-end
-
-function m = confoundsMeta(c)
-m.framewise_displacement = struct('Description', 'Framewise displacement (Power et al. 2012), rotations on a 50 mm sphere', 'Units', 'mm');
-m.motion_outlier = struct('Description', sprintf(['One column per flagged frame: FD > %g mm, ' ...
-    'plus %d frame(s) before and %d after'], c.fd_threshold, c.before, c.after));
-m.censor = struct('Description', ['1 = frame excluded from later analyses (censor.mode ''censor''). ' ...
-    'In the denoised series these frames hold interpolated values.'], 'CensorMode', c.mode);
-m.c_comp_cor = struct('Description', 'aCompCor components from the eroded CSF mask, good frames only');
-m.w_comp_cor = struct('Description', 'aCompCor components from the eroded WM mask, good frames only');
 end

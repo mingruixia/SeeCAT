@@ -48,7 +48,8 @@ See `CHANGELOG.md`.
   - [ ] Remove `PrepfMRI/jobmats` (with the legacy GUI, weeks 7–8).
   - [x] Nuisance masks from the subject's own segmentation.
   - [x] aCompCor (CSF and WM separately).
-  - [ ] Denoise from fMRIPrep outputs (confounds table already compatible).
+  - [x] Denoise from fMRIPrep outputs (`seecat.config('fmriprep')`; ds002785, 5
+        subjects, ~1 min each).
   - [x] Censoring (interpolate → filter → regress → drop), with unit tests.
   - [x] Spectral gap fill (replaces Lomb–Scargle, which cannot fill gaps on a
         regular grid).

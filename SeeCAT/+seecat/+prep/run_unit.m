@@ -66,10 +66,10 @@ ctx = step(ctx, 'masks', @step_masks, struct());
 ctx = step(ctx, 'confounds', @step_confounds, struct('censor', cfg.censor, ...
     'acompcor_n', cfg.denoise.acompcor_n, 'detrend_order', cfg.denoise.detrend_order));
 if cfg.denoise.enable
-    ctx = step(ctx, 'denoise', @step_denoise, struct('denoise', cfg.denoise, 'censor', cfg.censor));
+    ctx = step(ctx, 'denoise', @seecat.steps.denoise, struct('denoise', cfg.denoise, 'censor', cfg.censor));
 end
 if cfg.smooth.enable && any(cfg.smooth.fwhm > 0)
-    ctx = step(ctx, 'smooth', @step_smooth, cfg.smooth);
+    ctx = step(ctx, 'smooth', @seecat.steps.smooth, cfg.smooth);
 end
 out = struct('output_dir', cfg.output_dir, 'bids_dir', cfg.bids_dir, 'write_anat', unit.write_anat, ...
     'voxel_size', cfg.normalise.voxel_size, 'smooth', cfg.smooth, 'denoise', cfg.denoise, ...

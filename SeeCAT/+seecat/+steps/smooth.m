@@ -1,7 +1,11 @@
-function ctx = step_smooth(ctx, opt, ~)
-% Gaussian smoothing (SPM kernel, spm_smooth on arrays), after denoising
-% (decision D2). Without the denoise step the normalised series is
-% smoothed instead.
+function ctx = smooth(ctx, opt, ~)
+% SMOOTH  Pipeline step: Gaussian smoothing (SPM kernel, spm_smooth on arrays).
+%   ctx = seecat.util.run_step(ctx, 'smooth', @seecat.steps.smooth, cfg.smooth, log)
+%
+% Smooths ctx.files.denoised, after denoising (decision D2), or
+% ctx.files.wbold without a denoise step. Writes s<name>.nii in the same
+% folder and sets ctx.files.smoothed. Shared by the prep and fmriprep
+% pipelines.
 %
 % Volumes are smoothed in memory and the 4D file is written once; the SPM
 % batch writes a 4D output volume by volume, which grows with the number of

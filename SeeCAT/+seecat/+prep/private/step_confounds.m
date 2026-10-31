@@ -13,7 +13,7 @@ c = opt.censor;
 rp = load(ctx.files.rp, '-ascii');
 nT = size(rp, 1);
 fd = seecat.denoise.fd_power(rp);
-bad = false(nT, 1);
+bad = false(nT, 1);                            % for aCompCor: good frames only
 if ~strcmp(c.mode, 'none')
     bad = seecat.denoise.flag_frames(fd, c.fd_threshold, c.before, c.after);
 end
@@ -32,26 +32,25 @@ T = addComponents(T, 'c_comp_cor', seecat.denoise.compcor(Y(:, M{3}), opt.acompc
 T = addComponents(T, 'w_comp_cor', seecat.denoise.compcor(Y(:, M{2}), opt.acompcor_n, opt.detrend_order, ~bad));
 T = [T, seecat.denoise.motion_regressors(rp)];
 T.framewise_displacement = fd;
-idx = find(bad);
-for k = 1:numel(idx)
-    col = zeros(nT, 1);
-    col(idx(k)) = 1;
-    T.(sprintf('motion_outlier_%02d', k - 1)) = col;
-end
-drop = bad & strcmp(c.mode, 'censor');
-T.censor = double(drop);
+[T, qc, meta] = seecat.denoise.censor_columns(T, fd, c, ctx.tr);
+meta.c_comp_cor = struct('Description', 'aCompCor components from the eroded CSF mask, good frames only');
+meta.w_comp_cor = struct('Description', 'aCompCor components from the eroded WM mask, good frames only');
 f = fullfile(ctx.work_dir, 'confounds.tsv');
 seecat.io.write_tsv(T, f);
 ctx.files.confounds = f;
-
-minutes = nnz(~drop) * ctx.tr / 60;
-ctx.qc = struct('dummy_scans', ctx.dummy_scans, 'n_frames', nT, ...
-    'mean_fd', mean(fd, 'omitnan'), 'max_fd', max(fd), 'n_flagged', nnz(bad), ...
-    'minutes_kept', minutes, 'low_data', minutes < c.min_minutes);
+ctx.confounds_meta = meta;
+ctx.qc = catstruct(struct('dummy_scans', ctx.dummy_scans), qc);
 log('confounds: mean FD %.3f mm, %d of %d frames flagged, %.1f min kept', ...
-    ctx.qc.mean_fd, nnz(bad), nT, minutes);
-if ctx.qc.low_data
+    qc.mean_fd, qc.n_flagged, nT, qc.minutes_kept);
+if qc.low_data
     log('confounds: WARNING less than %g min of good data', c.min_minutes);
+end
+end
+
+function s = catstruct(a, b)
+s = a;
+for f = fieldnames(b)'
+    s.(f{1}) = b.(f{1});
 end
 end
 

@@ -133,6 +133,22 @@
   1.0. `tests/unit/test_templates.m` checks that regenerating gives the
   committed files.
 
+- `fmriprep` pipeline (`seecat.config('fmriprep')`): denoises fMRIPrep outputs
+  with SeeCAT's censoring and the prep pipeline's denoise and smooth steps
+  (now shared as `seecat.steps.*`, `seecat.util.denoise_defaults`,
+  `seecat.denoise.censor_columns`, `seecat.util.publish_output`). Drops
+  fMRIPrep's leading non-steady-state volumes and replaces its motion outlier
+  flags by SeeCAT's own. Reads current and older fMRIPrep naming
+  (`_timeseries`/`_regressors`, `motion_outlier00`/`_00`). `acompcor` now uses
+  the first `acompcor_n` components per tissue.
+  - ds002785, 5 subjects (fMRIPrep outputs from OpenNeuro): ~1 min per subject.
+    PCC–mPFC r = 0.57–0.74 (SeeCAT's own preprocessing: 0.60–0.86); PCC seed
+    maps of the two routes correlate spatially at 0.62–0.70.
+  - Fed SeeCAT's own prep outputs (same file naming), it reproduces prep's
+    denoised and smoothed series exactly (difference 0), and prep's outputs
+    are unchanged by the refactor (difference 0, confounds byte-identical).
+  - `tests/unit/test_fmriprep.m` (4 tests, synthetic fMRIPrep folder).
+
 ### Known issues
 
 ## Unreleased: phase 0 fixes on top of 1.0 beta

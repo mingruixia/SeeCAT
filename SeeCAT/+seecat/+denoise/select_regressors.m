@@ -1,6 +1,7 @@
-function [R, cols] = select_regressors(T, names)
+function [R, cols] = select_regressors(T, names, ncomp)
 % SELECT_REGRESSORS  Confound columns for the denoising model.
 %   [R, cols] = seecat.denoise.select_regressors(T, {'friston24', 'wm', 'csf'})
+%   [R, cols] = seecat.denoise.select_regressors(T, {'acompcor'}, 5)
 %
 % T is a confounds table with fMRIPrep column names (from SeeCAT or from
 % fMRIPrep). NAMES may contain these shortcuts, or any column name:
@@ -8,10 +9,15 @@ function [R, cols] = select_regressors(T, names)
 %   wm         white_matter
 %   csf        csf
 %   gs         global_signal
-%   acompcor   every c_comp_cor_* and w_comp_cor_* column
+%   acompcor   the first NCOMP (default 5) c_comp_cor_* and w_comp_cor_*
+%              columns. Older fMRIPrep writes only a_comp_cor_*, whose
+%              tissue is given in its JSON sidecar; then name the columns.
 % R is T x k with NaN (the n/a first row of derivatives) set to 0; COLS
 % are the column names used, without duplicates.
 
+if nargin < 3
+    ncomp = 5;
+end
 cols = {};
 vars = T.Properties.VariableNames;
 missing = {};
@@ -28,8 +34,12 @@ for i = 1:numel(names)
         case 'gs'
             c = {'global_signal'};
         case 'acompcor'
-            c = vars(~cellfun(@isempty, regexp(vars, '^[cw]_comp_cor_\d+$', 'once')));
-            if isempty(c)
+            c = [firstN(vars, 'c_comp_cor', ncomp), firstN(vars, 'w_comp_cor', ncomp)];
+            if isempty(c) && any(startsWith(vars, 'a_comp_cor_'))
+                error('SeeCAT:denoise', ['The confounds table has a_comp_cor_* but no c_comp_cor_*/w_comp_cor_* ' ...
+                    '(older fMRIPrep). Which tissue each a_comp_cor component belongs to is in the ' ...
+                    'confounds JSON; list the columns you want in denoise.regressors instead of ''acompcor''.']);
+            elseif isempty(c)
                 missing{end+1} = 'c_comp_cor_*/w_comp_cor_*'; %#ok<AGROW>
             end
         otherwise
@@ -47,4 +57,11 @@ for j = 1:numel(cols)
     R(:, j) = double(T.(cols{j}));
 end
 R(isnan(R)) = 0;
+end
+
+function c = firstN(vars, prefix, n)
+% Columns prefix_00, prefix_01, ... in number order, at most n
+c = vars(~cellfun(@isempty, regexp(vars, ['^' prefix '_\d+$'], 'once')));
+[~, k] = sort(cellfun(@(x) str2double(x(numel(prefix) + 2:end)), c));
+c = c(k(1:min(n, numel(k))));
 end

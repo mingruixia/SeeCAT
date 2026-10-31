@@ -192,6 +192,29 @@ SPM needs uncompressed `.nii`. All SPM work happens in `work_dir` as `.nii`;
 final derivatives are written as `.nii.gz`. Intermediates are deleted after
 a subject succeeds unless `keep_work` is true.
 
+### 5.5 Denoising fMRIPrep outputs (`fmriprep` pipeline)
+
+`cfg = seecat.config('fmriprep'); cfg.fmriprep_dir = '.../derivatives/fmriprep';`
+For each run: `*_space-<space>_desc-preproc_bold`, its `desc-brain_mask`, and
+the confounds table (`desc-confounds_timeseries`, or `_regressors` from
+older fMRIPrep). Default space `MNI152NLin2009cAsym`; `res` only needed when
+several exist.
+
+- Leading non-steady-state volumes (fMRIPrep's `non_steady_state_outlier*`)
+  are dropped (`dummy_scans` 'auto', or a number).
+- fMRIPrep's `motion_outlier*` columns (FD and DVARS) are replaced by
+  SeeCAT's own flags from `framewise_displacement`, so every input is
+  censored by the same rule.
+- Denoise and smooth are the prep pipeline's steps (`seecat.steps.denoise`,
+  `seecat.steps.smooth`; options from `seecat.util.denoise_defaults`).
+- `acompcor` takes the first `acompcor_n` `c_comp_cor`/`w_comp_cor` columns.
+  Older fMRIPrep writes only `a_comp_cor_*` (tissue in the JSON sidecar);
+  then the columns must be listed explicitly.
+- Outputs in the fMRIPrep space next to `fmriprep_dir` (`derivatives/seecat`):
+  confounds TSV, brain mask, `desc-denoised` and `desc-denoisedSm6`.
+- Check (2026-10-31): fed SeeCAT's own prep outputs (same naming), the
+  fmriprep pipeline reproduces prep's denoised and smoothed series exactly.
+
 ## 6. Output layout (BIDS derivatives)
 
 Space label for SPM's TPM: `IXI549Space` (BIDS template identifier for SPM12).
