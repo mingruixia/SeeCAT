@@ -187,7 +187,7 @@ Group pipelines plan one unit; heavy parts are vectorised (batch-api §7).
 
 | check | reference | pass |
 |---|---|---|
-| β, T, F maps for each design (no image covariates) | SPM `spm_spm` + `spm_contrasts` on the same images, design and mask | max rel. difference < 1e-6 |
+| β, T, F maps for each design (no image covariates) | SPM `spm_spm` + `spm_contrasts` on the same images, design and mask | max rel. difference < 1e-6 — **passed 2026-10-31** for every design (`tests/validation/compare_stat_spm.m`, `compare_designs_spm.m`, `compare_reml_spm.m`) |
 | non-sphericity (`anova1_rm`, unequal variance) | SPM flexible/full factorial with the same independence and variance settings: hyperparameters, whitened df, F map | rel. difference < 1e-6 |
 | 1.0 header string | parse back; dLh and FWHM equal to the JSON | exact |
 | FWHM, resels | `spm_est_smoothness`, `spm_resels_vol` | equal to 1e-8 |

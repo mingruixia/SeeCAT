@@ -182,6 +182,13 @@
   - Within-subject ANOVA with dependence and unequal variance
     (`tests/validation/compare_reml_spm.m`): same 1,562 first-pass voxels,
     covariance V within 5e-12, df equal, F within 3e-7, FWHM equal.
+  - one_sample, paired, anova1 and regression (age, with gender as covariate)
+    through the whole pipeline against SPM's t1, pt, anova and mreg designs
+    (`tests/validation/compare_designs_spm.m`): same mask voxels; statistic
+    maps within 5e-7 (relative); df equal; FWHM and resels equal (to 1e-9);
+    every row of SPM's results table at p < 0.001 equal (220, 49, 38, 48
+    rows: peak statistic 3e-6, Z 5e-6, peak p FWE 8e-7, coordinates and
+    cluster sizes exact).
   - 1.0's `T2_zFCSeed01_CONvsSCHZ` (10 subjects, same mask): T equal at all
     67,541 voxels (9.5e-7). Smoothness differs (FWHM ~12.0 vs 10.6 mm):
     1.0 used FSL smoothest's estimator, 2.0 SPM's, so RFT thresholds differ

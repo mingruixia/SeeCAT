@@ -78,8 +78,9 @@ See `CHANGELOG.md`.
   - [x] Voxel- and cluster-level RFT (SPM's spm_P / spm_uc, S1), and FDR.
   - [x] AlphaSim not offered by the new pipeline (the legacy viewer's AlphaSim
         goes with Visual/ in weeks 7–8).
-  - [x] Validated against SPM (two-sample with covariate; within-subject ANOVA
-        with non-sphericity) and against 1.0's T map.
+  - [x] Validated against SPM for all built-in designs (one-sample, two-sample
+        with covariate, paired, ANOVA, regression with covariate, within-subject
+        ANOVA with non-sphericity) and against 1.0's T map.
   - [ ] DPABI V9 cross-check (needs a DPABI installation; not a gate).
 - [ ] Basic QC report (head motion, FD, registration snapshots) as HTML.
 
