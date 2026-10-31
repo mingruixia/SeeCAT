@@ -98,9 +98,17 @@
   regressors; every voxel's residual had the same shape and all seed
   correlations were 1.00. The unit now fails with the reason in the summary.
 
+- Output manifest per unit (`logs/outputs/<pipeline>_<unit>.txt`,
+  `seecat.util.record_output`). A unit that runs again first deletes the
+  derivatives of its previous run, and a failed unit deletes what it wrote, so
+  a failure never leaves earlier or partial derivatives behind (before: a
+  failed rerun of ds000030 sub-50052 kept its earlier, meaningless denoised
+  files). Changing an option that renames outputs (e.g. `smooth.fwhm`) no
+  longer leaves the old files. The prep outputs step now always runs.
+  Derivatives written before this change have no manifest and stay until
+  removed by hand.
+
 ### Known issues
-- A unit that fails leaves the derivatives of an earlier successful run in place
-  (found with sub-50052 above; removed by hand there).
 
 ## Unreleased: phase 0 fixes on top of 1.0 beta
 

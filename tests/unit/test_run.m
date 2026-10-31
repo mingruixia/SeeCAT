@@ -88,6 +88,42 @@ S = quiet(@() seecat.run(cfg));
 tc.verifyEqual(S.status, {'ok'; 'ok'; 'failed'});
 end
 
+function testRerunReplacesDerivatives(tc)
+cfg = demoCfg(tc);
+quiet(@() seecat.run(cfg));
+tc.verifyEqual(derivs(cfg), {'u1_value-1.txt'; 'u2_value-1.txt'; 'u3_value-1.txt'});
+cfg.value = 2;                              % new options: old derivatives go
+quiet(@() seecat.run(cfg));
+tc.verifyEqual(derivs(cfg), {'u1_value-2.txt'; 'u2_value-2.txt'; 'u3_value-2.txt'});
+end
+
+function testFailedUnitLeavesNoDerivatives(tc)
+cfg = demoCfg(tc);
+quiet(@() seecat.run(cfg));
+% u2 fails before its output on the rerun, u3 fails after writing it
+cfg.value = 2;
+cfg.fail_units = {'u2'};
+cfg.fail_after_output = {'u3'};
+S = quiet(@() seecat.run(cfg));
+tc.verifyEqual(S.status, {'ok'; 'failed'; 'failed'});
+tc.verifyEqual(derivs(cfg), {'u1_value-2.txt'});
+% Fixed: both come back, and the skipped u1 keeps its file
+cfg.fail_units = {};
+cfg.fail_after_output = {};
+S = quiet(@() seecat.run(cfg));
+tc.verifyEqual(S.status, {'ok'; 'ok'; 'ok'});       % fail lists are options, so u1 reruns
+tc.verifyEqual(derivs(cfg), {'u1_value-2.txt'; 'u2_value-2.txt'; 'u3_value-2.txt'});
+S = quiet(@() seecat.run(cfg));
+tc.verifyEqual(S.status, {'skipped'; 'skipped'; 'skipped'});
+tc.verifyEqual(derivs(cfg), {'u1_value-2.txt'; 'u2_value-2.txt'; 'u3_value-2.txt'});
+end
+
+function testRecordOutputRejectsPathsOutsideOutputDir(tc)
+cfg = demoCfg(tc);
+tc.verifyError(@() seecat.util.record_output(fullfile(cfg.output_dir, 'm.txt'), cfg.output_dir, ...
+    fullfile(cfg.output_dir, '..', 'elsewhere.txt')), 'SeeCAT:output');
+end
+
 function testDerivName(tc)
 src = 'D:/bids/sub-01/ses-2/func/sub-01_ses-2_task-rest_acq-mb3_run-1_bold.nii.gz';
 r = seecat.bids.deriv_name(src, 'desc', 'preproc', 'space', 'IXI549Space', 'res', '3');
@@ -127,6 +163,11 @@ function cfg = demoCfg(tc)
 cfg = seecat.config('demo');
 cfg.output_dir = tc.TestData.out;
 cfg.work_dir = fullfile(fileparts(tc.TestData.out), 'seecat_work');
+end
+
+function f = derivs(cfg)
+d = dir(fullfile(cfg.output_dir, 'deriv', '*.txt'));
+f = sort({d.name})';
 end
 
 function c = calls(cfg, unit)

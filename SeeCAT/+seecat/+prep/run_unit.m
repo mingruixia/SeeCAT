@@ -18,6 +18,9 @@ function result = run_unit(unit, cfg, log)
 %   smooth      Gaussian smoothing of the denoised series
 %   outputs     .nii.gz derivatives with JSON sidecars, confounds TSV
 %
+% The outputs step always runs (it is not resumable): seecat.run removes a
+% unit's previous derivatives before running it.
+%
 % Steps never change their input files; each writes new files, which keeps
 % step-level resume correct (a re-run realign would otherwise re-estimate
 % on headers it had already corrected).
@@ -70,8 +73,10 @@ if cfg.smooth.enable && any(cfg.smooth.fwhm > 0)
 end
 out = struct('output_dir', cfg.output_dir, 'bids_dir', cfg.bids_dir, 'write_anat', unit.write_anat, ...
     'voxel_size', cfg.normalise.voxel_size, 'smooth', cfg.smooth, 'denoise', cfg.denoise, ...
-    'censor', cfg.censor, 'meta', unit.meta);
-ctx = step(ctx, 'outputs', @step_outputs, out);
+    'censor', cfg.censor, 'meta', unit.meta, 'manifest', unit.manifest);
+% Not through run_step: seecat.run deletes the previous outputs before a
+% unit runs, so this step must always write them.
+ctx = step_outputs(ctx, out, log);
 
 result = ctx.qc;
 result.normalise_method = method;

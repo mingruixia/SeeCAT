@@ -11,15 +11,18 @@ boldMeta = struct('RepetitionTime', ctx.tr, 'SkullStripped', false, 'Sources', {
 if isfield(opt.meta, 'TaskName')
     boldMeta.TaskName = opt.meta.TaskName;
 end
-put = @(file, rel, meta) publish(file, rel, meta, opt.output_dir, ctx.work_dir);
+put = @(file, rel, meta) publish(file, rel, meta, opt.output_dir, ctx.work_dir, opt.manifest);
 
 put(ctx.files.wbold, name(bold, space{:}, 'desc', 'preproc'), boldMeta);
 put(ctx.files.mask_brain, name(bold, space{:}, 'desc', 'brain', 'suffix', 'mask'), ...
     struct('Type', 'Brain', 'Sources', {{src}}));
 
-conf = name(bold, 'desc', 'confounds', 'suffix', 'timeseries', 'ext', '.tsv');
-copyTo(ctx.files.confounds, fullfile(opt.output_dir, conf));
-seecat.util.write_json(fullfile(opt.output_dir, regexprep(conf, '\.tsv$', '.json')), confoundsMeta(opt.censor));
+conf = fullfile(opt.output_dir, name(bold, 'desc', 'confounds', 'suffix', 'timeseries', 'ext', '.tsv'));
+confJson = regexprep(conf, '\.tsv$', '.json');
+seecat.util.record_output(opt.manifest, opt.output_dir, conf);
+seecat.util.record_output(opt.manifest, opt.output_dir, confJson);
+copyTo(ctx.files.confounds, conf);
+seecat.util.write_json(confJson, confoundsMeta(opt.censor));
 
 if isfield(ctx.files, 'denoised')
     dm = boldMeta;
@@ -65,9 +68,12 @@ function rel = name(src, varargin)
 rel = seecat.bids.deriv_name(src, varargin{:});
 end
 
-function publish(file, rel, meta, outDir, workDir)
+function publish(file, rel, meta, outDir, workDir, manifest)
 % Compress in the unit's own work folder, then move into place
 dst = fullfile(outDir, rel);
+json = regexprep(dst, '\.nii\.gz$', '.json');
+seecat.util.record_output(manifest, outDir, dst);
+seecat.util.record_output(manifest, outDir, json);
 tmp = fullfile(workDir, 'gz');
 if ~exist(tmp, 'dir')
     mkdir(tmp);
@@ -75,7 +81,7 @@ end
 g = gzip(file, tmp);
 copyTo(g{1}, dst);
 delete(g{1});
-seecat.util.write_json(regexprep(dst, '\.nii\.gz$', '.json'), meta);
+seecat.util.write_json(json, meta);
 end
 
 function copyTo(src, dst)

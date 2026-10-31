@@ -263,6 +263,13 @@ seecat.run(cfg)
   in `ctx.files`. On skip, only the fields the step added or changed are
   applied to `ctx`. Conventions: a step's settings come in `opt`, never in
   `ctx`; `ctx` holds state only (paths, metadata) and is JSON-encodable.
+- **Derivatives of a unit** are listed in `logs/outputs/<p>_<unit>.txt`
+  (`seecat.util.record_output`, called before each file is written). When a
+  unit runs (is not skipped), the files of its previous list are deleted
+  first; when it fails, the files it wrote are deleted. A failed unit leaves
+  no derivatives, and a changed option never leaves files of the old one
+  (e.g. `desc-denoisedSm8` after changing `smooth.fwhm` back to 6). The
+  final outputs step is therefore not resumable: it always runs.
 - Steps never modify their input files; each writes new files (realign
   estimates on a copy, coregister changes a copy of the T1w). Otherwise a
   re-run step would start from its own earlier output.

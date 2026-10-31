@@ -7,6 +7,13 @@ ctx.unit = unit.id;
 ctx.calls = fullfile(cfg.output_dir, 'calls', [unit.id '.txt']);
 ctx = seecat.util.run_step(ctx, 'step1', @step1, struct('value', cfg.value), log);
 ctx = seecat.util.run_step(ctx, 'step2', @step2, struct('value', cfg.value, 'fail', ismember(unit.id, cfg.fail_units)), log);
+% A derivative whose name depends on the options, recorded before writing
+out = fullfile(cfg.output_dir, 'deriv', sprintf('%s_value-%g.txt', unit.id, cfg.value));
+seecat.util.record_output(unit.manifest, cfg.output_dir, out);
+writeFile(out, cfg.value);
+if ismember(unit.id, cfg.fail_after_output)
+    error('demo:fail', 'Unit %s failed after writing its output.', unit.id);
+end
 result = struct('value', cfg.value, 'label', ['L' unit.id]);
 end
 
