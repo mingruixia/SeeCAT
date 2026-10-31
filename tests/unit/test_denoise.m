@@ -112,6 +112,12 @@ function testCleanFailsWithTooFewGoodFrames(tc)
 o = opt(2, [false(8, 1); true(32, 1)]);
 o.band = [];
 tc.verifyError(@() seecat.denoise.clean(randn(40, 2), randn(40, 10), o), 'SeeCAT:denoise');
+% Enough frames to fit, but too few degrees of freedom left (30 - 22 = 8)
+o = opt(2, [false(30, 1); true(30, 1)]);
+o.band = [];
+tc.verifyError(@() seecat.denoise.clean(randn(60, 2), randn(60, 20), o), 'SeeCAT:denoise');
+o.bad = [false(40, 1); true(20, 1)];                  % 40 - 22 = 18: fine
+tc.verifyWarningFree(@() seecat.denoise.clean(randn(60, 2), randn(60, 20), o));
 end
 
 function testSelectRegressors(tc)

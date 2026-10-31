@@ -43,8 +43,14 @@ if filtering
 end
 X = [ones(T, 1), X(:, any(abs(X) > 1e-10, 1))];   % filtering turns the constant into 0
 k = rank(X(good, :));
-if nnz(good) <= k
-    error('SeeCAT:denoise', '%d good frames are not enough for %d regressors.', nnz(good), k);
+% With few residual degrees of freedom every voxel's residual has nearly the
+% same shape and all correlations go to +-1 (ds000030 sub-50052: 29 good
+% frames, 28 regressors, every seed correlation 1.00), so refuse.
+minDof = 10;
+if nnz(good) - k < minDof
+    error('SeeCAT:denoise', ['%d good frames and %d regressors leave %d degrees of freedom ' ...
+        '(at least %d needed). Exclude this run, or use fewer regressors.'], ...
+        nnz(good), k, nnz(good) - k, minDof);
 end
 pX = pinv(X(good, :));
 

@@ -88,7 +88,19 @@
   grey-matter partial volume and removed some shared signal, close to a partial
   global-signal regression.
 
+- Re-checked with the new masks on all 15 subjects (3 mm): the interpolation
+  comparison is unchanged (spectral better in 9/9 and 5/5 subjects; kept-frame
+  change ratio 0.94 at TR 2 s and 0.65 at TR 0.75 s). PCC–mPFC median r = 0.63.
+
+### Fixed
+- Denoising now refuses runs with fewer than 10 residual degrees of freedom.
+  ds000030 sub-50052 (123 of 152 frames flagged) kept 29 frames for 28
+  regressors; every voxel's residual had the same shape and all seed
+  correlations were 1.00. The unit now fails with the reason in the summary.
+
 ### Known issues
+- A unit that fails leaves the derivatives of an earlier successful run in place
+  (found with sub-50052 above; removed by hand there).
 
 ## Unreleased: phase 0 fixes on top of 1.0 beta
 
