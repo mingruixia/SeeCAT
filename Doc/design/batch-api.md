@@ -117,7 +117,7 @@ Common fields:
 | step | default | notes |
 |---|---|---|
 | DICOM → BIDS | off (separate tool) | `seecat.bids.from_dicom(dicom_dir, bids_dir, heuristic)` with dcm2niix; writes sidecars |
-| dummy scans | `auto` | from `NumberOfVolumesDiscardedByScanner`/`DummyScans`, else 0; number overridable |
+| dummy scans | `auto` | leading non-steady-state volumes: mean in-brain intensity a robust outlier (z > 3.5 vs median/MAD, first 20 frames). `NumberOfVolumesDiscardedBy*` describe volumes already removed, so they are not used. A number overrides |
 | slice timing | on, `auto` | uses `SliceTiming` (seconds) from JSON, so multiband works; reference = middle of TR. Off if no SliceTiming and none given |
 | realign | on | SPM estimate+reslice, register to mean; writes motion parameters |
 | coregister | on | T1 → mean EPI (header only) |
@@ -247,6 +247,9 @@ seecat.run(cfg)
   in `ctx.files`. On skip, only the fields the step added or changed are
   applied to `ctx`. Conventions: a step's settings come in `opt`, never in
   `ctx`; `ctx` holds state only (paths, metadata) and is JSON-encodable.
+- Steps never modify their input files; each writes new files (realign
+  estimates on a copy, coregister changes a copy of the T1w). Otherwise a
+  re-run step would start from its own earlier output.
 - `ctx` carries `work_dir`, `files` (paths) and metadata (TR, slice times,
   confounds) from step to step. Steps never change directory.
 - SPM runs through `spm_jobman('run', job)` with jobs built in code (no

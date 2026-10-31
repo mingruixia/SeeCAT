@@ -1,5 +1,32 @@
 # Changelog
 
+## Unreleased: 2.0 development
+
+### Added
+- **Preprocessing pipeline** `seecat.prep` (`seecat.run(cfg)` with
+  `cfg = seecat.config('prep')`): input copy with non-steady-state detection,
+  slice timing from `SliceTiming` (multiband-ready), realign (estimate only; data
+  resampled once, at normalisation), T1w → mean EPI coregistration, unified
+  segmentation (T1w, or the mean EPI without one), normalisation to IXI549Space,
+  brain/WM/CSF masks from the subject's segmentation, confounds table with
+  fMRIPrep column names (Friston 24, FD, tissue signals, aCompCor, motion
+  outliers, `censor`), censor-aware denoising, smoothing after denoising, and
+  BIDS-derivative outputs with JSON sidecars. Anatomical outputs are written by
+  one unit per T1w.
+- `seecat.denoise`: `fd_power`, `flag_frames`, `interpolate` (spline,
+  Lomb–Scargle), `clean` (interpolate → band-pass data and regressors → fit on
+  good frames), `compcor`, `motion_regressors`, `select_regressors`,
+  `poly_trend`. `seecat.io.read_tsv`; `seecat.util.spm_run`.
+- Tests: `tests/unit/test_denoise.m` (10), including that values on censored
+  frames cannot change the residuals of good frames.
+
+### Known issues
+- Lomb–Scargle interpolation fills gaps of several frames with values close to
+  the series mean (reconstruction kernel about one TR wide). Spline is the
+  default; the Lomb–Scargle option needs checking against Power et al. (2014).
+- At 3 mm the eroded CSF mask is small (35 voxels in the first ds000030
+  subject).
+
 ## Unreleased: phase 0 fixes on top of 1.0 beta
 
 ### Fixed

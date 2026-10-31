@@ -40,11 +40,15 @@ See `CHANGELOG.md`.
 - [x] BIDS-derivatives naming and `dataset_description.json`.
 - [ ] DICOM conversion with dcm2niix; TR, SliceTiming and multiband from JSON.
 - [ ] Preprocessing:
-  - [ ] SPM batches built in code; remove `PrepfMRI/jobmats`.
-  - [ ] Nuisance masks from the subject's own segmentation.
-  - [ ] aCompCor; import of fMRIPrep confounds.
-  - [ ] Censoring (interpolate → filter → regress → drop), with unit tests.
-  - [ ] One parallel pattern everywhere; no `cd`.
+  - [x] `seecat.prep.run_unit`: all steps, SPM batches built in code
+        (first subject of ds000030 end to end, 5.4 min).
+  - [ ] Remove `PrepfMRI/jobmats` (with the legacy GUI, weeks 7–8).
+  - [x] Nuisance masks from the subject's own segmentation.
+  - [x] aCompCor (CSF and WM separately).
+  - [ ] Denoise from fMRIPrep outputs (confounds table already compatible).
+  - [x] Censoring (interpolate → filter → regress → drop), with unit tests.
+  - [ ] Lomb–Scargle gap fill: check against the published implementation.
+  - [x] One parallel pattern everywhere; no `cd`.
 - [ ] Rebuild `templates/`: masks generated from SPM TPM by a script in the
       repo; remove DPABI-distributed masks and label files.
 - [ ] End-to-end tests at 2 mm, and on ds002785 (multiband).
