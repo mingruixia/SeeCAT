@@ -66,7 +66,7 @@ SeeCAT/
     +bids/    layout.m  query.m  sidecar.m  deriv_name.m  from_dicom.m
     +prep/    defaults.m  run_subject.m
               step_dummy.m  step_slicetime.m  step_realign.m  step_coreg.m
-              step_segment.m  step_normalise.m  step_masks.m  step_confounds.m
+              step_segment.m  step_tissue_masks.m  step_normalise.m  step_masks.m  step_confounds.m
               step_denoise.m  step_smooth.m
     +denoise/ friston24.m  acompcor.m  fd_power.m  spikes.m  bandpass.m  regress.m
     +fc/      defaults.m  run_subject.m  seed_maps.m
@@ -123,7 +123,7 @@ Common fields:
 | coregister | on | T1 → mean EPI (header only) |
 | segment | on | unified segmentation of T1 with SPM TPM; native c1–c3 + forward deformation `y_` |
 | normalise | on | `normalise.write` with `y_`; 3 mm, bounding box `[-90 -126 -72; 90 90 108]`. Without T1: `normalise.estwrite` of mean EPI to TPM |
-| masks | on | brain mask; WM and CSF masks from the subject's own c2/c3 (p > 0.99, eroded 1 voxel), in output space |
+| masks | on | brain mask (GM+WM+CSF > 0.5, inside the field of view) in output space. WM and CSF masks are built in **native** segmentation space (WM p > 0.99, CSF p > 0.95, eroded 2 mm with a ball) and resampled to the output grid (> 0.5), so they do not depend on the output voxel size. Changed 2026-10-31: built on the output grid, the CSF signal at 2 mm and 3 mm correlated only 0.80–0.84 (ds000030). Thresholds and erosion chosen from mask volumes in 15 subjects (CSF p > 0.99 eroded 2 mm can be empty) |
 | confounds | on | writes `desc-confounds_timeseries.tsv` (see 5.3) |
 | denoise | on | detrend + regression + band-pass in one model (see 5.2) |
 | smooth | on, 6 mm | applied **after** denoising |

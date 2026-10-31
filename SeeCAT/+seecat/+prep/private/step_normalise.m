@@ -1,6 +1,7 @@
 function ctx = step_normalise(ctx, opt, ~)
 % Apply the deformation: BOLD (4th-degree B-spline, the only resampling of
-% the data) and the GM/WM/CSF maps (trilinear) to the output grid.
+% the data), the GM/WM/CSF maps and the native WM/CSF masks (trilinear)
+% to the output grid.
 %
 % The BOLD run is split into 3D volumes (each keeps its realigned affine),
 % normalised by SPM, and written back as one 4D file. SPM writes a 4D
@@ -12,7 +13,7 @@ if isscalar(vox)
     vox = [vox vox vox];
 end
 w = struct('bb', opt.bounding_box, 'vox', vox, 'interp', 4, 'prefix', 'w');
-c = {ctx.files.c1; ctx.files.c2; ctx.files.c3};
+c = {ctx.files.c1; ctx.files.c2; ctx.files.c3; ctx.files.native_wm; ctx.files.native_csf};
 frames = splitVolumes(ctx.files.bold, fullfile(ctx.work_dir, 'frames'));
 job{1}.spm.spatial.normalise.write.subj.def = {ctx.files.deform};
 job{1}.spm.spatial.normalise.write.subj.resample = strcat(frames, ',1');
@@ -32,6 +33,8 @@ rmdir(fullfile(ctx.work_dir, 'frames'), 's');
 for k = 1:3
     ctx.files.(sprintf('wc%d', k)) = prefixed(c{k});
 end
+ctx.files.wnative_wm = prefixed(c{4});
+ctx.files.wnative_csf = prefixed(c{5});
 end
 
 function files = splitVolumes(f, d)

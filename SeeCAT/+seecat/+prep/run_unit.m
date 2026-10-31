@@ -10,6 +10,7 @@ function result = run_unit(unit, cfg, log)
 %   realign     SPM realign (estimate; mean image only); motion parameters
 %   coreg       T1w -> mean EPI (header only)
 %   segment     unified segmentation of the T1w (or of the mean EPI)
+%   tissue_masks  eroded WM/CSF masks in native space
 %   normalise   BOLD and tissue maps to IXI549Space with the deformation
 %   masks       brain, WM and CSF masks in output space
 %   confounds   motion, FD, censor flags, tissue signals, aCompCor
@@ -56,8 +57,9 @@ if strcmp(method, 'segment')
     ctx = step(ctx, 'coreg', @step_coreg, struct());
 end
 ctx = step(ctx, 'segment', @step_segment, struct('source', method));
+ctx = step(ctx, 'tissue_masks', @step_tissue_masks, cfg.masks);
 ctx = step(ctx, 'normalise', @step_normalise, cfg.normalise);
-ctx = step(ctx, 'masks', @step_masks, cfg.masks);
+ctx = step(ctx, 'masks', @step_masks, struct());
 ctx = step(ctx, 'confounds', @step_confounds, struct('censor', cfg.censor, ...
     'acompcor_n', cfg.denoise.acompcor_n, 'detrend_order', cfg.denoise.detrend_order));
 if cfg.denoise.enable

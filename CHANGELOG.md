@@ -70,14 +70,25 @@
   ds002785, 0.80 and 0.93 on ds000030. ds002785 2 mm: ~13 min per subject,
   ~2.5 min of it gzip of the 4D outputs.
 
+### Changed: WM/CSF masks built in native space
+- WM and CSF masks were thresholded and eroded on the output grid, so they
+  depended on the output voxel size (ds000030 sub-11061: CSF 35 voxels at 3 mm,
+  389 at 2 mm; CSF signal r = 0.80–0.84 between grids; PCC seed maps r = 0.80
+  and 0.93). They are now built in the native space of the segmentation
+  (`step_tissue_masks`: WM p > 0.99, CSF p > 0.95, eroded `masks.erode_mm` = 2 mm
+  with a ball) and resampled to the output grid. Option `masks.erode` (voxels)
+  is replaced by `masks.erode_mm`. Thresholds from a sweep over 15 subjects:
+  CSF p > 0.99 eroded 2 mm can be empty; p > 0.95 keeps 2.7–8.4 cm^3
+  (min–median); WM keeps 46–104 cm^3.
+- Result on the same 4 subjects: CSF mask sizes now scale with voxel volume
+  (sub-11061: 246 vs 813 voxels, ratio 3.3), CSF signal r = 0.95–0.99 between
+  grids, PCC seed maps r = 0.991–0.995 on both datasets.
+- Denoised data change with the new regressors. Example: ds000030 sub-11061
+  PCC–V1 r went from 0.20 to 0.50 at 3 mm. The old 35-voxel CSF mask carried
+  grey-matter partial volume and removed some shared signal, close to a partial
+  global-signal regression.
+
 ### Known issues
-- WM/CSF masks are thresholded and eroded on the output grid, so they depend on
-  the output resolution: CSF mask 35 voxels at 3 mm vs 389 at 2 mm
-  (ds000030 sub-11061); CSF signal r = 0.84 and 0.80 between grids. Swapping in
-  the 3 mm confounds moves the 2 mm PCC–V1 correlation from 0.41 to 0.30, so
-  much of the 2 mm vs 3 mm FC difference on ds000030 comes from this.
-- At 3 mm the eroded CSF mask is small (35 voxels in the first ds000030
-  subject).
 
 ## Unreleased: phase 0 fixes on top of 1.0 beta
 

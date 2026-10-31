@@ -1,7 +1,9 @@
 % COMPARE_RESOLUTION  Same subjects preprocessed at 2 mm and 3 mm output.
-% Script (paths under D:/data/SeeCAT_e2e): file names and grid, brain-mask
-% Dice with SPM mask_ICV, FD, PCC seed correlations, and the spatial
-% correlation of the 2 mm PCC map (resampled to 3 mm) with the 3 mm map.
+% Script; expects D:/data/SeeCAT_e2e/<dataset>_<res>mm/{seecat,work} with
+% keep_work. Reports grid, WM/CSF mask sizes, brain-mask Dice with SPM
+% mask_ICV, FD, PCC seed correlations, CSF/WM signal agreement between
+% grids, and the spatial r of the 2 mm PCC map (on the 3 mm grid) with the
+% 3 mm map.
 addpath('D:/verysync/dropbox/Works/Claude_Project/SeeCAT/SeeCAT');
 addpath('D:/verysync/dropbox/SciTools/MatlabToolbox/spm');
 units = {'ds000030', 'sub-11061', 'sub-11061_task-rest'; 'ds000030', 'sub-50048', 'sub-50048_task-rest';
@@ -10,7 +12,9 @@ for u = 1:size(units, 1)
   [ds, sub, stem] = units{u, :};
   fprintf('== %s %s\n', ds, sub);
   for res = [2 3]
-    if res == 2, root = ['D:/data/SeeCAT_e2e/' ds '_2mm/seecat']; else, root = ['D:/data/SeeCAT_e2e/' ds '/seecat']; end
+    root = sprintf('D:/data/SeeCAT_e2e/%s_%dmm/seecat', ds, res);
+    wk = sprintf('D:/data/SeeCAT_e2e/%s_%dmm/work/prep/%s', ds, res, stem);
+    nw = nnz(seecat.io.read_nii(fullfile(wk, 'mask_wm.nii'))); nc = nnz(seecat.io.read_nii(fullfile(wk, 'mask_csf.nii')));
     d = fullfile(root, sub, 'func');
     p = sprintf('%s_space-IXI549Space_res-%d_', stem, res);
     mf = fullfile(d, [p 'desc-brain_mask.nii.gz']);
@@ -26,9 +30,9 @@ for u = 1:size(units, 1)
     r = @(x) corr(pcc(keep), x(keep));
     mapz = atanh(corr(pcc(keep), double(Y2(keep, m(:) > 0))));
     M = zeros(V(1).dim); M(m(:) > 0) = mapz;
-    maps{res} = M; mapV{res} = V(1); FD{res} = A.framewise_displacement;
-    fprintf('  res-%d dim %s vox %.1f | mask %d vox, Dice ICV %.3f | mean FD %.4f | r(PCC,mPFC) %.2f V1 %.2f M1 %.2f\n', res, ...
-      mat2str(V(1).dim), abs(V(1).mat(1,1)), nnz(m), 2*nnz(m & icv)/(nnz(m)+nnz(icv)), mean(A.framewise_displacement, 'omitnan'), ...
+    maps{res} = M; mapV{res} = V(1); FD{res} = A.framewise_displacement; CSF{res} = A.csf; WM{res} = A.white_matter;
+    fprintf('  res-%d dim %s vox %.1f | WM %d CSF %d vox | mask %d vox, Dice ICV %.3f | mean FD %.4f | r(PCC,mPFC) %.2f V1 %.2f M1 %.2f\n', res, ...
+      mat2str(V(1).dim), abs(V(1).mat(1,1)), nw, nc, nnz(m), 2*nnz(m & icv)/(nnz(m)+nnz(icv)), mean(A.framewise_displacement, 'omitnan'), ...
       r(ts([0 52 -6])), r(ts([0 -90 0])), r(ts([-38 -22 56])));
   end
   % 2 mm seed map on the 3 mm grid vs the 3 mm map
@@ -36,7 +40,7 @@ for u = 1:size(units, 1)
   seecat.io.write_nii(maps{2}, mapV{2}, tmp);
   m2on3 = seecat.io.read_nii(tmp, 'Ref', mapV{3}, 'Interp', 1); delete(tmp);
   both = maps{3} ~= 0 & m2on3 ~= 0;
-  fprintf('  FD identical %d | seed-map spatial r (2 mm on 3 mm grid vs 3 mm) %.3f\n', isequaln(FD{2}, FD{3}), corr(m2on3(both), maps{3}(both)));
+  fprintf('  FD identical %d | r(CSF 2 vs 3 mm) %.3f  r(WM) %.3f | seed-map spatial r %.3f\n', isequaln(FD{2}, FD{3}), corr(CSF{2}, CSF{3}), corr(WM{2}, WM{3}), corr(m2on3(both), maps{3}(both)));
 end
 function in = sphere(V, mm, r)
 [i, j, k] = ndgrid(1:V.dim(1), 1:V.dim(2), 1:V.dim(3));

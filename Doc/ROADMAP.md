@@ -55,8 +55,8 @@ See `CHANGELOG.md`.
 - [x] End-to-end on ds002785 (multiband, TR 0.75 s, 5 subjects): non-steady-state
       counts, motion and FD checked against its fMRIPrep confounds.
 - [x] End-to-end test at 2 mm output (2 + 2 subjects).
-- [ ] WM/CSF masks independent of the output grid (2 mm vs 3 mm CSF signal
-      r = 0.80–0.84 on ds000030; see CHANGELOG).
+- [x] WM/CSF masks built in native space, independent of the output grid
+      (2 mm vs 3 mm seed maps r = 0.99 on both datasets).
 
 ## Weeks 5–6 (11/23 – 12/04): computation and statistics
 

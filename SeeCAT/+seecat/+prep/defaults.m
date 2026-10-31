@@ -22,9 +22,12 @@ cfg.normalise.method       = 'auto';       % 'auto' = 'segment' with a T1w, else
 cfg.normalise.voxel_size   = 3;
 cfg.normalise.bounding_box = [-90 -126 -72; 90 90 108];
 
+% WM/CSF masks are built in native space (step_tissue_masks). On 15 subjects
+% (ds000030, ds002785) WM p > 0.99 eroded 2 mm keeps 46-104 cm^3 (min-median);
+% CSF p > 0.99 eroded 2 mm can be empty, p > 0.95 keeps 2.7-8.4 cm^3.
 cfg.masks.wm_threshold  = 0.99;
-cfg.masks.csf_threshold = 0.99;
-cfg.masks.erode         = 1;               % voxels
+cfg.masks.csf_threshold = 0.95;
+cfg.masks.erode_mm      = 2;               % ball radius (mm), native space
 
 cfg.denoise.enable        = true;
 cfg.denoise.regressors    = {'friston24', 'wm', 'csf'};
@@ -60,7 +63,7 @@ spec = [
     'normalise.bounding_box',      @(x) isnumeric(x) && isequal(size(x), [2 3]) && all(x(1, :) < x(2, :)), 'a 2x3 matrix [min; max] in mm'
     'masks.wm_threshold',          @(x) v.positive(x) && x < 1,       'a probability in (0, 1)'
     'masks.csf_threshold',         @(x) v.positive(x) && x < 1,       'a probability in (0, 1)'
-    'masks.erode',                 v.count,                           'a non-negative integer'
+    'masks.erode_mm',              v.nonneg,                          'a non-negative number (mm)'
     'denoise.enable',              v.flag,                            'true or false'
     'denoise.regressors',          @(x) iscellstr(x), ['a cell array of names: ' strjoin(regressors, ', ') ' or confounds column names'] %#ok<ISCLSTR>
     'denoise.acompcor_n',          @(x) v.count(x) && x > 0,          'a positive integer'
