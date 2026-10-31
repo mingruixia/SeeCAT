@@ -118,6 +118,11 @@ switch name
         b = '<path d="M5 12l5 5L20 7"/>';
     case 'refresh'
         b = '<path d="M20 11a8 8 0 0 0-14.8-4M4 4v4h4"/><path d="M4 13a8 8 0 0 0 14.8 4M20 20v-4h-4"/>';
+    case 'activity'    % a signal trace
+        b = '<path d="M3 12h4l2.5-6 4 12 2.5-6H21"/>';
+    case 'pause'
+        b = '<rect x="6" y="5" width="4" height="14" rx="1"/><rect x="14" y="5" width="4" height="14" rx="1"/>';
+        filled = true;
     otherwise
         error('SeeCAT:gui', 'No icon "%s".', name);
 end

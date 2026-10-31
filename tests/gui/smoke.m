@@ -1,8 +1,9 @@
-function smoke(outDir, statMap)
+function smoke(outDir, statMap, series)
 % SMOKE  Open every SeeCAT window and save screenshots (needs a desktop
 % session; -batch cannot draw windows). exportapp leaves out the uihtml
 % parts (side bar, section links); check those on screen.
 %   smoke('C:/tmp/shots', 'group/x/x_contrast-pos_stat-t_statmap.nii.gz')
+%   smoke(..., 'sub-01/func/..._desc-preproc_bold.nii.gz')   % also the 4D data check
 if ~exist(outDir, 'dir'), mkdir(outDir); end
 app = SeeCAT();
 for name = {'Preprocessing', 'fMRIPrep denoising', 'Seed FC', 'Degree', 'Statistics', 'DICOM to BIDS'}
@@ -29,6 +30,17 @@ for layout = {'single', 'mosaic'}
 end
 fprintf('viewer ok\n');
 delete(v.fig);
+if nargin > 2
+    v = seecat.viewer(series);                       % opens on the Time series tab
+    v.setFrame(10);
+    v.play(); pause(2); v.play();
+    exportapp(v.fig, fullfile(outDir, 'viewer_timeseries.png'));
+    v.fig.CloseRequestFcn(v.fig, []);
+    app.select('Data check');
+    drawnow; pause(1);
+    exportapp(app.fig, fullfile(outDir, 'launcher_Data_check.png'));
+    fprintf('4D check ok\n');
+end
 delete(app.fig);
 end
 

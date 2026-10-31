@@ -5,12 +5,19 @@ classdef Model < handle
 %   m.setThreshold(1, struct('mode', 'p', 'value', 0.001, 'correction', 'cluster_fwe'));
 %   rgb = m.slice('axial');                       % RGB image at the cursor
 %   T = m.clusters(1);                            % SPM-style table with atlas labels
+%   m.addLayer('..._desc-preproc_bold.nii.gz');   % a 4D series, drawn as the image
+%   m.setFrame(2, 40); ts = m.timeSeries(2);      % volume 40; the cursor voxel's signal
 %
 % Display grid: axis-aligned, at the underlay's voxel size, so slices are
 % plain array cuts (neurological or radiological). Statistics are always
 % computed on each layer's own grid with seecat.stat.inference, so the
 % viewer and the stat pipeline agree; the result is only sampled onto the
 % display grid for drawing.
+%
+% A 4D image without a statistic (a BOLD series) is a 'series' layer: it is
+% drawn in grey instead of the underlay, at its current frame, and has a
+% TR and the run's framewise displacement and flagged frames
+% (seecat.qc.motion) for the time-series view.
 
     properties
         cursor = [0 0 0]                 % mm
@@ -18,7 +25,8 @@ classdef Model < handle
         underlay = struct()              % name, file, img (display grid)
         layers = struct('name', {}, 'file', {}, 'data', {}, 'hdr', {}, 'stat', {}, ...
             'threshold', {}, 'colormap', {}, 'alpha', {}, 'visible', {}, 'frame', {}, ...
-            'shown', {}, 'index', {}, 'result', {}, 'range', {})
+            'shown', {}, 'index', {}, 'result', {}, 'range', {}, 'series', {}, 'tr', {}, ...
+            'motion', {}, 'global', {})
         grid = struct()                  % dim, mat (display grid, axis aligned)
         atlases = struct([])
     end
@@ -44,7 +52,8 @@ classdef Model < handle
             end
             [vol, V] = seecat.io.read_nii(f, 'Volumes', 1);
             m.grid = axisGrid(V(1));
-            m.underlay = struct('name', name, 'file', f, 'img', resample(vol, V(1), m.grid, 1));
+            img = resample(vol, V(1), m.grid, 1);
+            m.underlay = struct('name', name, 'file', f, 'img', img, 'lim', robustLimits(img));
             for i = 1:numel(m.layers)
                 m.layers(i).index = nearestIndex(m.layers(i).hdr, m.grid);
                 m.refresh(i);
@@ -66,7 +75,7 @@ classdef Model < handle
             L.data = Y;
             L.hdr = hdr;
             L.stat = statInfo(file, hdr, Y(:, :, :, 1));
-            L.threshold = struct('mode', 'stat', 'value', defaultThreshold(L.stat, Y), 'sign', 'both', ...
+            L.threshold = struct('mode', 'stat', 'value', defaultThreshold(L.stat, Y(:, :, :, 1)), 'sign', 'both', ...
                 'k', 0, 'correction', 'none', 'alpha', 0.05, 'cdt_p', 0.001);
             L.colormap = 'auto';
             L.alpha = 1;
@@ -76,6 +85,15 @@ classdef Model < handle
             L.index = nearestIndex(hdr, m.grid);
             L.result = struct();
             L.range = [];
+            L.series = size(Y, 4) > 1 && isempty(L.stat.type);
+            L.tr = NaN;
+            L.motion = struct('file', '', 'fd', [], 'flagged', false(0, 1));
+            L.global = [];
+            if L.series
+                L.tr = seriesTR(file);
+                L.motion = seecat.qc.motion(file, size(Y, 4));
+                L.range = robustLimits(double(Y(:, :, :, 1)));
+            end
             m.layers(end+1) = L;
             i = numel(m.layers);
             m.refresh(i);
@@ -110,6 +128,11 @@ classdef Model < handle
             % Apply layer i's threshold on its own grid
             L = m.layers(i);
             y = double(L.data(:, :, :, L.frame));
+            if L.series                               % drawn as an image: nothing to threshold
+                m.layers(i).shown = zeros(size(y));
+                m.layers(i).result = struct('height', [], 'extent', 0, 'tables', {{}});
+                return
+            end
             t = L.threshold;
             s = L.stat;
             mask = y ~= 0 & isfinite(y);
@@ -173,6 +196,7 @@ classdef Model < handle
             L = m.layers(i);
             y = L.shown;
             T = table();
+            if L.series, return, end
             lab = label18(y ~= 0);
             n = max(lab(:));
             rows = {};
@@ -220,11 +244,40 @@ classdef Model < handle
             s = strjoin(parts, '; ');
         end
 
-        function ts = timeSeries(m, i, mm)
-            if nargin < 3, mm = m.cursor; end
+        function ts = timeSeries(m, i, mm, radius)
+            % Signal of layer i at MM (default the cursor): the voxel, the
+            % mean within RADIUS mm, or with RADIUS Inf the mean over the
+            % brain (voxels above 20% of the first volume's robust maximum).
+            % NaN outside the image.
+            if nargin < 3 || isempty(mm), mm = m.cursor; end
+            if nargin < 4, radius = 0; end
             L = m.layers(i);
+            nT = size(L.data, 4);
+            Y = reshape(L.data, [], nT);
+            if isinf(radius)
+                if isempty(L.global)
+                    y1 = L.data(:, :, :, 1);
+                    lim = robustLimits(double(y1));
+                    m.layers(i).global = double(mean(Y(y1(:) > 0.2 * lim(2), :), 1))';
+                end
+                ts = m.layers(i).global;
+                return
+            end
+            dim = size(L.data, 1:3);
             vox = round(L.hdr.mat \ [mm(:); 1]);
-            ts = squeeze(L.data(vox(1), vox(2), vox(3), :));
+            vox = vox(1:3)';
+            if any(vox < 1 | vox > dim)
+                ts = nan(nT, 1);
+                return
+            end
+            vs = sqrt(sum(L.hdr.mat(1:3, 1:3) .^ 2));
+            r = floor(radius ./ vs);
+            [a, b, c] = ndgrid(-r(1):r(1), -r(2):r(2), -r(3):r(3));
+            d = [a(:) b(:) c(:)];
+            d = d(sum((d .* vs) .^ 2, 2) <= radius ^ 2 + eps, :);
+            p = vox + d;
+            p = p(all(p >= 1 & p <= dim, 2), :);
+            ts = double(mean(Y(sub2ind(dim, p(:, 1), p(:, 2), p(:, 3)), :), 1))';
         end
 
         %% Images -------------------------------------------------------------
@@ -235,16 +288,23 @@ classdef Model < handle
             v = round(m.grid.mat \ [mm(:); 1]);
             v = max(1, min(v(1:3)', m.grid.dim));
             base = cut(m.underlay.img, view, v);
-            lim = robustLimits(m.underlay.img);
+            lim = m.underlay.lim;
             g = min(max((base - lim(1)) / max(diff(lim), eps), 0), 1);
             rgb = repmat(g, 1, 1, 3);
             for i = 1:numel(m.layers)
                 L = m.layers(i);
                 if ~L.visible || isempty(L.shown), continue, end
-                d = zeros(m.grid.dim);
-                ok = L.index > 0;
-                d(ok) = L.shown(L.index(ok));
-                s = cut(d, view, v);
+                ix = cut(L.index, view, v);           % only this slice of the display grid
+                ok = ix > 0;
+                s = zeros(size(ix));
+                if L.series                           % the series replaces the underlay
+                    y = L.data(:, :, :, L.frame);
+                    s(ok) = y(ix(ok));
+                    g = min(max((s - L.range(1)) / max(diff(L.range), eps), 0), 1);
+                    rgb = repmat(g, 1, 1, 3);
+                    continue
+                end
+                s(ok) = L.shown(ix(ok));
                 rgb = overlay(rgb, s, L);
             end
             [r, c] = cutPos(view, v, m.grid.dim);
@@ -319,6 +379,23 @@ function p = pick(d, n)
 p = fullfile(d, [n '.nii.gz']);
 if ~exist(p, 'file')
     p = fullfile(d, [n '.nii']);
+end
+end
+
+function tr = seriesTR(file)
+% Seconds between volumes: the JSON sidecar, else the NIfTI header
+tr = NaN;
+j = regexprep(file, '\.nii(\.gz)?$', '.json');
+if exist(j, 'file')
+    J = jsondecode(fileread(j));
+    if isfield(J, 'RepetitionTime')
+        tr = J.RepetitionTime;
+        return
+    end
+end
+try
+    tr = seecat.io.nii_info(file).tr;
+catch
 end
 end
 

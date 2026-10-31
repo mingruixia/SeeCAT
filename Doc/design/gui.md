@@ -41,7 +41,7 @@ Status: **accepted** (2026-10-31; G5 by data space, the others as recommended). 
 └─────────────────────────────────────────────────────────────────────────┘
 ```
 
-- Left: pipelines in workflow order, plus Viewer and QC reports.
+- Left: pipelines in workflow order, plus Viewer, Data check and QC reports.
 - Right: the pipeline's form, grouped in sections; advanced options hidden by
   default; every field shows the batch name and the validator's message as a
   tooltip; invalid fields are marked before Run (`seecat.check_config`).
@@ -97,6 +97,29 @@ share one style; all text is English; the main window carries a logo.
   the uihtml browser has no flex `gap`; read-only text areas are greyed;
   the child process writes its log in the system encoding.
 
+### 4D data check (added 2026-10-31)
+
+Requested after the restyle: scroll through a 4D fMRI series with a slider
+to check the data. Placed in two parts, so there is one viewer to maintain:
+
+- Viewer, drawer tab "Time series" next to "Clusters". A 4D image without
+  a statistic (a BOLD series) is a *series* layer: drawn in grey instead of
+  the underlay, at its current volume, with no threshold. The tab has Play,
+  a volume slider, the volume / time / FD read-out, and two plots sharing
+  the volume axis: the cursor's signal (voxel, 6 mm sphere or global mean)
+  and framewise displacement, with flagged frames shaded; a click on a plot
+  picks a volume; Export TSV saves the plotted series. FD and flags come
+  from the run's confounds table next to the image (`seecat.qc.motion`,
+  aligned at the end when non-steady-state volumes were dropped). A volume
+  step only replaces the pixels of the views (about 0.1 s in R2020b,
+  0.05 s in R2025a, on a 3 mm series over the 1 mm underlay).
+- Main window, Results › "Data check": a folder (BIDS dataset, SeeCAT or
+  fMRIPrep derivatives) and the series kind (preprocessed, denoised, raw,
+  all) give a table of runs with volumes, TR, mean and max FD and flagged
+  frames (`seecat.qc.runs`, headers only via `seecat.io.nii_info`); runs
+  with mean FD > 0.25 mm or > 20% flagged volumes are highlighted. "Open in
+  viewer" opens the run on the Time series tab; "QC report" opens its page.
+
 ## 3. Viewer (`seecat.view`)
 
 ```
@@ -115,7 +138,7 @@ share one style; all text is English; the main window carries a logo.
 
 - Layers: any number of overlays, each with colormap, threshold (statistic
   or p, positive/negative/both), minimum cluster size, transparency; 4D files
-  get a volume slider (time series of the voxel in a small plot).
+  get a volume slider and the Time series tab (see 4D data check above).
 - Statistic maps: df, FWHM and resels come from the JSON sidecar written by
   the stat pipeline, else from the 1.0 header string (`CAT{T_[df]}{dLh_…}`).
   p ↔ statistic conversion and corrections (voxel FWE, voxel FDR, cluster

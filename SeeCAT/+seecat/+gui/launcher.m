@@ -10,10 +10,11 @@ function app = launcher()
 
 T = seecat.gui.theme();
 pages = struct( ...
-    'name', {'DICOM to BIDS', 'Preprocessing', 'fMRIPrep denoising', 'Seed FC', 'Degree', 'Statistics', 'Viewer', 'QC reports'}, ...
-    'pipe', {'', 'prep', 'fmriprep', 'fc', 'degree', 'stat', '', ''}, ...
-    'icon', {'dicom', 'sliders', 'filter', 'target', 'network', 'stat', 'brain', 'report'}, ...
-    'group', {'PREPARE', 'PREPARE', 'PREPARE', 'ANALYSE', 'ANALYSE', 'ANALYSE', 'RESULTS', 'RESULTS'}, ...
+    'name', {'DICOM to BIDS', 'Preprocessing', 'fMRIPrep denoising', 'Seed FC', 'Degree', 'Statistics', 'Viewer', ...
+    'Data check', 'QC reports'}, ...
+    'pipe', {'', 'prep', 'fmriprep', 'fc', 'degree', 'stat', '', '', ''}, ...
+    'icon', {'dicom', 'sliders', 'filter', 'target', 'network', 'stat', 'brain', 'activity', 'report'}, ...
+    'group', {'PREPARE', 'PREPARE', 'PREPARE', 'ANALYSE', 'ANALYSE', 'ANALYSE', 'RESULTS', 'RESULTS', 'RESULTS'}, ...
     'about', {'Convert a DICOM folder to a BIDS dataset with dcm2niix.', ...
     'Slice timing, realignment, normalisation, denoising and smoothing of a raw BIDS dataset.', ...
     'Denoising and smoothing of fMRIPrep outputs, with the same steps as Preprocessing.', ...
@@ -21,6 +22,7 @@ pages = struct( ...
     'Voxel-wise degree centrality maps from denoised data.', ...
     'Group GLM with SPM inference: one- and two-sample tests, paired tests and regression.', ...
     'Slices, thresholds, clusters and surfaces of statistic maps.', ...
+    'Volumes, TR and head motion of every BOLD run; open a run to step through its volumes.', ...
     'The HTML quality-control reports of a derivatives folder.'});
 here = fileparts(fileparts(fileparts(mfilename('fullpath'))));   % SeeCAT/
 
@@ -107,7 +109,7 @@ summary.Layout.Column = 1;
 
 seecat.gui.segment([logTab, sumTab], [true false]);
 state = struct('page', 'Preprocessing', 'pipe', '', 'cfg', [], 'defaults', [], 'form', [], ...
-    'run', [], 'timer', [], 'help', '', 'started', [], 'units', 0, 'stale', 0);
+    'run', [], 'timer', [], 'help', '', 'started', [], 'units', 0, 'stale', 0, 'output', '');
 seecat.gui.style(fig);
 app.fig = fig;
 app.select = @(name) select(name);
@@ -188,6 +190,8 @@ show();
                 dicomPage();
             case 'Viewer'
                 viewerPage();
+            case 'Data check'
+                dataPage();
             case 'QC reports'
                 qcPage();
         end
@@ -372,6 +376,7 @@ show();
     function showSummary(txt)
         out = regexp(txt, 'Output: ([^\r\n]+)', 'tokens', 'once');
         if isempty(out), return, end
+        state.output = strtrim(out{1});              % offered by the Data check page
         d = dir(fullfile(strtrim(out{1}), 'reports', '*_summary.tsv'));
         if isempty(d), return, end
         [~, k] = max([d.datenum]);
@@ -492,6 +497,124 @@ show();
         seecat.viewer(fullfile(p, f));
     end
 
+    function dataPage()
+        g = uigridlayout(host, [1 1], 'Padding', [16 14 16 14], 'BackgroundColor', T.page);
+        cg = pageCard(g, 'Runs', {T.row, T.row, '1x', 18, 32});
+        uilabel(cg, 'Text', 'Folder', 'FontColor', T.text2);
+        ed = uieditfield(cg, 'text', 'Value', state.output, 'BackgroundColor', T.panel, 'FontColor', T.text, ...
+            'Tooltip', 'A BIDS dataset or a derivatives folder (SeeCAT or fMRIPrep)', 'ValueChangedFcn', @(~, ~) scan());
+        uibutton(cg, 'Text', '', 'Icon', seecat.gui.icon('folder'), 'BackgroundColor', T.panel, 'Tooltip', 'Browse', ...
+            'ButtonPushedFcn', @(~, ~) pickAndScan());
+        uilabel(cg, 'Text', 'Series', 'FontColor', T.text2);
+        sg2 = uigridlayout(cg, [1 3], 'ColumnWidth', {220, 90, '1x'}, 'Padding', [0 0 0 0], 'ColumnSpacing', 8, ...
+            'BackgroundColor', T.panel);
+        dd = uidropdown(sg2, 'Items', {'Preprocessed (desc-preproc)', 'Denoised (desc-denoised)', 'Raw (BIDS dataset)', ...
+            'All BOLD images'}, 'ItemsData', {'preproc', 'denoised', 'raw', 'all'}, 'BackgroundColor', T.panel, ...
+            'FontColor', T.text, 'ValueChangedFcn', @(~, ~) scan());
+        button(sg2, 'Scan', 'refresh', @(~, ~) scan());
+        found = uilabel(sg2, 'Text', '', 'FontColor', T.muted);
+        tb = uitable(cg, 'RowName', {}, 'CellSelectionCallback', @(~, e) pickRow(e));
+        tb.Layout.Row = 4;
+        tb.Layout.Column = [1 3];
+        note = uilabel(cg, 'Text', ['Highlighted: mean FD above 0.25 mm, or more than 20% of the volumes flagged ' ...
+            'for motion. FD and flags come from each run''s confounds table.'], 'FontColor', T.icon, ...
+            'FontSize', T.size.small);
+        note.Layout.Row = 5;
+        note.Layout.Column = [1 3];
+        bg = uigridlayout(cg, [1 3], 'ColumnWidth', {160, 130, '1x'}, 'Padding', [0 0 0 0], 'ColumnSpacing', 8, ...
+            'BackgroundColor', T.panel);
+        bg.Layout.Row = 6;
+        bg.Layout.Column = [1 3];
+        uibutton(bg, 'Text', 'Open in viewer', 'Icon', seecat.gui.icon('activity', '#FFFFFF'), 'FontWeight', 'bold', ...
+            'BackgroundColor', T.accent, 'FontColor', [1 1 1], 'Tooltip', 'Step through the volumes of the selected run', ...
+            'ButtonPushedFcn', @(~, ~) openRun());
+        button(bg, 'QC report', 'external', @(~, ~) openReport());
+        seecat.gui.style(fig);
+        R = table();
+        row = [];
+        if ~isempty(ed.Value)
+            drawnow;
+            scan();
+        end
+
+        function pickAndScan()
+            pick(ed, 'folder');
+            scan();
+        end
+        function scan()
+            R = table();
+            row = [];
+            tb.Data = table();
+            removeStyle(tb);
+            found.Text = '';
+            if isempty(ed.Value), return, end
+            d = uiprogressdlg(fig, 'Title', 'Data check', 'Message', 'Reading headers and confounds tables ...', ...
+                'Indeterminate', 'on');
+            try
+                R = seecat.qc.runs(ed.Value, dd.Value);
+            catch err
+                close(d);
+                uialert(fig, err.message, 'Data check');
+                return
+            end
+            close(d);
+            if isempty(R)
+                found.Text = 'No BOLD images of this kind in the folder';
+                return
+            end
+            pct = compose('%d (%.0f%%)', R.flagged, R.flagged_pct);
+            pct(isnan(R.flagged)) = {'–'};
+            run = regexprep(R.run, '_(space|res|den|desc)-[a-zA-Z0-9]+', '');   % the same for every row
+            tb.Data = table(run, R.volumes, num(R.tr, '%.3g'), num(R.mean_fd, '%.3f'), num(R.max_fd, '%.2f'), ...
+                cellstr(pct), 'VariableNames', {'Run', 'Volumes', 'TR (s)', 'Mean FD (mm)', 'Max FD (mm)', 'Flagged'});
+            tb.ColumnWidth = {'auto', 76, 70, 110, 110, 110};
+            if any(R.flag)
+                addStyle(tb, uistyle('BackgroundColor', [1 0.93 0.93], 'FontColor', T.failed), 'row', find(R.flag));
+            end
+            found.Text = sprintf('%d of %d highlighted', nnz(R.flag), height(R));
+        end
+        function pickRow(e)
+            if ~isempty(e.Indices)
+                row = e.Indices(1);
+            end
+        end
+        function ok = chosen()
+            if isempty(row) && height(R) == 1
+                row = 1;
+            end
+            ok = ~isempty(row);
+            if ~ok
+                uialert(fig, 'Select a run in the table first.', 'Data check', 'Icon', 'info');
+            end
+        end
+        function openRun()
+            if ~chosen(), return, end
+            d = uiprogressdlg(fig, 'Title', 'Data check', 'Message', ['Loading ' R.run{row} ' ...'], ...
+                'Indeterminate', 'on');
+            try
+                seecat.viewer(R.file{row});
+            catch err
+                uialert(fig, err.message, 'Open in viewer');
+            end
+            close(d);
+        end
+        function openReport()
+            if ~chosen(), return, end
+            id = regexprep(R.run{row}, '_(space|res|den|desc)-[a-zA-Z0-9]+', '');
+            sub = regexp(id, 'sub-([a-zA-Z0-9]+)', 'tokens', 'once');
+            f = '';
+            if ~isempty(sub)
+                f = fullfile(ed.Value, ['sub-' sub{1}], [id '_desc-qc_report.html']);
+            end
+            if exist(f, 'file')
+                web(f, '-browser');
+            else
+                uialert(fig, ['No QC report for this run. The Preprocessing and fMRIPrep denoising ' ...
+                    'pipelines write one per run.'], 'QC report', 'Icon', 'info');
+            end
+        end
+    end
+
     function qcPage()
         g = pageGrid(22 + T.row + 180 + 32 + 6 * 3 + 24);
         cg = pageCard(g, 'Reports', {T.row, 180, 32});
@@ -592,4 +715,10 @@ end
 
 function s = onOff(b)
 if b, s = 'on'; else, s = 'off'; end
+end
+
+function c = num(x, f)
+% Numbers as text for a table, '–' for NaN
+c = cellstr(compose(f, x));
+c(isnan(x)) = {'–'};
 end

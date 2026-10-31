@@ -3,6 +3,15 @@
 ## Unreleased: 2.0 development
 
 ### Added
+- **4D data check.** Viewer: a "Time series" drawer tab for 4D images —
+  Play, a volume slider, the cursor's signal (voxel, 6 mm sphere or global
+  mean) above framewise displacement with flagged frames shaded, click to
+  pick a volume, Export TSV; a BOLD series is drawn in grey instead of the
+  underlay. Main window: a "Data check" page listing every run's volumes,
+  TR, mean/max FD and flagged frames, highlighting high-motion runs, with
+  Open in viewer and QC report. New `seecat.qc.motion`, `seecat.qc.runs`,
+  `seecat.io.nii_info` (header only, also .nii.gz). Slices are now cut from
+  the layer index per view, which made every viewer redraw faster.
 - **Preprocessing pipeline** `seecat.prep` (`seecat.run(cfg)` with
   `cfg = seecat.config('prep')`): input copy with non-steady-state detection,
   slice timing from `SliceTiming` (multiband-ready), realign (estimate only; data

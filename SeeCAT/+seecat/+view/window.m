@@ -4,7 +4,10 @@ function app = window(m)
 %
 % Tool bar (layout, underlay, orientation, surface and export), the views
 % with a colour bar, a side column with Layers, Threshold and Go to cards,
-% and a cluster table at the bottom whose rows move the cursor. Layouts:
+% and a drawer at the bottom: the cluster table, whose rows move the
+% cursor, or the time series of a 4D layer (a slider and Play step through
+% the volumes; the plot shows the cursor's signal with the run's framewise
+% displacement and flagged frames, and a click picks a volume). Layouts:
 % Orthogonal (three views and the cursor read-out), Single (one large view
 % and three thumbnails) and Mosaic (slices of the chosen orientation).
 % All logic lives in the model; this file only draws and forwards user
@@ -18,7 +21,8 @@ fig = uifigure('Name', 'SeeCAT Viewer', 'Position', [70 60 1380 880], 'Color', T
 app.fig = fig;
 root = uigridlayout(fig, [3 1], 'RowHeight', {46, '1x', 31}, 'Padding', [0 0 0 0], ...
     'RowSpacing', 1, 'BackgroundColor', T.border);
-st = struct('layout', 'orthogonal', 'view', 'axial', 'clusters', table());
+st = struct('layout', 'orthogonal', 'view', 'axial', 'clusters', table(), 'clusterText', '', ...
+    'pane', 'clusters', 'seriesKey', [], 'mark', gobjects(0), 'timer', []);
 names = {'sagittal', 'coronal', 'axial'};
 
 % ---- tool bar ----
@@ -152,16 +156,37 @@ for k = 1:3
 end
 tool(g4, 'Peak', 'peak', @(~, ~) onPeak());
 
-% ---- cluster drawer ----
+% ---- drawer: clusters | time series ----
 drawer = uigridlayout(root, [2 1], 'RowHeight', {30, '1x'}, 'Padding', [0 0 0 0], 'RowSpacing', 0, ...
     'BackgroundColor', T.panel);
-dh = uigridlayout(drawer, [1 5], 'ColumnWidth', {30, 70, '1x', 110, 6}, 'Padding', [8 3 4 3], ...
-    'ColumnSpacing', 6, 'BackgroundColor', T.panel);
-app.fold = iconButton(dh, 'chevron-up', 'Show or hide the cluster table', @(~, ~) toggleDrawer());
-uilabel(dh, 'Text', 'Clusters', 'FontWeight', 'bold', 'FontColor', T.text);
+dh = uigridlayout(drawer, [1 6], 'ColumnWidth', {30, 76, 96, '1x', 110, 6}, 'Padding', [8 3 4 3], ...
+    'ColumnSpacing', 4, 'BackgroundColor', T.panel);
+app.fold = iconButton(dh, 'chevron-up', 'Show or hide the drawer', @(~, ~) toggleDrawer());
+app.paneB(1) = uibutton(dh, 'Text', 'Clusters', 'ButtonPushedFcn', @(~, ~) showPane('clusters'));
+app.paneB(2) = uibutton(dh, 'Text', 'Time series', 'ButtonPushedFcn', @(~, ~) showPane('series'));
 app.clText = uilabel(dh, 'Text', '', 'FontColor', T.muted);
 tool(dh, 'Export TSV', 'download', @(~, ~) saveTable());
-app.table = uitable(drawer, 'RowName', {}, 'CellSelectionCallback', @(~, e) goRow(e));
+dbody = uigridlayout(drawer, [1 1], 'Padding', [0 0 0 0], 'BackgroundColor', T.panel);
+app.table = uitable(dbody, 'RowName', {}, 'CellSelectionCallback', @(~, e) goRow(e));
+ser = uigridlayout(dbody, [3 1], 'RowHeight', {32, '1x', 96}, 'Padding', [12 2 14 4], 'RowSpacing', 0, ...
+    'BackgroundColor', T.panel, 'Visible', 'off');
+ser.Layout.Row = 1;
+ser.Layout.Column = 1;
+ctl = uigridlayout(ser, [1 4], 'ColumnWidth', {28, '1x', 330, 120}, 'Padding', [0 2 0 2], ...
+    'ColumnSpacing', 12, 'BackgroundColor', T.panel);
+app.playB = iconButton(ctl, 'play', 'Play the volumes', @(~, ~) togglePlay());
+app.slider = uislider(ctl, 'Limits', [1 2], 'Value', 1, 'MajorTicks', [], 'MinorTicks', [], ...
+    'ValueChangingFcn', @(~, e) onSlide(e.Value), 'ValueChangedFcn', @(s, ~) onSlide(s.Value));
+app.frameText = uilabel(ctl, 'Text', '', 'FontName', T.mono, 'FontSize', T.size.small, 'FontColor', T.text2);
+app.signal = uidropdown(ctl, 'Items', {'Voxel', 'Sphere 6 mm', 'Global mean'}, 'ItemsData', [0 6 Inf], ...
+    'Tooltip', 'Signal plotted: the cursor voxel, the mean within 6 mm of it, or the brain mean', ...
+    'BackgroundColor', T.panel, 'FontColor', T.text, 'ValueChangedFcn', @(~, ~) drawSeries(true));
+app.sax = plotAxes(ser, @(ax) onPlotClick(ax));
+app.fax = plotAxes(ser, @(ax) onPlotClick(ax));
+app.empty = uilabel(ser, 'Text', ['Open a 4D series (for example a *_desc-preproc_bold image) ' ...
+    'to step through its volumes.'], 'FontColor', T.muted, 'HorizontalAlignment', 'center');
+app.empty.Layout.Row = [2 3];
+fig.CloseRequestFcn = @(~, ~) closeWindow();
 
 seecat.gui.style(fig);
 for k = 1:7
@@ -169,10 +194,16 @@ for k = 1:7
 end
 app.setLayout = @setLayout;                   % for scripts and tests
 app.refresh = @showLayer;
+app.showPane = @showPane;
+app.setFrame = @(k) setFrame(seriesLayer(), k);
+app.play = @togglePlay;
+seecat.gui.segment(app.paneB, [true false]);
 refreshList(1);
 setLayout('orthogonal');
 seecat.gui.segment(ori, [~m.radiological, m.radiological]);
-if ~isempty(m.layers)
+if any([m.layers.series])
+    showPane('series');
+elseif ~isempty(m.layers)
     openDrawer(true);
 end
 
@@ -255,6 +286,16 @@ end
         app.talpha.Enable = onOff(canCorrect);
         app.tcdt.Enable = onOff(canCorrect);
         for h = app.tmode, h.Enable = onOff(hasStat); end
+        for h = [app.tvalue, app.tk, app.cmap, app.alpha, app.tsign]
+            h.Enable = onOff(~L.series);
+        end
+        if L.series
+            app.info.Text = sprintf('4D series in grey (volume %d of %d); see the Time series tab.', ...
+                L.frame, size(L.data, 4));
+            refreshClusters();
+            redraw();
+            return
+        end
         stat = 'No statistic: thresholded on values.';
         if hasStat
             stat = sprintf('%s map, df %s.', L.stat.type, strjoin(arrayfun(@(x) sprintf('%.4g', x), L.stat.df, 'UniformOutput', false), ', '));
@@ -310,10 +351,48 @@ end
     end
 
     function onFrame(k)
-        i = current();
+        setFrame(current(), k);
+    end
+
+    function setFrame(i, k)
+        % Show volume K of layer I (the spinner, slider, plot and Play)
         if isempty(i), return, end
-        m.setFrame(i, round(k));
-        showLayer();
+        k = max(1, min(size(m.layers(i).data, 4), round(k)));
+        m.setFrame(i, k);
+        if isequal(current(), i)
+            app.frame.Value = k;
+            if ~m.layers(i).series                % a 4D map: its thresholded result changes
+                showLayer();
+                return
+            end
+            app.info.Text = regexprep(app.info.Text, '\(volume \d+ of', sprintf('(volume %d of', k));
+        end
+        if m.layers(i).series                     % same cursor: only the pixels change
+            newPixels();
+            readOut();
+            colourBar();
+            drawSeries(false);
+        else
+            redraw();
+        end
+    end
+
+    function newPixels()
+        for k2 = 1:3
+            setPixels(app.ax.(names{k2}), m.slice(names{k2}));
+        end
+        if strcmp(st.layout, 'single')
+            setPixels(app.ax.main, m.slice(st.view));
+        elseif strcmp(st.layout, 'mosaic')
+            setPixels(app.ax.main, m.montage(st.view, 12, 4));
+        end
+    end
+
+    function setPixels(ax, rgb)
+        im = findobj(ax, 'Type', 'image');
+        if ~isempty(im)
+            im(1).CData = rgb;
+        end
     end
 
     function onAdd()
@@ -330,7 +409,11 @@ end
         end
         app.underlay.Value = m.underlay.name;
         refreshList(numel(m.layers));
-        openDrawer(true);
+        if m.layers(end).series
+            showPane('series');
+        else
+            openDrawer(true);
+        end
     end
 
     function onRemove()
@@ -430,7 +513,11 @@ end
         st.clusters = C;
         if isempty(C)
             app.table.Data = table();
-            app.clText.Text = 'No suprathreshold clusters';
+            st.clusterText = 'No suprathreshold clusters';
+            if ~isempty(i) && m.layers(i).series
+                st.clusterText = 'Clusters are listed for statistic maps';
+            end
+            drawerText();
             return
         end
         D = C;
@@ -441,7 +528,8 @@ end
         app.table.Data = D;
         app.table.ColumnWidth = {44, 70, 70, 70, 70, 70, max(200, fig.Position(3) - 420)};
         L = m.layers(i);
-        app.clText.Text = sprintf('%d cluster(s), %d voxels  ·  %s', height(C), sum(C.voxels), correctionText(L));
+        st.clusterText = sprintf('%d cluster(s), %d voxels  ·  %s', height(C), sum(C.voxels), correctionText(L));
+        drawerText();
     end
 
     function goRow(e)
@@ -453,11 +541,18 @@ end
     end
 
     function saveTable()
-        if isempty(st.clusters), return, end
-        [f, p] = uiputfile('*.tsv', 'Save cluster table', 'clusters.tsv');
+        if strcmp(st.pane, 'series')
+            R = seriesTable();
+            name = 'timeseries.tsv';
+        else
+            R = st.clusters;
+            name = 'clusters.tsv';
+        end
+        if isempty(R), return, end
+        [f, p] = uiputfile('*.tsv', 'Save table', name);
         figure(fig);
         if isequal(f, 0), return, end
-        seecat.io.write_tsv(st.clusters, fullfile(p, f));
+        seecat.io.write_tsv(R, fullfile(p, f));
     end
 
     function toggleDrawer()
@@ -466,12 +561,243 @@ end
 
     function openDrawer(on)
         if on
-            root.RowHeight{3} = 190;
+            root.RowHeight{3} = 190 + 110 * strcmp(st.pane, 'series');
             app.fold.Icon = seecat.gui.icon('chevron-down');
+            drawSeries(false);
         else
             root.RowHeight{3} = 31;
             app.fold.Icon = seecat.gui.icon('chevron-up');
         end
+    end
+
+    function showPane(name)
+        st.pane = name;
+        isC = strcmp(name, 'clusters');
+        seecat.gui.segment(app.paneB, [isC, ~isC]);
+        app.table.Visible = onOff(isC);
+        ser.Visible = onOff(~isC);
+        if isC
+            stopPlay();
+        end
+        openDrawer(true);
+        drawerText();
+    end
+
+    function drawerText()
+        if strcmp(st.pane, 'clusters')
+            app.clText.Text = st.clusterText;
+            return
+        end
+        i = seriesLayer();
+        if isempty(i)
+            app.clText.Text = '';
+            return
+        end
+        L = m.layers(i);
+        parts = {shortName(L.name), sprintf('%d volumes', size(L.data, 4))};
+        if isfinite(L.tr)
+            parts{end+1} = sprintf('TR %.3g s', L.tr);
+        end
+        if isempty(L.motion.file)
+            parts{end+1} = 'no confounds table found';
+        else
+            parts{end+1} = sprintf('mean FD %.2f mm', mean(L.motion.fd, 'omitnan'));
+            parts{end+1} = sprintf('%d flagged', nnz(L.motion.flagged));
+        end
+        app.clText.Text = strjoin(parts, '  ·  ');
+    end
+
+    % ---- time series ------------------------------------------------------
+    function i = seriesLayer()
+        % The selected layer if it is 4D, else the first 4D layer
+        i = current();
+        if ~isempty(i) && size(m.layers(i).data, 4) > 1, return, end
+        i = [];
+        if ~isempty(m.layers)
+            i = find(arrayfun(@(L) size(L.data, 4) > 1, m.layers), 1);
+        end
+    end
+
+    function drawSeries(force)
+        if ~strcmp(st.pane, 'series') || root.RowHeight{3} < 40, return, end
+        i = seriesLayer();
+        has = ~isempty(i);
+        app.empty.Visible = onOff(~has);
+        app.sax.Visible = onOff(has);
+        app.fax.Visible = onOff(has);
+        for h = [app.playB, app.slider, app.signal]
+            h.Enable = onOff(has);
+        end
+        if ~has
+            app.frameText.Text = '';
+            st.seriesKey = [];
+            cla(app.sax);
+            cla(app.fax);
+            stopPlay();
+            drawerText();
+            return
+        end
+        L = m.layers(i);
+        nT = size(L.data, 4);
+        key = {i, L.file, m.cursor, app.signal.Value};
+        if force || ~isequal(key, st.seriesKey)
+            st.seriesKey = key;
+            plotSeries(L, m.timeSeries(i, m.cursor, app.signal.Value));
+            app.slider.Limits = [1 nT];
+            drawerText();
+        end
+        k = L.frame;
+        for h = st.mark
+            if isvalid(h), h.XData = [k k]; end
+        end
+        if abs(app.slider.Value - k) >= 0.5
+            app.slider.Value = k;
+        end
+        txt = sprintf('vol %3d / %d', k, nT);
+        if isfinite(L.tr)
+            txt = [txt sprintf('  ·  %6.1f s', (k - 1) * L.tr)];
+        end
+        flagged = ~isempty(L.motion.file) && L.motion.flagged(k);
+        if ~isempty(L.motion.file)
+            fdk = sprintf('%.2f mm', L.motion.fd(k));
+            if isnan(L.motion.fd(k))
+                fdk = 'n/a';
+            end
+            txt = [txt '  ·  FD ' fdk];
+            if flagged
+                txt = [txt '  ·  flagged'];
+            end
+        end
+        app.frameText.Text = txt;
+        app.frameText.FontColor = T.text2;
+        if flagged
+            app.frameText.FontColor = T.failed;
+        end
+    end
+
+    function plotSeries(L, ts)
+        nT = numel(ts);
+        k = L.frame;
+        fl = L.motion.flagged;
+        ax = app.sax;
+        cla(ax);
+        lim = [min(ts) max(ts)];
+        if ~all(isfinite(lim))
+            lim = [0 1];
+        elseif diff(lim) == 0
+            lim = lim + [-1 1];
+        end
+        lim = lim + [-0.06 0.06] * diff(lim);
+        shade(ax, fl, lim);
+        line(ax, 1:nT, ts, 'Color', T.accent, 'LineWidth', 1.1, 'HitTest', 'off');
+        st.mark = line(ax, [k k], lim, 'Color', T.text, 'LineWidth', 1, 'HitTest', 'off');
+        ax.XLim = [0.5 nT + 0.5];
+        ax.YLim = lim;
+        ax.XTickLabel = {};
+        labels = {'voxel', '6 mm sphere', 'global mean'};
+        ylabel(ax, labels{find([0 6 Inf] == app.signal.Value, 1)});
+        ax = app.fax;
+        cla(ax);
+        ax.XLim = [0.5 nT + 0.5];
+        if isempty(L.motion.file)
+            ax.YLim = [0 1];
+            text(ax, nT / 2, 0.5, 'No confounds table next to this series, so no framewise displacement', ...
+                'HorizontalAlignment', 'center', 'Color', T.muted, 'FontSize', 10, 'FontName', T.font, 'HitTest', 'off');
+        else
+            fd = L.motion.fd;
+            hi = max([fd; 0.5], [], 'omitnan') * 1.1;
+            shade(ax, fl, [0 hi]);
+            line(ax, 1:nT, fd, 'Color', T.icon, 'LineWidth', 1, 'HitTest', 'off');
+            st.mark(2) = line(ax, [k k], [0 hi], 'Color', T.text, 'LineWidth', 1, 'HitTest', 'off');
+            ax.YLim = [0 hi];
+        end
+        ylabel(ax, 'FD (mm)');
+        xlabel(ax, 'volume');
+    end
+
+    function shade(ax, fl, lim)
+        % Flagged frames as light red bands
+        if ~any(fl), return, end
+        d = diff([0; fl(:); 0]);
+        a = find(d == 1) - 0.5;
+        b2 = find(d == -1) - 0.5;
+        X = [a b2 b2 a]';
+        Y = repmat([lim(1); lim(1); lim(2); lim(2)], 1, numel(a));
+        patch(ax, X, Y, T.failed, 'EdgeColor', 'none', 'FaceAlpha', 0.16, 'PickableParts', 'none');
+    end
+
+    function onPlotClick(ax)
+        setFrame(seriesLayer(), ax.CurrentPoint(1, 1));
+    end
+
+    function onSlide(v)
+        i = seriesLayer();
+        if ~isempty(i) && round(v) ~= m.layers(i).frame
+            setFrame(i, v);
+        end
+    end
+
+    function R = seriesTable()
+        R = table();
+        i = seriesLayer();
+        if isempty(i), return, end
+        L = m.layers(i);
+        n = size(L.data, 4);
+        fd = L.motion.fd;
+        fl = L.motion.flagged;
+        if isempty(L.motion.file)
+            fd = nan(n, 1);
+            fl = false(n, 1);
+        end
+        R = table((1:n)', (0:n - 1)' * L.tr, m.timeSeries(i, m.cursor, app.signal.Value), fd, double(fl), ...
+            'VariableNames', {'volume', 'onset', 'signal', 'framewise_displacement', 'flagged'});
+    end
+
+    function togglePlay()
+        if isempty(st.timer)
+            if isempty(seriesLayer()), return, end
+            st.timer = timer('ExecutionMode', 'fixedSpacing', 'Period', 0.1, 'BusyMode', 'drop', ...
+                'TimerFcn', @(~, ~) stepPlay(), 'StopFcn', @(t, ~) delete(t));
+            app.playB.Icon = seecat.gui.icon('pause');
+            app.playB.Tooltip = 'Pause';
+            start(st.timer);
+        else
+            stopPlay();
+        end
+    end
+
+    function stepPlay()
+        try
+            i = seriesLayer();
+            if ~isvalid(fig) || isempty(i)
+                stopPlay();
+                return
+            end
+            k = m.layers(i).frame + 1;
+            if k > size(m.layers(i).data, 4)
+                k = 1;
+            end
+            setFrame(i, k);
+            drawnow limitrate
+        catch
+            stopPlay();
+        end
+    end
+
+    function stopPlay()
+        if ~isempty(st.timer) && isvalid(st.timer)
+            stop(st.timer);                       % its StopFcn deletes it
+        end
+        st.timer = [];
+        if isvalid(app.playB)
+            app.playB.Icon = seecat.gui.icon('play');
+            app.playB.Tooltip = 'Play the volumes';
+        end
+    end
+
+    function closeWindow()
+        stopPlay();
+        delete(fig);
     end
 
     % ---- surface and export -----------------------------------------------
@@ -537,6 +863,7 @@ end
         end
         readOut();
         colourBar();
+        drawSeries(false);
     end
 
     function drawView(ax, v, thumb)
@@ -582,6 +909,9 @@ end
             L = m.layers(i);
             s = L.stat;
             lines{3} = sprintf('value  %.3f', vals(i));
+            if size(L.data, 4) > 1
+                lines{4} = sprintf('volume %d / %d', L.frame, size(L.data, 4));
+            end
             if ~isempty(s.type) && isfinite(vals(i))
                 lines{4} = sprintf('p      %s (1-sided)', pText(vals(i), s));
             end
@@ -636,6 +966,14 @@ end
         end
         L = m.layers(i);
         app.cbImg.Visible = 'on';
+        if L.series
+            t = linspace(0, 1, 128)';
+            app.cbImg.ImageSource = repmat(reshape(repmat(t, 1, 3), 1, [], 3), 8, 1, 1);
+            app.cbLo.Text = sprintf('%.4g', L.range(1));
+            app.cbHi.Text = sprintf('%.4g', L.range(2));
+            app.cbText.Text = sprintf('volume %d / %d', L.frame, size(L.data, 4));
+            return
+        end
         hasNeg = any(L.shown(:) < 0);
         hasPos = any(L.shown(:) > 0);
         app.cbImg.ImageSource = colourBarImage(L, hasPos, hasNeg);
@@ -661,6 +999,16 @@ T = seecat.gui.theme();
 ax = uiaxes(parent, 'Color', T.canvas, 'XColor', 'none', 'YColor', 'none', 'Toolbar', [], ...
     'BackgroundColor', T.canvas);
 disableDefaultInteractivity(ax);
+end
+
+function ax = plotAxes(parent, onClick)
+% A small white plot for the time-series pane; a click calls ONCLICK(ax)
+T = seecat.gui.theme();
+ax = uiaxes(parent, 'Color', T.panel, 'BackgroundColor', T.panel, 'XColor', T.icon, 'YColor', T.icon, ...
+    'FontSize', 10, 'FontName', T.font, 'Box', 'off', 'TickDir', 'out', 'YGrid', 'on', ...
+    'GridColor', T.border, 'GridAlpha', 1, 'Toolbar', []);
+disableDefaultInteractivity(ax);
+ax.ButtonDownFcn = @(a, ~) onClick(a);
 end
 
 function h = caption(parent, text, colour)
