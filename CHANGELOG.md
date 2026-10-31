@@ -196,6 +196,16 @@
   - Config: selector structs with free fields (e.g. `stat.maps`) are allowed.
   - `tests/unit/test_stat.m` (6 tests).
 
+- QC report (`seecat.qc.run_report`, `seecat.qc.group_report`; design 5.7):
+  per-run HTML pages and a dataset page for prep and fmriprep, drawn without
+  MATLAB graphics. `seecat.run` calls an optional `seecat.<pipeline>.finish`
+  after all units. On ds000030 sub-11061: r(FD, DVARS) 0.79 before and −0.05
+  after denoising (kept frames), DVARS median 2.1 % → 0.51 %.
+- Step-level resume now includes the step's source code in its key: after an
+  update, a changed step runs again instead of reusing a result made by the
+  old code (found when a confounds step from before the shared-step refactor
+  was reused and the outputs step failed).
+
 ### Known issues
 
 ## Unreleased: phase 0 fixes on top of 1.0 beta

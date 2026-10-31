@@ -80,4 +80,19 @@ ctx = step_outputs(ctx, out, log);
 
 result = ctx.qc;
 result.normalise_method = method;
+% QC page; a failure here is logged, the derivatives are already written
+f = ctx.files;
+R = struct('id', unit.id, 'sub', unit.sub, 'output_dir', cfg.output_dir, 'work_dir', ctx.work_dir, ...
+    'manifest', unit.manifest, 'pipeline', 'prep', 'tr', ctx.tr, 'bold', f.wbold, 'mask', f.mask_brain, ...
+    'wm', f.mask_wm, 'csf', f.mask_csf, 'tissue', {{f.wc1, f.wc2, f.wc3}}, 'confounds', f.confounds, ...
+    'fd_threshold', cfg.censor.fd_threshold, 'summary', result);
+if isfield(f, 'denoised')
+    R.denoised = f.denoised;
+end
+try
+    M = seecat.qc.run_report(R);
+    result.tsnr_median = M.tsnr_median;
+catch err
+    log('QC report failed: %s', err.message);
+end
 end

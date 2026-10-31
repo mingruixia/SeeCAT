@@ -13,6 +13,8 @@ function summary = run(cfg)
 %      continue.
 %   4. Writes, under <output_dir>/logs: the config, a run log and one log
 %      per unit; and <output_dir>/reports/<run>_summary.tsv.
+%   5. Calls seecat.<pipeline>.finish(cfg, summary, log) when the pipeline
+%      has one (dataset-level outputs, e.g. the group QC page).
 %
 % A unit that finished before with the same options (all fields except
 % n_workers, overwrite and keep_work) is skipped unless cfg.overwrite is
@@ -65,6 +67,14 @@ for i = 1:n
         log('%s: FAILED: %s', units(i).id, message{i});
     else
         log('%s: %s', units(i).id, status{i});
+    end
+end
+% Optional dataset-level step of the pipeline (e.g. the group QC page)
+if ~isempty(which(['seecat.' p '.finish']))
+    try
+        feval(['seecat.' p '.finish'], cfg, summary, log);
+    catch err
+        log('finish step failed: %s', err.message);
     end
 end
 log('Done: %d ok, %d skipped, %d failed. Logs in %s', nnz(strcmp(status, 'ok')), ...

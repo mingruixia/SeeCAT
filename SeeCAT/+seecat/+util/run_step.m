@@ -8,7 +8,8 @@ function ctx = run_step(ctx, name, fn, opt, log)
 %
 % After a successful step, the fields the step added or changed are saved
 % to <work_dir>/<name>.done.mat with a key made from NAME, OPT, the whole
-% ctx before the step, and the sizes and dates of the files in ctx.files.
+% ctx before the step, the sizes and dates of the files in ctx.files, and
+% the source code of FN (so a changed step runs again after an update).
 % The step is skipped when the key matches and every file it produced
 % exists; its saved changes are then applied to ctx. A changed option, a
 % different ctx or a re-made input file therefore re-runs the step and,
@@ -21,7 +22,7 @@ if nargin < 5 || isempty(log)
     log = @(varargin) [];
 end
 done = fullfile(ctx.work_dir, [name '.done.mat']);
-key = seecat.util.hash({name, opt, ctx, fileSignature(ctx.files)});
+key = seecat.util.hash({name, opt, ctx, fileSignature(ctx.files), codeSignature(fn)});
 
 if exist(done, 'file')
     s = load(done);
@@ -106,4 +107,13 @@ elseif isstruct(x)
     end
 end
 p = p(:);
+end
+
+function sig = codeSignature(fn)
+% Hash of the step function's source file ('' for anonymous functions)
+sig = '';
+info = functions(fn);
+if isfield(info, 'file') && ~isempty(info.file) && exist(info.file, 'file')
+    sig = seecat.util.hash(fileread(info.file));
+end
 end

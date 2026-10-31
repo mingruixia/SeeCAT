@@ -82,7 +82,10 @@ See `CHANGELOG.md`.
         with covariate, paired, ANOVA, regression with covariate, within-subject
         ANOVA with non-sphericity) and against 1.0's T map.
   - [ ] DPABI V9 cross-check (needs a DPABI installation; not a gate).
-- [ ] Basic QC report (head motion, FD, registration snapshots) as HTML.
+- [x] QC report as HTML: per run (motion, FD with censored frames, DVARS and
+      FD–DVARS before/after denoising, carpet plots, registration and nuisance
+      mask snapshots) and per dataset (`reports/<pipeline>_qc.html`), for prep
+      and fmriprep.
 
 ## Weeks 7–8 (12/07 – 12/18): GUI and viewer
 

@@ -124,6 +124,31 @@ tc.verifyError(@() seecat.util.record_output(fullfile(cfg.output_dir, 'm.txt'), 
     fullfile(cfg.output_dir, '..', 'elsewhere.txt')), 'SeeCAT:output');
 end
 
+function testChangedStepCodeRunsAgain(tc)
+d = tempname;
+mkdir(d);
+c = onCleanup(@() rmdir(d, 's'));
+addpath(d);
+p = onCleanup(@() rmpath(d));
+writeStep(d, 1);
+ctx = struct('work_dir', fullfile(d, 'work'), 'files', struct());
+ctx = seecat.util.run_step(ctx, 'tmpstep', @tmp_step_fn, struct());
+tc.verifyEqual(ctx.value, 1);
+ctx2 = seecat.util.run_step(rmfield(ctx, 'value'), 'tmpstep', @tmp_step_fn, struct());
+tc.verifyEqual(ctx2.value, 1);                       % skipped: same code
+writeStep(d, 2);                                     % the step's code changes
+ctx3 = seecat.util.run_step(rmfield(ctx, 'value'), 'tmpstep', @tmp_step_fn, struct());
+tc.verifyEqual(ctx3.value, 2);
+end
+
+function writeStep(d, v)
+fid = fopen(fullfile(d, 'tmp_step_fn.m'), 'w');
+fprintf(fid, 'function ctx = tmp_step_fn(ctx, ~, ~)\nctx.value = %d;\nend\n', v);
+fclose(fid);
+clear tmp_step_fn
+rehash
+end
+
 function testDerivName(tc)
 src = 'D:/bids/sub-01/ses-2/func/sub-01_ses-2_task-rest_acq-mb3_run-1_bold.nii.gz';
 r = seecat.bids.deriv_name(src, 'desc', 'preproc', 'space', 'IXI549Space', 'res', '3');

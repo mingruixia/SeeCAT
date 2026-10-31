@@ -29,6 +29,19 @@ ctx = step_outputs(ctx, struct('output_dir', cfg.output_dir, 'fmriprep_dir', cfg
     'denoise', cfg.denoise, 'censor', cfg.censor, 'smooth', cfg.smooth, 'manifest', unit.manifest, ...
     'meta', unit.meta), log);
 result = ctx.qc;
+R = struct('id', unit.id, 'sub', unit.sub, 'output_dir', cfg.output_dir, 'work_dir', ctx.work_dir, ...
+    'manifest', unit.manifest, 'pipeline', 'fmriprep', 'tr', ctx.tr, 'bold', ctx.files.wbold, ...
+    'first_frame', ctx.first_frame, 'mask', ctx.files.mask_brain, 'confounds', ctx.files.confounds, ...
+    'fd_threshold', cfg.censor.fd_threshold, 'summary', result);
+if isfield(ctx.files, 'denoised')
+    R.denoised = ctx.files.denoised;
+end
+try
+    M = seecat.qc.run_report(R);
+    result.tsnr_median = M.tsnr_median;
+catch err
+    log('QC report failed: %s', err.message);
+end
 end
 
 function ctx = step_confounds(ctx, opt, log)

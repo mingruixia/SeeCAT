@@ -234,6 +234,22 @@ table; frames with `censor = 1` are dropped (D3).
 - The correlation matrix is computed in blocks of 1000 voxels (memory
   block x V); every map comes from the same pass.
 
+### 5.7 QC report
+
+Per run (prep and fmriprep): `sub-<sub>/<run>_desc-qc_report.html`, figures in
+`sub-<sub>/figures/`, metrics in `<run>_desc-qc_metrics.json`: run summary,
+FD (threshold, censored frames shaded), translations and rotations, DVARS
+(% of the median voxel mean) before and after denoising with the FD–DVARS
+correlation (after: kept frames only), carpet plots before/after (Power 2017;
+GM/WM/CSF order when tissue maps exist; censored frames tinted), mean BOLD
+with template GM and brain-mask outlines, and the WM/CSF nuisance masks.
+Per dataset: `reports/<pipeline>_qc.html` and `.tsv` (one row per run;
+flags: mean FD > 0.25 mm, too little data; failed units listed), written by
+the pipeline's `finish` hook, which `seecat.run` calls after all units.
+Figures are drawn without MATLAB graphics (imwrite, inline SVG), so they work
+headless and on parallel workers. A failing report is logged; it does not
+fail the unit.
+
 ## 6. Output layout (BIDS derivatives)
 
 Space label for SPM's TPM: `IXI549Space` (BIDS template identifier for SPM12).
