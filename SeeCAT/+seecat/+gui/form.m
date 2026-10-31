@@ -47,6 +47,9 @@ for s = 1:numel(secs)
 end
 g.RowHeight = num2cell(heights);
 total = pad(2) + pad(4) + sum(heights) + g.RowSpacing * (numel(heights) - 1);
+if isprop(parent, 'AutoResizeChildren')         % R2025a: otherwise SizeChangedFcn never runs
+    parent.AutoResizeChildren = 'off';
+end
 parent.SizeChangedFcn = @(~, ~) fit();
 drawnow;                                          % the panel gets its size from the layout
 fit();

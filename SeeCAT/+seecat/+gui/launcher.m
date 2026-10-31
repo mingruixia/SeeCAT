@@ -97,7 +97,7 @@ logTab = uibutton(dh, 'Text', 'Log', 'ButtonPushedFcn', @(~, ~) showPane('log'))
 sumTab = uibutton(dh, 'Text', 'Summary', 'ButtonPushedFcn', @(~, ~) showPane('summary'));
 uilabel(dh, 'Text', '');
 uibutton(dh, 'Text', '', 'Icon', seecat.gui.icon('copy'), 'BackgroundColor', T.panel, ...
-    'Tooltip', 'Copy the log', 'ButtonPushedFcn', @(~, ~) clipboard('copy', strjoin(logBox.Value, newline)));
+    'Tooltip', 'Copy the log', 'ButtonPushedFcn', @(~, ~) copyLog());
 pane = uigridlayout(drawer, [1 1], 'Padding', [0 0 0 0], 'BackgroundColor', T.logBg);
 logBox = uitextarea(pane, 'FontName', T.mono, 'FontSize', T.size.small, ...   % editable: R2020b greys out read-only text areas
     'BackgroundColor', T.logBg, 'FontColor', T.logText, 'Value', {''});
@@ -107,7 +107,7 @@ summary.Layout.Column = 1;
 
 seecat.gui.segment([logTab, sumTab], [true false]);
 state = struct('page', 'Preprocessing', 'pipe', '', 'cfg', [], 'defaults', [], 'form', [], ...
-    'run', [], 'timer', [], 'help', '', 'started', [], 'units', 0);
+    'run', [], 'timer', [], 'help', '', 'started', [], 'units', 0, 'stale', 0);
 seecat.gui.style(fig);
 app.fig = fig;
 app.select = @(name) select(name);
@@ -299,6 +299,7 @@ show();
         state.run = seecat.gui.runner(cfg);
         state.started = tic;
         state.units = 0;
+        state.stale = 0;
         setStatus('Running', T.running, 0, 0, 0);
         runB.Enable = 'off';
         stopB.Enable = 'on';
@@ -315,7 +316,10 @@ show();
         t = state.run.read();
         if ~isempty(t)
             lines = splitlines(strtrim(t));
-            logBox.Value = [logBox.Value; lines(~cellfun(@isempty, lines))];
+            stale = staleFolder(lines);           % MATLAB's start-up warnings about the saved path
+            state.stale = state.stale + nnz(stale);
+            lines = lines(~stale & ~cellfun(@isempty, lines));
+            logBox.Value = [logBox.Value; lines];
             scroll(logBox, 'bottom');
         end
         [n, done, failed] = progress(logBox.Value);
@@ -335,6 +339,11 @@ show();
             setStatus(sprintf('Finished, %d failed', failed), T.failed, n, n, failed);
         else
             setStatus(sprintf('Stopped (exit %d)', code), T.failed, n, done, failed);
+        end
+        if state.stale > 0
+            logBox.Value{end+1} = sprintf(['Note: MATLAB''s saved path lists %d folder(s) that no longer exist; ' ...
+                'MATLAB warns about them at every start. Remove them in pathtool and save the path.'], state.stale);
+            scroll(logBox, 'bottom');
         end
         showSummary(strjoin(logBox.Value, newline));
     end
@@ -387,6 +396,10 @@ show();
             main.RowHeight{3} = 31;
             fold.Icon = seecat.gui.icon('chevron-up');
         end
+    end
+
+    function copyLog()
+        clipboard('copy', strjoin(logBox.Value, newline));
     end
 
     function showPane(which_)
@@ -562,6 +575,12 @@ stamp = '\d{4}-\d\d-\d\d \d\d:\d\d:\d\d  ';
 ok = numel(regexp(txt, ['^' stamp '\[[^\]]+\] finished (\(|on )'], 'start', 'lineanchors'));   % '[unit] finished ...'
 failed = numel(regexp(txt, ['^' stamp '\[[^\]]+\] FAILED: '], 'start', 'lineanchors'));
 done = min(n, ok + failed);
+end
+
+function tf = staleFolder(lines)
+% Lines of MATLAB's warning that a folder on the saved path does not exist
+% (English and Chinese MATLAB), including the indented "In ..." trace lines
+tf = contains(lines, {'nonexistent or not a directory', '名称不存在或不是目录'});
 end
 
 function v = getPath(s, p)
