@@ -1,6 +1,6 @@
 # SeeCAT 2.0 — GUI, viewer and BrainNet hook
 
-Status: **draft for review** (2026-10-31). Roadmap weeks 7–8. Replaces the
+Status: **accepted** (2026-10-31; G5 by data space, the others as recommended). Roadmap weeks 7–8. Replaces the
 1.0 GUIDE windows (`SeeCAT.m`, `PrepfMRI/`, `FuncConnect/`, `VoxDeg/`,
 `Stat/`, `Visual/`, `Utilities/SeeCAT_Calculator`) and `sc_check_dpabi.m`.
 
@@ -157,7 +157,7 @@ files and the unused underlays (`ch2bet`, 2009c face mask) in `templates/`. `tes
   runs a small pipeline from the GUI, takes screenshots; run by hand on a
   desktop session, not in `-batch`.
 
-## 7. Decisions to make
+## 7. Decisions (accepted 2026-10-31)
 
 | # | question | recommendation | alternative |
 |---|---|---|---|
