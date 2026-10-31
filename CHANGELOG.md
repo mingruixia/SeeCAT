@@ -163,6 +163,32 @@
   - `tests/unit/test_conn.m` (4 tests; degree against a brute-force loop over
     signs, metrics, local exclusion and distance bins).
 
+- `stat` pipeline (`seecat.config('stat')`; Doc/design/stat.md): designs
+  one_sample, two_sample, paired, anova1, anova1_rm, regression (all
+  regressors in one model, S8) and custom (design TSV); covariates from
+  participants.tsv (numeric centred, text as centred dummies); image
+  covariates fitted voxel-wise; ReML non-sphericity (default for anova1_rm,
+  `variance = 'unequal'` for the others); inference cluster FWE (CDT p 0.001),
+  voxel FWE and voxel FDR, T contrasts at alpha/2 when two-tailed; outputs
+  under `group/<name>/` (t/F, Z, −log10 p, effect, thresholded maps, cluster
+  index, cluster tables, design.tsv, report.json) with JSON metadata and the
+  1.0 header string. New code: `seecat.stat.{glm, design, reml, smoothness,
+  inference}`; RFT p-values from SPM's functions (S1).
+  - Against SPM (ds000030 PCC zFC, CONTROL 5 vs SCHZ 4 with age;
+    `tests/validation/compare_stat_spm.m`): same 45,763 mask voxels, T within
+    8e-7 (float32), betas 5e-8, df equal, FWHM and resels equal to 8 digits,
+    height threshold equal, all 329 rows of SPM's results table equal (peak T,
+    Z, p FWE, coordinates, cluster sizes, cluster p).
+  - Within-subject ANOVA with dependence and unequal variance
+    (`tests/validation/compare_reml_spm.m`): same 1,562 first-pass voxels,
+    covariance V within 5e-12, df equal, F within 3e-7, FWHM equal.
+  - 1.0's `T2_zFCSeed01_CONvsSCHZ` (10 subjects, same mask): T equal at all
+    67,541 voxels (9.5e-7). Smoothness differs (FWHM ~12.0 vs 10.6 mm):
+    1.0 used FSL smoothest's estimator, 2.0 SPM's, so RFT thresholds differ
+    from 1.0.
+  - Config: selector structs with free fields (e.g. `stat.maps`) are allowed.
+  - `tests/unit/test_stat.m` (6 tests).
+
 ### Known issues
 
 ## Unreleased: phase 0 fixes on top of 1.0 beta

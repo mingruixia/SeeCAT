@@ -1,6 +1,6 @@
 # SeeCAT 2.0 — group statistics (`stat` pipeline)
 
-Status: **draft for review** (2026-10-31). Roadmap weeks 5–6. Replaces the
+Status: **accepted** (2026-10-31; S1–S5 and S8 as recommended, S6 and S7 as chosen). Roadmap weeks 5–6. Replaces the
 1.0 Stat module and the GRF/FDR/AlphaSim tools of the 1.0 viewer, with no
 DPABI-derived code.
 
@@ -201,7 +201,7 @@ Test data: ds000030 zFC (PCC), CONTROL 5 vs SCHZ 4 (sub-50052 has no
 derivative), age and gender covariates; ds002785 one-sample on 5 subjects;
 synthetic data with known effects for the unit tests.
 
-## 11. Decisions to make
+## 11. Decisions (accepted 2026-10-31)
 
 | # | question | recommendation | alternative |
 |---|---|---|---|
@@ -212,7 +212,7 @@ synthetic data with known effects for the unit tests.
 | S5 | covariate coding | numeric centred, text → centred dummies | uncentred (1.0) |
 | S6 | repeated measures | **decided:** SPM-style ReML non-sphericity (section 5) | — |
 | S7 | outputs | **decided:** t/F + Z + −log10 p + effect; JSON metadata **and** the 1.0 header string (section 8) | — |
-| S8 | `regression` with several regressors | **recommended:** one model with all regressors (partial effects, one family of tests; standard in SPM/FSL); VIF reported. A marginal test = an analysis with that regressor alone | one model per regressor (1.0): confounded effects when regressors correlate, and the extra models are not corrected for |
+| S8 | `regression` with several regressors | **decided:** one model with all regressors (partial effects, one family of tests; standard in SPM/FSL); VIF reported. A marginal test = an analysis with that regressor alone | one model per regressor (1.0): confounded effects when regressors correlate, and the extra models are not corrected for |
 
 ## 12. Differences users will see from 1.0
 

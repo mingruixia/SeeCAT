@@ -70,12 +70,17 @@ See `CHANGELOG.md`.
       SeeCAT derivatives. Degree equals SeeCAT 1.0 on the legacy baseline input
       (float32 precision) and takes 35 s instead of ~20 min per subject; all 9
       ds000030 subjects in 2 min on 4 workers.
-- [ ] Rewrite Stat with no DPABI-derived code:
-  - [ ] QR-based GLM with T and F contrasts.
-  - [ ] Own FWHM (smoothness) estimation from residuals.
-  - [ ] Own voxel- and cluster-level GRF, and FDR.
-  - [ ] Drop AlphaSim.
-  - [ ] Validate against SPM; DPABI V9 as an external cross-check.
+- [x] Rewrite Stat with no DPABI-derived code (`seecat.config('stat')`,
+      Doc/design/stat.md, accepted 2026-10-31):
+  - [x] QR-based GLM with T and F contrasts, image covariates, ReML
+        non-sphericity.
+  - [x] Own FWHM (smoothness) estimation from residuals (= spm_est_smoothness).
+  - [x] Voxel- and cluster-level RFT (SPM's spm_P / spm_uc, S1), and FDR.
+  - [x] AlphaSim not offered by the new pipeline (the legacy viewer's AlphaSim
+        goes with Visual/ in weeks 7–8).
+  - [x] Validated against SPM (two-sample with covariate; within-subject ANOVA
+        with non-sphericity) and against 1.0's T map.
+  - [ ] DPABI V9 cross-check (needs a DPABI installation; not a gate).
 - [ ] Basic QC report (head motion, FD, registration snapshots) as HTML.
 
 ## Weeks 7–8 (12/07 – 12/18): GUI and viewer
