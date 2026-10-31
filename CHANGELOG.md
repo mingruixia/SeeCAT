@@ -108,6 +108,19 @@
   Derivatives written before this change have no manifest and stay until
   removed by hand.
 
+- `seecat.bids.from_dicom`: DICOM → BIDS with dcm2niix (anonymised sidecars) and
+  naming rules (`seecat.bids.dicom_rules`; JSON file or struct; default rules
+  for 3D T1w and resting BOLD only). Handles runs (several series, one name;
+  ordered by study time and series number, so two studies in one folder do
+  not collide), multi-echo, TaskName, dataset_description.json,
+  participants.tsv and a per-subject report. `seecat.util.find_dcm2niix`
+  (argument, SEECAT_DCM2NIIX, bundled copy, PATH; v1.0.20220720 or later).
+  Tested on the dcm2niix QA data: 47 Siemens images (incl. multiband with
+  SliceTiming) and Philips EPI (reported as having no SliceTiming) equal the
+  reference outputs in data, affine and every sidecar field except
+  WipMemBlock, which dcm2niix v1.0.20260724 itself writes differently.
+  `tests/unit/test_dicom.m` (6 tests; skipped without dcm2niix or the data).
+
 ### Known issues
 
 ## Unreleased: phase 0 fixes on top of 1.0 beta

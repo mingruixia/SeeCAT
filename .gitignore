@@ -8,3 +8,6 @@
 # OS
 .DS_Store
 Thumbs.db
+
+# dcm2niix binaries: added by the release script, not kept in git
+external/dcm2niix/*/

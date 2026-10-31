@@ -116,7 +116,7 @@ Common fields:
 
 | step | default | notes |
 |---|---|---|
-| DICOM → BIDS | off (separate tool) | `seecat.bids.from_dicom(dicom_dir, bids_dir, heuristic)` with dcm2niix; writes sidecars |
+| DICOM → BIDS | off (separate tool) | `seecat.bids.from_dicom(dicom_dir, bids_dir, 'sub', ..., 'rules', ...)`: dcm2niix (bundled in releases, v1.0.20260724; anonymised sidecars), then each series named by the first matching rule (`seecat.bids.dicom_rules`: sidecar field → regex; default rules know only 3D T1w and resting BOLD; DERIVED/MOCO/phase excluded). Same name → run-N by study time and series number; multi-echo → echo-N; BOLD gets TaskName; unmatched series reported in `code/seecat/from_dicom_*.tsv` |
 | dummy scans | `auto` | leading non-steady-state volumes: mean in-brain intensity a robust outlier (z > 3.5 vs median/MAD, first 20 frames). `NumberOfVolumesDiscardedBy*` describe volumes already removed, so they are not used. A number overrides |
 | slice timing | on, `auto` | uses `SliceTiming` (seconds) from JSON, so multiband works; reference = middle of TR. Off if no SliceTiming and none given |
 | realign | on | SPM estimate+reslice, register to mean; writes motion parameters |

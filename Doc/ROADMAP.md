@@ -38,7 +38,10 @@ See `CHANGELOG.md`.
 - [x] `seecat.run` entry point: units, logging, per-unit errors, resume.
 - [x] BIDS input (layout query, sidecar JSON).
 - [x] BIDS-derivatives naming and `dataset_description.json`.
-- [ ] DICOM conversion with dcm2niix; TR, SliceTiming and multiband from JSON.
+- [x] DICOM conversion with dcm2niix (`seecat.bids.from_dicom`); checked against the
+      dcm2niix QA references (Siemens incl. multiband, Philips).
+- [ ] Release script: bundle dcm2niix v1.0.20260724 for win/mac/lnx; licence in
+      THIRD_PARTY_NOTICES.
 - [ ] Preprocessing:
   - [x] `seecat.prep.run_unit`: all steps, SPM batches built in code
         (first subject of ds000030 end to end, 5.4 min).
