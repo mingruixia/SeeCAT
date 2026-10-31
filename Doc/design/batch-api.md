@@ -157,7 +157,10 @@ Common fields:
        patterns; spectral changed the remaining good frames less (9/9
        subjects, median 6 % less, p = 0.004) and the PCC seed map less
        (9/9, 10 % less, p = 0.004); accuracy on the held-out frames did not
-       differ (p = 0.57).
+       differ (p = 0.57). ds002785 (TR 0.75 s, 5 subjects, patterns from
+       both datasets mapped by time): spectral better in 5/5 subjects on all
+       three measures, kept frames 35 % less changed, seed map 32 % less,
+       held-out frames 47 % more accurate (p = 0.062, the minimum for n = 5).
     3. Band-pass data and regressors with the same filter. No spike is left
        to spread, and filtering cannot reintroduce removed signal.
     4. Fit the regression on good frames only; residuals for all frames.

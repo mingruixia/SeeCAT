@@ -52,7 +52,9 @@ See `CHANGELOG.md`.
   - [x] One parallel pattern everywhere; no `cd`.
 - [ ] Rebuild `templates/`: masks generated from SPM TPM by a script in the
       repo; remove DPABI-distributed masks and label files.
-- [ ] End-to-end tests at 2 mm, and on ds002785 (multiband).
+- [x] End-to-end on ds002785 (multiband, TR 0.75 s, 5 subjects): non-steady-state
+      counts, motion and FD checked against its fMRIPrep confounds.
+- [ ] End-to-end test at 2 mm output.
 
 ## Weeks 5–6 (11/23 – 12/04): computation and statistics
 

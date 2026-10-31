@@ -13,9 +13,13 @@ if endsWith(src, '.gz')
     rmdir(tmp, 's');
 else
     copyfile(src, dst, 'f');
-    mat = regexprep(src, '\.nii$', '.mat');
-    if exist(mat, 'file')
-        copyfile(mat, regexprep(dst, '\.nii$', '.mat'), 'f');
-    end
+end
+% A .mat left from an interrupted run would give the copy stale affines
+mat = regexprep(src, '\.nii(\.gz)?$', '.mat');
+dstMat = regexprep(dst, '\.nii$', '.mat');
+if exist(mat, 'file') && ~endsWith(src, '.gz')
+    copyfile(mat, dstMat, 'f');
+elseif exist(dstMat, 'file')
+    delete(dstMat);
 end
 end

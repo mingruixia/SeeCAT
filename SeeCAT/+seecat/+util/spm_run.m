@@ -1,6 +1,7 @@
 function out = spm_run(matlabbatch)
 % SPM_RUN  Run an SPM batch built in code.
 %   out = seecat.util.spm_run(matlabbatch)
+%   seecat.util.spm_run([])       % only initialise, before calling SPM functions directly
 %
 % SPM is initialised once per MATLAB process (each parallel worker is its
 % own process): fMRI defaults, command-line mode (no figures) and the batch
@@ -13,6 +14,10 @@ if isempty(ready)
     spm_get_defaults('cmdline', true);
     spm_jobman('initcfg');
     ready = true;
+end
+out = {};
+if isempty(matlabbatch)
+    return
 end
 if ~iscell(matlabbatch)
     matlabbatch = {matlabbatch};

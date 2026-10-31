@@ -35,6 +35,30 @@
   frames less in 9/9 subjects (median 6 % less) and the PCC seed map less in
   9/9 (10 % less); fill accuracy on the held-out frames did not differ.
 
+- ds002785 (TR 0.75 s): at short TR the spectral fill is much better than spline
+  (5/5 subjects; kept frames 35 % less changed, held-out frames 47 % more
+  accurate).
+
+### Fixed (found on ds002785, 480-volume runs)
+- Realign took over 20 minutes per run: through the batch, SPM rewrites the 4D
+  file's header once per volume. `spm_realign` is now called directly and the
+  affines are written once (identical parameters; 152 volumes in 26 s, 477 in
+  ~100 s).
+- Normalisation took ~13 minutes per run: SPM writes a 4D output volume by
+  volume, each write slower as the file grows. Volumes are now split, normalised
+  by SPM and written back in one go (477 volumes: 775 s → 100 s). Output is
+  float32 (was the input type, e.g. int16).
+- Smoothing: SPM kernel applied in memory, 4D written once (identical output;
+  152 volumes 63–124 s → 10 s).
+- A `.mat` affine file left by an interrupted realign could give a re-made work
+  copy stale affines; `work_copy` now removes it.
+
+### Validation
+- ds002785 against its fMRIPrep confounds: non-steady-state volumes 3/2/1/1/3 vs
+  3/2/0/3/2; FD r = 0.71–0.91 (mean FD ~20 % higher than fMRIPrep's); motion
+  parameters r ≥ 0.92 for trans_z, rot_x, rot_y, and consistently negative r for
+  trans_x and rot_z (axis sign convention, SPM vs FSL). PCC–mPFC r = 0.55–0.86.
+
 ### Known issues
 - At 3 mm the eroded CSF mask is small (35 voxels in the first ds000030
   subject).
