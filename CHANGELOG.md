@@ -29,6 +29,11 @@
   jointly up to the low-pass edge, with a ridge penalty. In simulations
   (in-band signal plus broadband noise) it beats spline and the mean in
   interior gaps; at the series edges no method beats the mean.
+- Default `censor.interp` is now `'spectral'` (was `'spline'`). On ds000030
+  (10 subjects; held-out real frames censored with other subjects' censor
+  patterns, `tests/validation/compare_interp.m`) it changed the remaining good
+  frames less in 9/9 subjects (median 6 % less) and the PCC seed map less in
+  9/9 (10 % less); fill accuracy on the held-out frames did not differ.
 
 ### Known issues
 - At 3 mm the eroded CSF mask is small (35 voxels in the first ds000030

@@ -143,14 +143,21 @@ Common fields:
   - `censor` (default). Order of operations:
     1. Flag bad frames: FD_Power > 0.5 mm, plus 1 before and 2 after.
     2. Interpolate the flagged frames from good frames only, in the BOLD data
-       and in every regressor (cubic spline by default; `spectral` as an
-       option: a joint ridge least-squares fit of sinusoids up to the
-       low-pass edge. Power et al. 2014 used the Lomb–Scargle form, which
-       fits each frequency separately; up to Nyquist on a regular grid its
-       reconstruction is a sinc kernel that is 0 at every other sample, so
-       gaps come back as the mean. Simulations on 2026-10-31, in-band signal
-       plus broadband noise: spectral (ridge 0.03) beats spline and the mean
-       in interior gaps; at the series edges no method beats the mean).
+       and in every regressor. Default `spectral`: a joint ridge
+       least-squares fit of sinusoids up to the low-pass edge; `spline`
+       (cubic) as an option. Power et al. 2014 used the Lomb–Scargle form,
+       which fits each frequency separately; up to Nyquist on a regular grid
+       its reconstruction is a sinc kernel that is 0 at every other sample,
+       so gaps come back as the mean.
+       Evidence (2026-10-31). Simulations, in-band signal plus broadband
+       noise: spectral (ridge 0.03) beats spline and the mean in interior
+       gaps; at the series edges no method beats the mean. Real data
+       (ds000030, 10 subjects, `tests/validation/compare_interp.m`): good
+       frames censored on purpose with other subjects' real censor
+       patterns; spectral changed the remaining good frames less (9/9
+       subjects, median 6 % less, p = 0.004) and the PCC seed map less
+       (9/9, 10 % less, p = 0.004); accuracy on the held-out frames did not
+       differ (p = 0.57).
     3. Band-pass data and regressors with the same filter. No spike is left
        to spread, and filtering cannot reintroduce removed signal.
     4. Fit the regression on good frames only; residuals for all frames.

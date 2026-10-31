@@ -36,7 +36,7 @@ cfg.censor.mode         = 'censor';        % 'censor', 'interp_keep' or 'none'
 cfg.censor.fd_threshold = 0.5;             % mm, Power FD
 cfg.censor.before       = 1;
 cfg.censor.after        = 2;
-cfg.censor.interp       = 'spline';        % 'spline' or 'spectral'
+cfg.censor.interp       = 'spectral';      % 'spectral' or 'spline' (design 5.2)
 cfg.censor.min_minutes  = 5;
 
 cfg.smooth.enable = true;
@@ -70,7 +70,7 @@ spec = [
     'censor.fd_threshold',         v.positive,                        'a positive number (mm)'
     'censor.before',               v.count,                           'a non-negative integer'
     'censor.after',                v.count,                           'a non-negative integer'
-    'censor.interp',               v.oneof({'spline', 'spectral'}), '''spline'' or ''spectral'''
+    'censor.interp',               v.oneof({'spectral', 'spline'}), '''spectral'' or ''spline'''
     'censor.min_minutes',          v.nonneg,                          'a non-negative number (minutes)'
     'smooth.enable',               v.flag,                            'true or false'
     'smooth.fwhm',                 @(x) isnumeric(x) && any(numel(x) == [1 3]) && all(x >= 0), 'a scalar or 1x3 vector (mm)'
