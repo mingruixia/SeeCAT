@@ -50,10 +50,14 @@ rules = qaRules();
 T = quiet(@() seecat.bids.from_dicom(fullfile(qa, 'In'), tc.TestData.bids, 'sub', '01', 'rules', rules));
 conv = T(~cellfun(@isempty, T.bids), :);
 tc.verifyGreaterThanOrEqual(height(conv), 40);
-% Two fMRI_MB series share a name: run-1 and run-2 by series number
-mb = conv.bids(contains(conv.bids, 'task-mb'));
-tc.verifyEqual(sort(mb), {'sub-01/func/sub-01_task-mb_run-1_bold.nii.gz'; 'sub-01/func/sub-01_task-mb_run-2_bold.nii.gz'});
-tc.verifyTrue(any(contains(conv.bids, 'fmap/sub-01_dir-AP_run-')));
+% dcm_qa/In holds two studies: ses-1 and ses-2. Two fMRI_MB series of one
+% study share a name: run-1 and run-2 by series number
+mb = sort(conv.bids(contains(conv.bids, 'task-mb')));
+tc.verifyNumElements(mb, 2);
+s = regexp(mb{1}, 'ses-(\d)', 'tokens', 'once');
+tc.verifyEqual(mb, {sprintf('sub-01/ses-%s/func/sub-01_ses-%s_task-mb_run-1_bold.nii.gz', s{1}, s{1}); ...
+    sprintf('sub-01/ses-%s/func/sub-01_ses-%s_task-mb_run-2_bold.nii.gz', s{1}, s{1})});
+tc.verifyTrue(any(contains(conv.bids, 'fmap/sub-01_ses-') & contains(conv.bids, '_dir-AP_run-')));
 % Every converted image equals the dcm2niix reference
 for i = 1:height(conv)
     compareWithRef(tc, fullfile(tc.TestData.bids, conv.bids{i}), fullfile(qa, 'Ref'));
@@ -93,13 +97,84 @@ end
 
 function testSameSeriesNumberInTwoStudies(tc)
 % Series 8 exists in two studies of dcm_qa (ax_int_35sl and an AP EPI); one
-% rule for both must give two runs, not one series with two images
+% rule for both must give two images, not one series with two images:
+% two sessions when the session is automatic, two runs in a given session
 qa = fullfile(tc.TestData.qa, 'dcm_qa');
 r = rule('^(ax_int_35sl|noPF_noPAT_noPOS_PEres100_ES0p59_BW2222_AP)$', 'func', 'bold', struct('task', 'x'));
 T = quiet(@() seecat.bids.from_dicom(fullfile(qa, 'In'), tc.TestData.bids, 'sub', '01', 'rules', r));
 got = T(~cellfun(@isempty, T.bids), :);
 tc.verifyEqual(got.series, [8; 8]);
-tc.verifyEqual(sort(got.bids), {'sub-01/func/sub-01_task-x_run-1_bold.nii.gz'; 'sub-01/func/sub-01_task-x_run-2_bold.nii.gz'});
+tc.verifyEqual(sort(got.bids), {'sub-01/ses-1/func/sub-01_ses-1_task-x_bold.nii.gz'; ...
+    'sub-01/ses-2/func/sub-01_ses-2_task-x_bold.nii.gz'});
+T = quiet(@() seecat.bids.from_dicom(fullfile(qa, 'In'), tc.TestData.bids, 'sub', '02', 'ses', 'a', 'rules', r));
+got = T(~cellfun(@isempty, T.bids), :);
+tc.verifyEqual(sort(got.bids), {'sub-02/ses-a/func/sub-02_ses-a_task-x_run-1_bold.nii.gz'; ...
+    'sub-02/ses-a/func/sub-02_ses-a_task-x_run-2_bold.nii.gz'});
+end
+
+function testSessionsFollowStudies(tc)
+% Two studies give ses-1 (the earlier) and ses-2; converting again keeps
+% them; a single-study subject gets no session folder, and a second study
+% for it then needs a session label
+qa = fullfile(tc.TestData.qa, 'dcm_qa');
+bids = tc.TestData.bids;
+T = quiet(@() seecat.bids.from_dicom(fullfile(qa, 'In'), bids, 'sub', '01', 'rules', qaRules()));
+tc.verifyEqual(unique(T.session), {'1'; '2'});
+M = seecat.io.read_tsv(fullfile(bids, 'code', 'seecat', 'from_dicom_sessions.tsv'));
+tc.verifyEqual(height(M), 2);
+tc.verifyEqual(M.session_id(:)', [1 2]);
+tc.verifyLessThan(M.study(1), M.study(2));
+% axmb is part of the 2014 study: it goes back into that study's session
+T2 = quiet(@() seecat.bids.from_dicom(fullfile(qa, 'In', 'Orientation', 'axmb'), bids, 'sub', '01', ...
+    'rules', qaRules(), 'overwrite', true));
+tc.verifyEqual(unique(T2.session), unique(T.session(contains(T.bids, 'task-orient'))));
+tc.verifyEmpty(dir(fullfile(bids, 'sub-01', 'ses-3')));
+% one study, new subject: no session folder
+T3 = quiet(@() seecat.bids.from_dicom(fullfile(qa, 'In', 'Orientation', 'axmb'), bids, 'sub', '02', 'rules', qaRules()));
+tc.verifyEqual(unique(T3.session), {''});
+tc.verifyTrue(exist(fullfile(bids, 'sub-02', 'func'), 'dir') == 7);
+tc.verifyError(@() quiet(@() seecat.bids.from_dicom(fullfile(qa, 'In', 'TotalReadoutTime'), bids, ...
+    'sub', '02', 'rules', qaRules())), 'SeeCAT:bids');
+end
+
+function testSubjectsFromFolderNames(tc)
+% dcm_qa_philips/In holds one folder per site (different people): each is a
+% subject, named after its folder
+qa = fullfile(tc.TestData.qa, 'dcm_qa_philips', 'In');
+tc.assumeTrue(exist(qa, 'dir') == 7, 'dcm_qa_philips not available');
+r = struct('match', struct('SeriesDescription', '^EPI'), 'datatype', 'func', 'suffix', 'bold', ...
+    'entities', struct('task', 'test'));
+T = quiet(@() seecat.bids.from_dicom(qa, tc.TestData.bids, 'rules', r));
+D = dir(qa);
+want = regexprep({D([D.isdir] & ~startsWith({D.name}, '.')).name}, '[^a-zA-Z0-9]', '');
+tc.verifyEqual(sort(unique(T.subject)), sort(want(:)));
+P = seecat.io.read_tsv(fullfile(tc.TestData.bids, 'participants.tsv'));
+tc.verifyEqual(sort(P.participant_id), sort(strcat('sub-', want(:))));
+tc.verifyTrue(any(strcmp(T.bids, 'sub-Magdeburg2014/func/sub-Magdeburg2014_task-test_bold.nii.gz')));
+end
+
+function testSeriesFoldersOfOnePersonAreOneSubject(tc)
+% Orientation/axmb holds two series folders of one phantom: one subject named
+% after the folder, not two subjects
+qa = fullfile(tc.TestData.qa, 'dcm_qa', 'In', 'Orientation', 'axmb');
+D = dir(qa);
+tc.assumeEqual(nnz([D.isdir] & ~startsWith({D.name}, '.')), 2);
+T = quiet(@() seecat.bids.from_dicom(qa, tc.TestData.bids, 'rules', qaRules()));
+tc.verifyEqual(unique(T.subject), {'axmb'});
+tc.verifyTrue(all(startsWith(T.bids(~cellfun(@isempty, T.bids)), 'sub-axmb/func/')));
+end
+
+function testFailedSubjectDoesNotStopTheOthers(tc)
+root = fullfile(fileparts(tc.TestData.bids), 'dicom');
+mkdir(fullfile(root, 'S_01'));
+mkdir(fullfile(root, 'S_02'));
+copyfile(fullfile(tc.TestData.qa, 'dcm_qa', 'In', 'Orientation', 'axmb'), fullfile(root, 'S_01'));
+fid = fopen(fullfile(root, 'S_02', 'readme.dat'), 'w'); fprintf(fid, 'not DICOM'); fclose(fid);
+T = quiet(@() seecat.bids.from_dicom(root, tc.TestData.bids, 'rules', qaRules()));
+tc.verifyTrue(all(contains(T.bids(strcmp(T.subject, 'S01')), 'sub-S01/func/')));
+bad = T(strcmp(T.subject, 'S02'), :);
+tc.verifyEqual(height(bad), 1);
+tc.verifySubstring(bad.note{1}, 'dcm2niix');
 end
 
 function testPhilipsWithoutSliceTimingIsReported(tc)

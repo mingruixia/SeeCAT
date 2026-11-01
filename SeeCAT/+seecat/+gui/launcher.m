@@ -15,7 +15,7 @@ pages = struct( ...
     'pipe', {'', 'prep', 'fmriprep', 'fc', 'degree', 'stat', '', '', ''}, ...
     'icon', {'dicom', 'sliders', 'filter', 'target', 'network', 'stat', 'brain', 'activity', 'report'}, ...
     'group', {'PREPARE', 'PREPARE', 'PREPARE', 'ANALYSE', 'ANALYSE', 'ANALYSE', 'RESULTS', 'RESULTS', 'RESULTS'}, ...
-    'about', {'Convert a DICOM folder to a BIDS dataset with dcm2niix.', ...
+    'about', {'Convert DICOM folders to a BIDS dataset with dcm2niix: one subject, or a folder of subjects.', ...
     'Slice timing, realignment, normalisation, denoising and smoothing of a raw BIDS dataset.', ...
     'Denoising and smoothing of fMRIPrep outputs, with the same steps as Preprocessing.', ...
     'Seed-based functional connectivity maps from denoised data.', ...
@@ -431,14 +431,23 @@ show();
     end
 
     function dicomPage()
-        g = pageGrid(22 + 5 * T.row + 6 * 6 + 34 + 24);
-        cg = pageCard(g, 'Conversion', [repmat({T.row}, 1, 5), {32}]);
+        g = pageGrid(22 + 5 * T.row + 54 + 32 + 6 * 7 + 24);
+        cg = pageCard(g, 'Conversion', [repmat({T.row}, 1, 5), {54, 32}]);
         lab = {'DICOM folder', 'BIDS folder', 'Subject', 'Session', 'Rules (JSON)'};
         kinds = {'folder', 'folder', '', '', 'file'};
+        hint = {'', '', 'Empty: from folder names', 'Empty: one per scanning visit', 'Empty: T1w and resting BOLD'};
+        tips = {'One subject''s DICOM files, or a folder with one folder per subject', ...
+            'The BIDS dataset to write into (created if missing)', ...
+            'Label without "sub-", letters and digits. Empty: each folder in the DICOM folder is a subject', ...
+            'Label without "ses-". Empty: no session folder for one visit, ses-1, ses-2, ... for several', ...
+            'Naming rules (seecat.bids.dicom_rules)'};
         ed = gobjects(1, 5);
         for i = 1:5
             uilabel(cg, 'Text', lab{i}, 'FontColor', T.text2);
-            ed(i) = uieditfield(cg, 'text', 'BackgroundColor', T.panel, 'FontColor', T.text);
+            ed(i) = uieditfield(cg, 'text', 'BackgroundColor', T.panel, 'FontColor', T.text, 'Tooltip', tips{i});
+            if ~isempty(hint{i}) && isprop(ed(i), 'Placeholder')         % R2021a+
+                ed(i).Placeholder = hint{i};
+            end
             if isempty(kinds{i})
                 uilabel(cg, 'Text', '');
             else
@@ -447,8 +456,14 @@ show();
                     'ButtonPushedFcn', @(~, ~) pick(ed(i), kind));
             end
         end
+        note = uilabel(cg, 'WordWrap', 'on', 'FontColor', T.muted, 'VerticalAlignment', 'top', 'Text', ...
+            ['Subject empty: each folder in the DICOM folder is one subject, named after the folder ' ...
+            '(S_001 becomes sub-S001). Session empty: ses-1, ses-2, ... by scan date when a subject ' ...
+            'has several visits, no session folder otherwise.']);
+        note.Layout.Row = 7;
+        note.Layout.Column = 2;
         b2 = uigridlayout(cg, [1 2], 'ColumnWidth', {140, '1x'}, 'Padding', [0 0 0 0], 'BackgroundColor', T.panel);
-        b2.Layout.Row = 7;
+        b2.Layout.Row = 8;
         b2.Layout.Column = 2;
         uibutton(b2, 'Text', 'Convert', 'Icon', seecat.gui.icon('play', '#FFFFFF'), 'FontWeight', 'bold', ...
             'BackgroundColor', T.accent, 'FontColor', [1 1 1], 'ButtonPushedFcn', @(~, ~) convert(ed));
@@ -465,7 +480,14 @@ show();
             R = seecat.bids.from_dicom(ed(1).Value, ed(2).Value, args{:});
             close(d);
             summary.Data = R;
-            logBox.Value = {sprintf('%d image(s), %d copied into %s', height(R), nnz(~cellfun(@isempty, R.bids)), ed(2).Value)};
+            subs = unique(R.subject);
+            bad = unique(R.subject(isnan(R.series) & cellfun(@isempty, R.description)));
+            msg = {sprintf('%d subject(s), %d image(s), %d copied into %s', numel(subs), height(R), ...
+                nnz(~cellfun(@isempty, R.bids)), ed(2).Value)};
+            for k = 1:numel(bad)
+                msg{end+1} = sprintf('sub-%s failed: %s', bad{k}, R.note{strcmp(R.subject, bad{k})}); %#ok<AGROW>
+            end
+            logBox.Value = msg;
             showPane('summary');
         catch err
             close(d);

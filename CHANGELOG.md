@@ -3,6 +3,15 @@
 ## Unreleased: 2.0 development
 
 ### Added
+- **DICOM to BIDS: automatic subject and session labels.** With no subject,
+  each folder in the DICOM folder becomes a subject named after the folder
+  (letters and digits); a folder of one person's series (same PatientID) or a
+  folder with DICOM files is one subject. With no session, a subject with
+  several studies gets ses-1, ses-2, ... by study time and a single study no
+  session folder; studies keep their session across conversions
+  (`code/seecat/from_dicom_sessions.tsv`). A failing subject is reported and
+  the others still convert. The report table gains `subject` and `session`
+  columns; the DICOM page explains the empty fields.
 - **Release.** `tools/make_release.m` builds `SeeCAT-<version>.zip` from the
   files committed at HEAD, with dcm2niix v1.0.20260724 for Windows, macOS and
   Linux (each zip's size and SHA-256 checked), a version stamp, `BUILD.txt`
