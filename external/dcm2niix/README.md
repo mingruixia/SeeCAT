@@ -23,3 +23,6 @@ bundled macOS/Linux binary.
 
 Tested with the dcm2niix QA data (`dcm_qa`, `dcm_qa_philips`):
 `tests/unit/test_dicom.m`.
+
+The Linux binary needs glibc 2.29 or later (it fails on Ubuntu 18.04 and
+RHEL 8); `find_dcm2niix` then falls back to a dcm2niix on the PATH.

@@ -32,6 +32,11 @@ On macOS, if dcm2niix is blocked the first time, allow it in System
 Settings → Privacy & Security, or run
 `xattr -dr com.apple.quarantine SeeCAT-<version>/external`.
 
+The bundled Linux dcm2niix needs glibc 2.29 or later (Ubuntu 20.04+, Debian
+11+, RHEL/Rocky 9+). On older systems install dcm2niix yourself (for example
+`pip install dcm2niix`) and put it on the PATH or set `SEECAT_DCM2NIIX`;
+SeeCAT uses it when the bundled copy does not run.
+
 ## Use
 
 The main window:
