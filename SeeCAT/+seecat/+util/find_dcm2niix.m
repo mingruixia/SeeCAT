@@ -27,8 +27,13 @@ end
 if ~isempty(getenv('SEECAT_DCM2NIIX'))
     candidates{end+1} = getenv('SEECAT_DCM2NIIX');
 end
-candidates{end+1} = fullfile(fileparts(here), 'external', 'dcm2niix', plat, name);
+bundled = fullfile(fileparts(here), 'external', 'dcm2niix', plat, name);
+candidates{end+1} = bundled;
 candidates{end+1} = name;                                         % on the PATH
+if ~ispc && exist(bundled, 'file')
+    % release zips made by MATLAB do not keep the executable bit
+    try fileattrib(bundled, '+x', 'a'); catch, end
+end
 
 exe = '';
 for i = 1:numel(candidates)

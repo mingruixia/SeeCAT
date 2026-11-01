@@ -40,7 +40,8 @@ See `CHANGELOG.md`.
 - [x] BIDS-derivatives naming and `dataset_description.json`.
 - [x] DICOM conversion with dcm2niix (`seecat.bids.from_dicom`); checked against the
       dcm2niix QA references (Siemens incl. multiband, Philips).
-- [ ] Release script: bundle dcm2niix v1.0.20260724 for win/mac/lnx; licence in
+- [x] Release script `tools/make_release.m`: committed files plus dcm2niix
+      v1.0.20260724 for win/mac/lnx (size and SHA-256 checked); licence in
       THIRD_PARTY_NOTICES.
 - [ ] Preprocessing:
   - [x] `seecat.prep.run_unit`: all steps, SPM batches built in code
@@ -100,8 +101,9 @@ See `CHANGELOG.md`.
 
 - [ ] English manual.
 - [ ] Full validation on both public datasets.
-- [ ] `LICENSE` (GPL-3.0-or-later), `THIRD_PARTY_NOTICES`; atlases fetched
-      from their original sources with licences checked.
+- [x] `LICENSE` (GPL-3.0-or-later), `THIRD_PARTY_NOTICES` (dcm2niix, Colin27,
+      ICBM152 2009c, TPM-derived masks; atlases are read from SPM and
+      BrainNet installations, not shipped), `README.md`.
 - [ ] Release on GitHub and NITRC.
 
 ## Cut order if late

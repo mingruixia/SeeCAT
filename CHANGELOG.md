@@ -3,6 +3,12 @@
 ## Unreleased: 2.0 development
 
 ### Added
+- **Release.** `tools/make_release.m` builds `SeeCAT-<version>.zip` from the
+  files committed at HEAD, with dcm2niix v1.0.20260724 for Windows, macOS and
+  Linux (each zip's size and SHA-256 checked), a version stamp, `BUILD.txt`
+  and `SHA256SUMS.txt`. `LICENSE` (GPL-3.0-or-later), `THIRD_PARTY_NOTICES`
+  and `README.md` added. `find_dcm2niix` makes the bundled macOS/Linux binary
+  executable.
 - **4D data check.** Viewer: a "Time series" drawer tab for 4D images —
   Play, a volume slider, the cursor's signal (voxel, 6 mm sphere or global
   mean) above framewise displacement with flagged frames shaded, click to

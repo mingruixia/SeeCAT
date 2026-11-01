@@ -10,8 +10,16 @@ release script puts them here. `seecat.util.find_dcm2niix` looks here after
 - `dcm2niix_win.zip`: 1,196,271 bytes, SHA-256
   `8310549ef7340b1b169c26f4721aeac69423fd73643fbbd22eec47b36cc70ada`
   (the Windows zip also holds the Microsoft C++ runtime DLLs it needs)
-- Licence: to be copied from the dcm2niix repository into
-  `THIRD_PARTY_NOTICES` at release time.
+- `dcm2niix_mac.zip`: 930,002 bytes, SHA-256
+  `d393006dd1edfba4013bc4b8eccc875b23d611ecbc53fda5a5542f629591008f`
+- `dcm2niix_lnx.zip`: 947,680 bytes, SHA-256
+  `2916a7bc64511eb20fb976a994799183cc1bfdd03395bf5d8edef54a58dee06f`
+- Licence: BSD 2-clause, reproduced in `THIRD_PARTY_NOTICES`.
+
+`tools/make_release.m` checks each zip's size and SHA-256 against these
+values (and the GitHub release's asset digests) before unpacking it. MATLAB
+zips do not keep the executable bit, so `find_dcm2niix` sets it on the
+bundled macOS/Linux binary.
 
 Tested with the dcm2niix QA data (`dcm_qa`, `dcm_qa_philips`):
 `tests/unit/test_dicom.m`.

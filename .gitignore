@@ -11,3 +11,7 @@ Thumbs.db
 
 # dcm2niix binaries: added by the release script, not kept in git
 external/dcm2niix/*/
+
+# Release builds (tools/make_release.m) and local screenshots
+build/
+Doc/screenshots/

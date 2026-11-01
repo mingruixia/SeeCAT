@@ -32,8 +32,8 @@ Dice 0.87), the brain mask 69,937 (was 70,831; Dice 0.96).
 | `ch2better.nii.gz` | Colin27, 0.5 mm, skull-stripped (MRIcroGL distribution) | (selectable) |
 | `mni_icbm152_t1_tal_nlin_asym_09c.nii.gz` | MNI ICBM152 2009c asymmetric average, 1 mm | MNI152NLin2009cAsym (fMRIPrep) |
 
-Licences and credits go in `THIRD_PARTY_NOTICES` at release (to be checked
-against the original terms). SPM's canonical images and any other image can
+Licences and credits are in `THIRD_PARTY_NOTICES` (MNI notice for Colin27
+and ICBM152 2009c, MRIcron's BSD licence). SPM's canonical images and any other image can
 also be used. Atlas labels come from installed sources only (SPM's
 Neuromorphometrics; AAL and Brodmann from BrainNet Viewer 2.0); the 1.0
 atlas files were removed (design gui.md, G4/G5).
