@@ -3,6 +3,10 @@
 ## Unreleased: 2.0 development
 
 ### Added
+- **DICOM to BIDS: help for each field.** Like the pipeline forms, every field
+  has an info icon; clicking it, or editing the field, shows a description
+  with examples, the default and the matching `from_dicom` argument in the
+  help column. `tests/gui/smoke.m` checks the icons.
 - **DICOM to BIDS: automatic subject and session labels.** With no subject,
   each folder in the DICOM folder becomes a subject named after the folder
   (letters and digits); a folder of one person's series (same PatientID) or a

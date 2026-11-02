@@ -11,8 +11,20 @@ for name = {'Preprocessing', 'fMRIPrep denoising', 'Seed FC', 'Degree', 'Statist
     drawnow; pause(1);
     exportapp(app.fig, fullfile(outDir, ['launcher_' strrep(name{1}, ' ', '_') '.png']));
 end
+info = findall(app.fig, 'Type', 'uiimage', 'Tooltip', 'About this option');   % DICOM to BIDS is showing
+if numel(info) ~= 5
+    error('smoke:dicom', 'DICOM to BIDS has %d info icons, not 5.', numel(info));
+end
+for h = info'
+    h.ImageClickedFcn(h, []);
+    txt = cellfun(@(t) char(join(string(t), newline)), get(findall(app.fig, 'Type', 'uilabel'), 'Text'), ...
+        'UniformOutput', false);
+    if ~any(startsWith(txt, 'Default:  ('))
+        error('smoke:dicom', 'An info icon on DICOM to BIDS shows no help.');
+    end
+end
 app.select('Preprocessing');
-cfg = app.config();                                  % an untouched form reads back the defaults
+cfg = app.config();                                 % an untouched form reads back the defaults
 d = differences(cfg, seecat.config('prep'), '');
 if ~isempty(d)
     error('smoke:roundtrip', 'The preprocessing form changes: %s', strjoin(d, '; '));
