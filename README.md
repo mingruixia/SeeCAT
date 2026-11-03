@@ -10,7 +10,7 @@ Version 2.0 is a rewrite. It needs only SPM; it no longer uses DPABI or the
 
 ## Requirements
 
-- MATLAB R2020b or later. The Parallel Computing Toolbox is optional, for
+- MATLAB R2025a or later. The Parallel Computing Toolbox is optional, for
   running subjects in parallel.
 - SPM25, or SPM12 r7771 or later.
 - Optional: BrainNet Viewer 2.0, for surface and network figures.

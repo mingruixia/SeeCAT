@@ -431,8 +431,8 @@ show();
     end
 
     function dicomPage()
-        g = pageGrid(22 + 5 * T.row + 54 + 32 + 6 * 7 + 24);
-        cg = pageCard(g, 'Conversion', [repmat({T.row}, 1, 5), {54, 32}]);
+        g = pageGrid(22 + 5 * T.row + 32 + 6 * 6 + 24);
+        cg = pageCard(g, 'Conversion', [repmat({T.row}, 1, 5), {32}]);
         H = dicomHelp();
         kinds = {'folder', 'folder', '', '', 'file'};
         hint = {'', '', 'Empty: from folder names', 'Empty: one per scanning visit', 'Empty: T1w and resting BOLD'};
@@ -448,9 +448,7 @@ show();
             ed(i) = uieditfield(parent, 'text', 'BackgroundColor', T.panel, 'FontColor', T.text, ...
                 'Tooltip', H(i).tip, 'ValueChangingFcn', @(~, ~) dicomInfo(H(k)), ...
                 'ValueChangedFcn', @(~, ~) dicomInfo(H(k)));
-            if ~isempty(hint{i}) && isprop(ed(i), 'Placeholder')         % R2021a+
-                ed(i).Placeholder = hint{i};
-            end
+            ed(i).Placeholder = hint{i};
             if ~isempty(kinds{i})
                 kind = kinds{i};
                 uibutton(parent, 'Text', '', 'Icon', seecat.gui.icon('folder'), 'BackgroundColor', T.panel, ...
@@ -459,14 +457,8 @@ show();
             uiimage(cg, 'ImageSource', seecat.gui.icon('info', T.hex.muted), 'Tooltip', 'About this option', ...
                 'ImageClickedFcn', @(~, ~) dicomInfo(H(k)));
         end
-        note = uilabel(cg, 'WordWrap', 'on', 'FontColor', T.muted, 'VerticalAlignment', 'top', 'Text', ...
-            ['Subject empty: each folder in the DICOM folder is one subject, named after the folder ' ...
-            '(S_001 becomes sub-S001). Session empty: ses-1, ses-2, ... by scan date when a subject ' ...
-            'has several visits, no session folder otherwise.']);
-        note.Layout.Row = 7;
-        note.Layout.Column = 2;
         b2 = uigridlayout(cg, [1 2], 'ColumnWidth', {140, '1x'}, 'Padding', [0 0 0 0], 'BackgroundColor', T.panel);
-        b2.Layout.Row = 8;
+        b2.Layout.Row = 7;
         b2.Layout.Column = 2;
         uibutton(b2, 'Text', 'Convert', 'Icon', seecat.gui.icon('play', '#FFFFFF'), 'FontWeight', 'bold', ...
             'BackgroundColor', T.accent, 'FontColor', [1 1 1], 'ButtonPushedFcn', @(~, ~) convert(ed));

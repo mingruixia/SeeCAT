@@ -30,6 +30,7 @@ function summary = run(cfg)
 % SUMMARY is a table: unit, status ('ok', 'skipped' or 'failed'), seconds,
 % message, then the fields each unit reports (e.g. mean FD).
 
+seecat.util.check_matlab();
 cfg = seecat.config(cfg);
 seecat.check_config(cfg);
 p = cfg.pipeline;

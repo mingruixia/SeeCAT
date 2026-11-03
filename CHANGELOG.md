@@ -49,6 +49,10 @@
   frames cannot change the residuals of good frames.
 
 ### Changed
+- **Minimum MATLAB is R2025a** (was R2020b); development and testing use
+  R2025a only. `SeeCAT` and `seecat.run` stop with a clear error on older
+  releases (`seecat.util.check_matlab`). Workarounds for older releases were
+  removed, including the extra hint line on the DICOM to BIDS page.
 - `censor.interp = 'lombscargle'` is replaced by `'spectral'`. On a regular TR
   grid, Lomb–Scargle reconstruction (fitting each frequency separately, up to
   Nyquist, as in Power et al. 2014 and in xcpEngine) is a sinc kernel that is 0
@@ -313,6 +317,12 @@
 - **Viewer**: opening it now lists the DPABI functions it needs but cannot find,
   instead of failing later with "Undefined function".
 - The log message at the end of realignment said "Started".
+
+### Changed
+- **Minimum MATLAB is R2025a** (was R2020b); development and testing use
+  R2025a only. `SeeCAT` and `seecat.run` stop with a clear error on older
+  releases (`seecat.util.check_matlab`). Workarounds for older releases were
+  removed, including the extra hint line on the DICOM to BIDS page.
 
 ### Added
 - `+seecat` namespace package (design: `Doc/design/batch-api.md`).

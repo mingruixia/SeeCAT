@@ -12,7 +12,7 @@ Maintainer: Mingrui Xia. Licence: GPL-3.0-or-later.
   BrainNet Viewer is optional, for surface and network figures.
 - **Batch API first, GUI second.** Every step runs from a config struct
   without a GUI. The GUI is built in code (`uicontrol`, no `.fig`) on top of
-  that API. Minimum MATLAB: R2020b.
+  that API. Minimum MATLAB: R2025a (raised from R2020b on 2026-11-03).
 - **BIDS in, BIDS-derivatives out.** No compatibility with the old
   `FunImgARW…` folder layout.
 - **New SPM routines only.** Unified segmentation + `normalise.write` with the
