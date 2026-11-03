@@ -16,9 +16,10 @@ function rules = dicom_rules(src)
 % The first rule that matches a series wins. A 'func' rule must give a task.
 %
 % The defaults recognise only a 3D T1w (MPRAGE, SPGR, BRAVO, TFL, T1w in the
-% series description) and resting-state BOLD (rest, rsfMRI, resting).
-% Anything else needs your own rules; unmatched series are reported, not
-% converted.
+% series description) and resting-state BOLD (rest, resting, rsfMRI, or RS
+% as a word: func_RS, RS_bold). Anything else needs your own rules;
+% unmatched series are reported, not converted (a series that looks like
+% BOLD is reported as such).
 
 if nargin < 1 || isempty(src)
     rules = defaults();
@@ -38,7 +39,7 @@ r(1).match = struct('SeriesDescription', 'mprage|spgr|bravo|tfl|t1w|t1_|_t1|^t1'
 r(1).datatype = 'anat';
 r(1).suffix = 'T1w';
 r(1).entities = struct();
-r(2).match = struct('SeriesDescription', 'rest|rs-?fmri|rs_fmri');
+r(2).match = struct('SeriesDescription', 'rest|rs-?fmri|rs_fmri|(^|[^a-z])rs([^a-z]|$)');   % ..._RS, RS_bold
 r(2).datatype = 'func';
 r(2).suffix = 'bold';
 r(2).entities = struct('task', 'rest');

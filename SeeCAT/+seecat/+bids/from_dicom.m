@@ -38,7 +38,8 @@ function T = from_dicom(dicom_dir, bids_dir, varargin)
 %   'ses'        session label (default: from the studies, see above)
 %   'rules'      rules struct array or JSON file (default: dicom_rules())
 %   'dcm2niix'   path to dcm2niix (default: found automatically)
-%   'overwrite'  replace existing files (default false: error)
+%   'overwrite'  replace existing images (default false: keep them, so
+%                converting again only adds what is missing)
 %
 % T is a table with one row per converted image: subject, session, series,
 % description, bids (path relative to bids_dir, or '' when not copied) and
@@ -137,6 +138,11 @@ for i = 1:numel(J)
     r.note = '';
     if r.rule == 0
         r.note = 'no rule matched';
+        nv = boldVolumes(m, nf);
+        if nv > 0
+            r.note = sprintf(['no rule matched, but it looks like BOLD fMRI (2D EPI, %d volumes); ' ...
+                'add a rule for it to convert it'], nv);
+        end
     end
     img(end+1) = r; %#ok<AGROW>
 end
@@ -195,7 +201,8 @@ for i = find(~cellfun(@isempty, base))'
     rel{i} = base{i};
     dst = fullfile(bids_dir, [rel{i} '.nii.gz']);
     if exist(dst, 'file') && ~overwrite
-        error('SeeCAT:bids', '%s exists; use ''overwrite'', true to replace it.', dst);
+        img(i).note = 'already in the dataset; kept (overwrite replaces it)';
+        continue
     end
     if ~exist(fileparts(dst), 'dir')
         mkdir(fileparts(dst));
@@ -309,6 +316,26 @@ end
 function k = studyKey(studies)
 % Study date and time as dcm2niix writes it (yyyymmddHHMMSS; 0 when missing)
 k = arrayfun(@(s) sprintf('%.0f', s), studies, 'UniformOutput', false);
+end
+
+function n = boldVolumes(m, nii)
+% Volumes of a series that looks like BOLD fMRI (2D EPI, not diffusion,
+% 20 or more volumes); 0 otherwise
+n = 0;
+seq = char(strjoin(string(field(m, 'ScanningSequence', '')), '\'));
+type = char(strjoin(string(field(m, 'ImageType', '')), '\'));
+if ~contains(seq, 'EP') || strcmpi(field(m, 'MRAcquisitionType', '2D'), '3D') || contains(type, 'DERIVED') ...
+        || exist(regexprep(nii, '\.nii\.gz$', '.bval'), 'file')
+    return
+end
+try
+    h = seecat.io.nii_info(nii);
+catch
+    return
+end
+if h.dim(4) >= 20
+    n = h.dim(4);
+end
 end
 
 function k = firstRule(rules, m)

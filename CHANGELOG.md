@@ -3,6 +3,13 @@
 ## Unreleased: 2.0 development
 
 ### Added
+- **DICOM to BIDS: resting-state names and reruns.** The default BOLD rule
+  also knows RS as a word (`ge_func_..._RS`, `RS_bold`). A series that
+  matches no rule but looks like BOLD (2D EPI, 20+ volumes, not diffusion)
+  is reported as such, and the window's log lists every series that was not
+  converted. Converting again into the same dataset keeps the images
+  already there and adds the missing ones, instead of stopping; `overwrite`
+  still replaces them.
 - **DICOM to BIDS finds subjects in any common folder layout.**
   `seecat.bids.scan_dicom` reads the first and last file of each DICOM
   folder with a new fast header reader (`seecat.bids.dicom_header`) and

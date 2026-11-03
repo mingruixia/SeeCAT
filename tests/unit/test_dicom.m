@@ -88,11 +88,16 @@ U = seecat.bids.bold_units(L, cfg);
 tc.verifyNumElements(U, 4);
 tc.verifyEqual(U(1).tr, 3);
 tc.verifyNumElements(U(1).meta.SliceTiming, 36);
-% A second conversion into the same place is refused unless overwrite
-tc.verifyError(@() quiet(@() seecat.bids.from_dicom(fullfile(qa, 'In', 'Orientation', 'axmb'), ...
-    tc.TestData.bids, 'sub', '01', 'rules', qaRules())), 'SeeCAT:bids');
-quiet(@() seecat.bids.from_dicom(fullfile(qa, 'In', 'Orientation', 'axmb'), tc.TestData.bids, ...
+% A second conversion into the same place keeps the images unless overwrite
+f = dir(fullfile(tc.TestData.bids, 'sub-01', 'func', '*_bold.nii.gz'));
+T = quiet(@() seecat.bids.from_dicom(fullfile(qa, 'In', 'Orientation', 'axmb'), ...
+    tc.TestData.bids, 'sub', '01', 'rules', qaRules()));
+kept = T(~cellfun(@isempty, T.bids), :);
+tc.verifyTrue(all(startsWith(kept.note, 'already in the dataset')));
+tc.verifyEqual([dir(fullfile(tc.TestData.bids, 'sub-01', 'func', '*_bold.nii.gz')).datenum], [f.datenum]);
+T = quiet(@() seecat.bids.from_dicom(fullfile(qa, 'In', 'Orientation', 'axmb'), tc.TestData.bids, ...
     'sub', '01', 'rules', qaRules(), 'overwrite', true));
+tc.verifyFalse(any(startsWith(T.note, 'already in the dataset')));
 end
 
 function testSameSeriesNumberInTwoStudies(tc)
@@ -269,6 +274,17 @@ qa = fullfile(tc.TestData.qa, 'dcm_qa');
 T = quiet(@() seecat.bids.from_dicom(fullfile(qa, 'In', 'Orientation', 'axmb'), tc.TestData.bids, 'sub', '01'));
 tc.verifyTrue(all(cellfun(@isempty, T.bids)));
 tc.verifyTrue(all(strcmp(T.note, 'no rule matched')));
+end
+
+function testDefaultRestNames(tc)
+r = seecat.bids.dicom_rules();
+pat = r(2).match.SeriesDescription;
+for name = {'ge_func_31x31x35_200_RS', 'RS_bold', 'rest_fMRI', 'Resting state', 'rsfMRI_8min', 'ep2d_rs'}
+    tc.verifyNotEmpty(regexpi(name{1}, pat, 'once'), name{1});
+end
+for name = {'first_task', 'mrs_svs', 't1_mprage', 'dti_64dir', 'ep2d_bold_task'}
+    tc.verifyEmpty(regexpi(name{1}, pat, 'once'), name{1});
+end
 end
 
 function testRuleErrors(tc)
