@@ -72,9 +72,12 @@ seecat.viewer('group/.../..._stat-t_statmap.nii.gz')
 | `degree` | voxel-wise degree and strength |
 | `stat` | GLM group statistics (one-sample, two-sample, paired, ANOVA, regression) with RFT and FDR inference |
 
-DICOM to BIDS: `seecat.bids.from_dicom(dicom_dir, bids_dir)` converts a
-folder with one folder per subject (labels from the folder names, sessions
-from the scan dates); give `'sub'` and `'ses'` to set them yourself.
+DICOM to BIDS: `seecat.bids.from_dicom(dicom_dir, bids_dir)` finds the
+subjects from the DICOM headers and the folder tree (one folder per subject,
+one per modality with subject folders inside, deeper trees), names them
+after their folders and makes sessions from the scan dates;
+`seecat.bids.scan_dicom(dicom_dir)` shows what it finds. Give `'sub'` and
+`'ses'` to set the labels yourself.
 
 Each run writes an HTML QC report per subject and per dataset. The Data check
 page lists every BOLD run's volumes, TR and head motion, and the viewer steps

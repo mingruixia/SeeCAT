@@ -6,12 +6,12 @@ function T = from_dicom(dicom_dir, bids_dir, varargin)
 %                              'rules', 'my_rules.json')
 %
 % Subject. With 'sub', DICOM_DIR (and everything below it) is that subject.
-% Without it, the labels come from folder names, keeping letters and digits
-% (S_001 -> sub-S001):
-%   - DICOM_DIR holds two or more folders and no DICOM files: each folder is
-%     one subject, unless all of them come from one person (same
-%     PatientID), which makes them one subject's series folders;
-%   - otherwise DICOM_DIR is one subject, named after DICOM_DIR itself.
+% Without it, seecat.bids.scan_dicom finds the subjects: by PatientID in the
+% DICOM headers, or by the folder tree when IDs are missing or anonymised,
+% so that one folder per subject (S001/...), one folder per modality with
+% subject folders inside (T1/S001, REST/S001, ...) and deeper trees all
+% work. Labels come from the folder names, keeping letters and digits
+% (S_001 -> sub-S001). Run scan_dicom first to see what will be converted.
 % A subject that fails is reported in T and the others still run.
 %
 % Session. With 'ses', every image goes into ses-<ses>. Without it:
@@ -67,11 +67,16 @@ end
 rules = seecat.bids.dicom_rules(o.rules);
 [exe, ver] = seecat.util.find_dcm2niix(o.dcm2niix);
 if ~isempty(sub)
-    T = convertSubject(dicom_dir, bids_dir, sub, ses, rules, exe, ver, o.overwrite);
+    T = convertSubject({dicom_dir}, bids_dir, sub, ses, rules, exe, ver, o.overwrite);
     return
 end
 
-[folders, labels] = subjectFolders(dicom_dir);
+[S, folders, info] = seecat.bids.scan_dicom(dicom_dir);
+labels = S.subject;
+fprintf('DICOM to BIDS: %s\n', info.layout);
+for k = 1:numel(info.ignored)
+    fprintf('DICOM to BIDS: no DICOM files in %s; skipped.\n', info.ignored{k});
+end
 parts = cell(numel(folders), 1);
 failed = {};
 for k = 1:numel(folders)
@@ -92,14 +97,19 @@ if numel(failed) == numel(folders)
 end
 end
 
-function T = convertSubject(dicom_dir, bids_dir, sub, ses, rules, exe, ver, overwrite)
-% 1. Convert everything into a temporary folder
+function T = convertSubject(folders, bids_dir, sub, ses, rules, exe, ver, overwrite)
+% 1. Convert everything into a temporary folder; FOLDERS hold only this
+% subject's files
 tmp = tempname;
 mkdir(tmp);
 cleanup = onCleanup(@() rmdir(tmp, 's'));
-% %t (study date and time) keeps series apart when one folder holds two studies
-cmd = sprintf('"%s" -b y -ba y -z y -f "%%t_%%s_%%p" -o "%s" "%s"', exe, tmp, dicom_dir);
-[st, out] = system(cmd);
+out = '';
+for k = 1:numel(folders)
+    % %t (study date and time) keeps series apart when one folder holds two studies
+    cmd = sprintf('"%s" -b y -ba y -z y -f "%%t_%%s_%%p" -o "%s" "%s"', exe, tmp, folders{k});
+    [st, o] = system(cmd);
+    out = [out o]; %#ok<AGROW>
+end
 J = dir(fullfile(tmp, '*.json'));
 if st ~= 0 && isempty(J)
     error('SeeCAT:dcm2niix', 'dcm2niix failed (exit %d):\n%s', st, out);
@@ -131,7 +141,7 @@ for i = 1:numel(J)
     img(end+1) = r; %#ok<AGROW>
 end
 if isempty(img)
-    error('SeeCAT:dcm2niix', 'dcm2niix produced no images from %s:\n%s', dicom_dir, out);
+    error('SeeCAT:dcm2niix', 'dcm2niix produced no images from %s:\n%s', strjoin(folders, ', '), out);
 end
 [~, order] = sortrows([[img.study]', [img.series]', (1:numel(img))']);
 img = img(order);
@@ -220,66 +230,6 @@ end
 
 function c = columns()
 c = {'subject', 'session', 'series', 'description', 'bids', 'note'};
-end
-
-function [folders, labels] = subjectFolders(dicom_dir)
-% One subject per folder of DICOM_DIR, or DICOM_DIR itself (see the help)
-D = dir(dicom_dir);
-D = D(~startsWith({D.name}, '.'));
-subs = D([D.isdir]);
-files = D(~[D.isdir]);
-files = files(cellfun(@isempty, regexpi({files.name}, otherFiles(), 'once')));
-folders = {dicom_dir};
-labels = {label(char(java.io.File(dicom_dir).getCanonicalFile().getName()))};
-if numel(subs) < 2 || ~isempty(files)
-    return
-end
-pid = cellfun(@patientID, fullfile(dicom_dir, {subs.name}), 'UniformOutput', false);
-if all(~cellfun(@isempty, pid)) && numel(unique(pid)) == 1
-    fprintf(['DICOM to BIDS: the %d folders in %s come from one person (same PatientID); ' ...
-        'converting them as one subject, sub-%s.\n'], numel(subs), dicom_dir, labels{1});
-    return
-end
-folders = fullfile(dicom_dir, {subs.name});
-labels = cellfun(@label, {subs.name}, 'UniformOutput', false);
-[u, ~, j] = unique(labels);
-dup = u(accumarray(j(:), 1) > 1);
-if ~isempty(dup)
-    error('SeeCAT:bids', 'Folders of %s give the same subject label sub-%s; rename them or convert them one by one.', ...
-        dicom_dir, dup{1});
-end
-end
-
-function r = otherFiles()
-% Names of files that are not DICOM images
-r = '\.(txt|md|csv|tsv|json|xlsx?|docx?|pdf|zip|gz|nii|log)$|^DICOMDIR$';
-end
-
-function s = label(name)
-s = regexprep(name, '[^a-zA-Z0-9]', '');
-if isempty(s)
-    error('SeeCAT:bids', 'Folder "%s" gives no subject label (letters and digits); give the label with ''sub''.', name);
-end
-end
-
-function id = patientID(folder)
-% PatientID of the first readable DICOM file under FOLDER ('' when none)
-id = '';
-F = dir(fullfile(folder, '**', '*'));
-F = F(~[F.isdir] & ~startsWith({F.name}, '.'));
-F = F(cellfun(@isempty, regexpi({F.name}, otherFiles(), 'once')));
-w = warning('off', 'spm:dicom');
-restore = onCleanup(@() warning(w));
-for k = 1:min(numel(F), 5)
-    try
-        [~, h] = evalc('spm_dicom_headers(fullfile(F(k).folder, F(k).name), true)');
-        if ~isempty(h) && isfield(h{1}, 'PatientID')
-            id = strtrim(char(h{1}.PatientID));
-            return
-        end
-    catch
-    end
-end
 end
 
 function out = sessions(bids_dir, sub, ses, studies)

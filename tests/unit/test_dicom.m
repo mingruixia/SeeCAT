@@ -165,16 +165,91 @@ tc.verifyTrue(all(startsWith(T.bids(~cellfun(@isempty, T.bids)), 'sub-axmb/func/
 end
 
 function testFailedSubjectDoesNotStopTheOthers(tc)
+% S_02 holds a DICOM header without its image data: dcm2niix fails on it,
+% S_01 still converts; S_03 holds no DICOM and is skipped
 root = fullfile(fileparts(tc.TestData.bids), 'dicom');
 mkdir(fullfile(root, 'S_01'));
 mkdir(fullfile(root, 'S_02'));
+mkdir(fullfile(root, 'S_03'));
 copyfile(fullfile(tc.TestData.qa, 'dcm_qa', 'In', 'Orientation', 'axmb'), fullfile(root, 'S_01'));
-fid = fopen(fullfile(root, 'S_02', 'readme.dat'), 'w'); fprintf(fid, 'not DICOM'); fclose(fid);
+src = series(tc, 'B', 1);
+F = dir(fullfile(src, '*'));
+F = F(~[F.isdir]);
+fid = fopen(fullfile(src, F(1).name), 'r');
+bytes = fread(fid, Inf, '*uint8');
+fclose(fid);
+fid = fopen(fullfile(root, 'S_02', 'IM0001'), 'w');
+fwrite(fid, bytes(1:round(numel(bytes) / 3)));
+fclose(fid);
+fid = fopen(fullfile(root, 'S_03', 'readme.dat'), 'w'); fprintf(fid, 'not DICOM'); fclose(fid);
 T = quiet(@() seecat.bids.from_dicom(root, tc.TestData.bids, 'rules', qaRules()));
+tc.verifyEqual(sort(unique(T.subject)), {'S01'; 'S02'});
 tc.verifyTrue(all(contains(T.bids(strcmp(T.subject, 'S01')), 'sub-S01/func/')));
 bad = T(strcmp(T.subject, 'S02'), :);
 tc.verifyEqual(height(bad), 1);
 tc.verifySubstring(bad.note{1}, 'dcm2niix');
+end
+
+function testModalityFoldersWithSubjectFolders(tc)
+% T1/S_01, REST/S_01, T1/S_02, REST/S_02: subjects S01 and S02 (told apart
+% by PatientID), each converted from its two folders
+root = fullfile(fileparts(tc.TestData.bids), 'dicom');
+layout(tc, root, {'T1/S_01', 'A', 1; 'REST/S_01', 'A', 2; 'T1/S_02', 'B', 1; 'REST/S_02', 'B', 2});
+[S, roots, info] = seecat.bids.scan_dicom(root);
+tc.verifyEqual(info.mode, 'PatientID');
+tc.verifyEqual(S.subject, {'S01'; 'S02'});
+tc.verifyEqual(cellfun(@numel, roots), [2; 2]);
+tc.verifyEqual(S.source{1}, 'REST/S_01; T1/S_01');
+T = quiet(@() seecat.bids.from_dicom(root, tc.TestData.bids, 'rules', qaRules()));
+got = T.bids(strcmp(T.subject, 'S01') & ~cellfun(@isempty, T.bids));
+tc.verifyNumElements(got, 2);                     % both axmb series, from two folders
+tc.verifyEqual(sort(got), {'sub-S01/func/sub-S01_task-mb_run-1_bold.nii.gz'; ...
+    'sub-S01/func/sub-S01_task-mb_run-2_bold.nii.gz'});
+end
+
+function testSubjectFoldersWithVisitsAndSeries(tc)
+% S_01/visit1/<series>, S_02/visit1/<series>: the subject folder names them
+root = fullfile(fileparts(tc.TestData.bids), 'dicom');
+layout(tc, root, {'S_01/visit1/a', 'A', 1; 'S_01/visit1/b', 'A', 2; 'S_02/visit1/a', 'B', 1});
+[S, roots] = seecat.bids.scan_dicom(root);
+tc.verifyEqual(S.subject, {'S01'; 'S02'});
+tc.verifyEqual(roots{1}, {fullfile(root, 'S_01')});
+% one person's series only: named after the folder above them
+[S, ~, info] = seecat.bids.scan_dicom(fullfile(root, 'S_01', 'visit1'));
+tc.verifyEqual(S.subject, {'visit1'});
+tc.verifyEqual(info.mode, 'PatientID');
+end
+
+function testAnonymisedFoldersAreReadFromTheTree(tc)
+% PatientID removed: modality folders with subject folders inside are
+% recognised from the tree; one folder per subject too
+root = fullfile(fileparts(tc.TestData.bids), 'dicom');
+layout(tc, root, {'T1/S_01', 'A', 1; 'REST/S_01', 'A', 2; 'T1/S_02', 'A', 1; 'REST/S_02', 'A', 2; ...
+    'T1/S_03', 'A', 1; 'REST/S_03', 'A', 2});
+anonymise(root);
+[S, ~, info] = seecat.bids.scan_dicom(root);
+tc.verifyEqual(info.mode, 'folders');
+tc.verifyEqual(S.subject, {'S01'; 'S02'; 'S03'});
+tc.verifySubstring(info.layout, 'modalities');
+% two subjects, two modalities: the modality names decide
+root2 = fullfile(fileparts(tc.TestData.bids), 'dicom2');
+layout(tc, root2, {'T1/S_01', 'A', 1; 'REST/S_01', 'A', 2; 'T1/S_02', 'A', 1; 'REST/S_02', 'A', 2});
+anonymise(root2);
+S = seecat.bids.scan_dicom(root2);
+tc.verifyEqual(S.subject, {'S01'; 'S02'});
+root3 = fullfile(fileparts(tc.TestData.bids), 'dicom3');
+layout(tc, root3, {'S_01/T1', 'A', 1; 'S_01/REST', 'A', 2; 'S_02/T1', 'A', 1; 'S_02/REST', 'A', 2});
+anonymise(root3);
+S = seecat.bids.scan_dicom(root3);
+tc.verifyEqual(S.subject, {'S01'; 'S02'});
+end
+
+function testFolderWithTwoPatientsIsAnError(tc)
+root = fullfile(fileparts(tc.TestData.bids), 'dicom');
+mkdir(root);
+copyFiles(series(tc, 'A', 1), root, 'a_');
+copyFiles(series(tc, 'B', 1), root, 'z_');
+tc.verifyError(@() seecat.bids.scan_dicom(root), 'SeeCAT:bids');
 end
 
 function testPhilipsWithoutSliceTimingIsReported(tc)
@@ -244,6 +319,61 @@ diffs = f(~cellfun(@(x) isequaln(j.(x), rj.(x)) || ...
     (isnumeric(j.(x)) && isnumeric(rj.(x)) && isequal(size(j.(x)), size(rj.(x))) && ...
     max(abs(j.(x)(:) - rj.(x)(:))) < 1e-6), f));
 tc.verifyEmpty(diffs, sprintf('%s: sidecar fields differ from the reference: %s', nii, strjoin(diffs, ', ')));
+end
+
+function d = series(tc, who, k)
+% A small series folder of person A (the Orientation phantom, axmb) or B
+% (the TotalReadoutTime session); K picks one of two
+qa = fullfile(tc.TestData.qa, 'dcm_qa', 'In');
+if who == 'A'
+    D = dir(fullfile(qa, 'Orientation', 'axmb'));
+else
+    D = dir(fullfile(qa, 'TotalReadoutTime', 'PF_PAT_POS_PFOV_PEres_INTERP_test2', '*_0016'));
+    D = [D; dir(fullfile(qa, 'TotalReadoutTime', 'PF_PAT_POS_PFOV_PEres_INTERP_test2', '*_0017'))];
+end
+D = D([D.isdir] & ~startsWith({D.name}, '.'));
+d = fullfile(D(k).folder, D(k).name);
+end
+
+function layout(tc, root, spec)
+% SPEC rows: folder under ROOT, person, series number (see series)
+for i = 1:size(spec, 1)
+    dst = fullfile(root, spec{i, 1});
+    mkdir(dst);
+    copyFiles(series(tc, spec{i, 2}, spec{i, 3}), dst, '');
+end
+end
+
+function copyFiles(src, dst, prefix)
+F = dir(fullfile(src, '*'));
+for f = F(~[F.isdir])'
+    copyfile(fullfile(f.folder, f.name), fullfile(dst, [prefix f.name]));
+end
+end
+
+function anonymise(root)
+% Overwrite PatientID and PatientName with x's of the same length
+F = dir(fullfile(root, '**', '*'));
+for f = F(~[F.isdir])'
+    file = fullfile(f.folder, f.name);
+    fid = fopen(file, 'r');
+    b = fread(fid, Inf, '*uint8')';
+    fclose(fid);
+    for el = [32 16]                               % (0010,0020), (0010,0010)
+        p = strfind(b(133:min(end, 65536)), uint8([16 0 el 0])) + 132;
+        if isempty(p), continue, end
+        p = p(1);
+        if all(b(p + 4:p + 5) >= 65 & b(p + 4:p + 5) <= 90)
+            len = double(b(p + 6)) + 256 * double(b(p + 7));
+        else
+            len = double(typecast(b(p + 4:p + 7), 'uint32'));
+        end
+        b(p + 8:p + 7 + len) = uint8('x');
+    end
+    fid = fopen(file, 'w');
+    fwrite(fid, b);
+    fclose(fid);
+end
 end
 
 function out = quiet(fn)

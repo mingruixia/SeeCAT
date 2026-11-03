@@ -435,7 +435,7 @@ show();
         cg = pageCard(g, 'Conversion', [repmat({T.row}, 1, 5), {32}]);
         H = dicomHelp();
         kinds = {'folder', 'folder', '', '', 'file'};
-        hint = {'', '', 'Empty: from folder names', 'Empty: one per scanning visit', 'Empty: T1w and resting BOLD'};
+        hint = {'', '', 'Empty: found automatically', 'Empty: one per scanning visit', 'Empty: T1w and resting BOLD'};
         ed = gobjects(1, 5);
         for i = 1:5
             uilabel(cg, 'Text', H(i).label, 'FontColor', T.text2, 'Tooltip', H(i).tip);
@@ -457,11 +457,14 @@ show();
             uiimage(cg, 'ImageSource', seecat.gui.icon('info', T.hex.muted), 'Tooltip', 'About this option', ...
                 'ImageClickedFcn', @(~, ~) dicomInfo(H(k)));
         end
-        b2 = uigridlayout(cg, [1 2], 'ColumnWidth', {140, '1x'}, 'Padding', [0 0 0 0], 'BackgroundColor', T.panel);
+        b2 = uigridlayout(cg, [1 3], 'ColumnWidth', {140, 150, '1x'}, 'Padding', [0 0 0 0], ...
+            'ColumnSpacing', 8, 'BackgroundColor', T.panel);
         b2.Layout.Row = 7;
         b2.Layout.Column = 2;
         uibutton(b2, 'Text', 'Convert', 'Icon', seecat.gui.icon('play', '#FFFFFF'), 'FontWeight', 'bold', ...
             'BackgroundColor', T.accent, 'FontColor', [1 1 1], 'ButtonPushedFcn', @(~, ~) convert(ed));
+        sb = button(b2, 'Find subjects', 'refresh', @(~, ~) scanDicom(ed));
+        sb.Tooltip = 'List the subjects SeeCAT finds in the DICOM folder, without converting';
         seecat.gui.style(fig);
     end
 
@@ -469,6 +472,37 @@ show();
         if strcmp(state.help, ['dicom:' h.label]), return, end
         setHelp(h.label, h.text, sprintf('Default:  %s\nBatch:  %s', h.default, h.batch));
         state.help = ['dicom:' h.label];
+    end
+
+    function scanDicom(ed)
+        if ~isempty(strtrim(ed(3).Value))
+            logBox.Value = {sprintf('Subject is set: everything in the DICOM folder becomes sub-%s.', ...
+                strtrim(ed(3).Value))};
+            showPane('log');
+            return
+        end
+        d = uiprogressdlg(fig, 'Title', 'DICOM to BIDS', 'Message', 'Reading DICOM headers ...', ...
+            'Indeterminate', 'on');
+        try
+            [S, ~, info] = seecat.bids.scan_dicom(ed(1).Value);
+        catch err
+            close(d);
+            uialert(fig, err.message, 'Find subjects');
+            return
+        end
+        close(d);
+        msg = {info.layout};
+        for k = 1:height(S)
+            msg{end+1} = sprintf('sub-%s  <-  %s   (PatientID %s; %d folder(s), %d file(s), %d study/studies)', ...
+                S.subject{k}, S.source{k}, S.patient_id{k}, S.folders(k), S.files(k), S.studies(k)); %#ok<AGROW>
+        end
+        for k = 1:numel(info.ignored)
+            msg{end+1} = sprintf('skipped, no DICOM files: %s', info.ignored{k}); %#ok<AGROW>
+        end
+        msg{end+1} = 'Convert uses these subjects. To change a label, convert that folder alone with Subject set.';
+        logBox.Value = msg;
+        summary.Data = S;
+        showPane('log');
     end
 
     function convert(ed)
@@ -715,13 +749,13 @@ function H = dicomHelp()
 H = struct('label', {}, 'tip', {}, 'text', {}, 'default', {}, 'batch', {});
 H(1).label = 'DICOM folder';
 H(1).tip = 'One subject''s DICOM files, or a folder with one folder per subject';
-H(1).text = sprintf(['The folder with the DICOM files, in any subfolders. It holds either one ' ...
-    'subject or one folder per subject (see Subject).\n\n' ...
+H(1).text = sprintf(['The folder with the DICOM files, arranged in any common way. Subjects ' ...
+    'come from the PatientID in the headers, or from the folder tree when IDs are removed; ' ...
+    'Find subjects lists them before converting. Files such as .txt, .csv and .nii are not read.\n\n' ...
     'Examples\n' ...
-    '  D:/dicom/S_001  ->  one subject\n' ...
-    '  D:/dicom  with S_001/, S_002/, ...  ->  sub-S001, sub-S002, ...\n' ...
-    '  D:/dicom/S_001  with T1/, REST/  ->  one subject (same PatientID)\n\n' ...
-    'Files such as .txt, .csv, .json, .nii and .zip are not read.']);
+    '  S_001/, S_002/  ->  sub-S001, sub-S002\n' ...
+    '  S_001/visit1/T1/  ->  sub-S001\n' ...
+    '  T1/S_001/, REST/S_001/  ->  sub-S001']);
 H(1).default = '(required)';
 H(1).batch = 'from_dicom(dicom_dir, bids_dir)';
 
@@ -741,14 +775,14 @@ H(3).label = 'Subject';
 H(3).tip = 'Label without "sub-", letters and digits. Empty: each folder in the DICOM folder is a subject';
 H(3).text = sprintf(['The participant label, without "sub-": letters and digits only.\n\n' ...
     'Given: everything in the DICOM folder is this subject.\n' ...
-    'Empty: each folder in the DICOM folder is one subject, named after the folder with other ' ...
-    'characters removed. When all the folders come from one person (the same PatientID), they ' ...
-    'are that subject''s series and make one subject, named after the DICOM folder. A subject ' ...
-    'that fails is reported and the others still convert.\n\n' ...
+    'Empty: SeeCAT finds the subjects (Find subjects lists them). Files of one PatientID are ' ...
+    'one subject, named after the folder that holds all of them and no one else''s, with other ' ...
+    'characters removed; a single person is named after the DICOM folder. Without usable IDs ' ...
+    'the folder tree decides. A subject that fails is reported and the others still convert.\n\n' ...
     'Examples\n' ...
     '  01  ->  sub-01\n' ...
     '  empty, folder S_001  ->  sub-S001\n' ...
-    '  empty, folder Pat-12a  ->  sub-Pat12a']);
+    '  empty, T1/Pat-12a and REST/Pat-12a  ->  sub-Pat12a']);
 H(3).default = '(empty: from folder names)';
 H(3).batch = '''sub'', ''01''';
 

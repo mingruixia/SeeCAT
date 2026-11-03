@@ -3,6 +3,16 @@
 ## Unreleased: 2.0 development
 
 ### Added
+- **DICOM to BIDS finds subjects in any common folder layout.**
+  `seecat.bids.scan_dicom` reads the first and last file of each DICOM
+  folder with a new fast header reader (`seecat.bids.dicom_header`) and
+  groups folders by PatientID, or by the folder tree when IDs are missing or
+  anonymised. One folder per subject, modality folders with subject folders
+  inside (T1/S001, REST/S001) and deeper trees (S001/visit1/T1) all work;
+  the label is the folder that holds all of a subject's files. A folder
+  mixing two patients is an error, and folders without DICOM are skipped.
+  The DICOM page has a Find subjects button that lists the subjects and
+  their folders before converting.
 - **DICOM to BIDS: help for each field.** Like the pipeline forms, every field
   has an info icon; clicking it, or editing the field, shows a description
   with examples, the default and the matching `from_dicom` argument in the
@@ -325,6 +335,16 @@
   removed, including the extra hint line on the DICOM to BIDS page.
 
 ### Added
+- **DICOM to BIDS finds subjects in any common folder layout.**
+  `seecat.bids.scan_dicom` reads the first and last file of each DICOM
+  folder with a new fast header reader (`seecat.bids.dicom_header`) and
+  groups folders by PatientID, or by the folder tree when IDs are missing or
+  anonymised. One folder per subject, modality folders with subject folders
+  inside (T1/S001, REST/S001) and deeper trees (S001/visit1/T1) all work;
+  the label is the folder that holds all of a subject's files. A folder
+  mixing two patients is an error, and folders without DICOM are skipped.
+  The DICOM page has a Find subjects button that lists the subjects and
+  their folders before converting.
 - `+seecat` namespace package (design: `Doc/design/batch-api.md`).
   - `seecat.io.read_nii` / `seecat.io.write_nii`: one NIfTI I/O layer for
     v2. Images are read in stored orientation (nothing is flipped), `.nii.gz`
