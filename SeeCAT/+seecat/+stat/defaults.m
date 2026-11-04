@@ -23,10 +23,13 @@ cfg.design_tsv = '';               % custom: TSV with a 'path' column and the de
 cfg.contrasts = struct('name', {}, 'type', {}, 'weights', {});   % empty: the design's defaults
 cfg.variance = 'auto';             % 'auto' (unequal for anova1_rm), 'equal' or 'unequal' (S6)
 cfg.mask = 'gm';                   % 'gm', 'brain' or a mask file; plus non-zero in every map (S4)
-cfg.inference = {'cluster_fwe'};   % any of cluster_fwe, voxel_fwe, voxel_fdr; {} = maps only
+cfg.inference = {'cluster_fwe'};   % any of cluster_fwe, voxel_fwe, voxel_fdr, tfce_fwe; {} = maps only
 cfg.cdt_p = 0.001;                 % cluster-forming threshold (uncorrected p)
 cfg.alpha = 0.05;                  % FWE / FDR level
 cfg.two_tailed = true;             % T contrasts tested at alpha/2 (the default pairs cover both sides)
+cfg.tfce.n_perm = 5000;            % tfce_fwe: permutations (fewer when fewer distinct ones exist)
+cfg.tfce.E = 0.5;                  % TFCE extent exponent (Smith & Nichols 2009)
+cfg.tfce.H = 2;                    % TFCE height exponent
 
 v = seecat.util.validators;
 designs = {'one_sample', 'two_sample', 'paired', 'anova1', 'anova1_rm', 'regression', 'custom'};
@@ -47,10 +50,13 @@ spec = [
     'contrasts',         @(x) isstruct(x) && (isempty(x) || all(isfield(x, {'name', 'type', 'weights'}))), 'a struct array with name, type, weights'
     'variance',          v.oneof({'auto', 'equal', 'unequal'}),             '''auto'', ''equal'' or ''unequal'''
     'mask',              @(x) v.text(x) && (any(strcmp(x, {'gm', 'brain'})) || exist(x, 'file') == 2), '''gm'', ''brain'' or a mask file'
-    'inference',         @(x) iscellstr(x) && all(ismember(x, {'cluster_fwe', 'voxel_fwe', 'voxel_fdr'})), 'a subset of cluster_fwe, voxel_fwe, voxel_fdr' %#ok<ISCLSTR>
+    'inference',         @(x) iscellstr(x) && all(ismember(x, {'cluster_fwe', 'voxel_fwe', 'voxel_fdr', 'tfce_fwe'})), 'a subset of cluster_fwe, voxel_fwe, voxel_fdr, tfce_fwe' %#ok<ISCLSTR>
     'cdt_p',             @(x) isnumeric(x) && isscalar(x) && x > 0 && x < 1, 'a p value'
     'alpha',             @(x) isnumeric(x) && isscalar(x) && x > 0 && x < 1, 'a level in (0, 1)'
     'two_tailed',        v.flag,                                            'true or false'
+    'tfce.n_perm',       @(x) v.count(x) && x >= 100,                       'an integer >= 100'
+    'tfce.E',            @(x) isnumeric(x) && isscalar(x) && x > 0,         'a positive number'
+    'tfce.H',            @(x) isnumeric(x) && isscalar(x) && x > 0,         'a positive number'
     }
     spec];
 end

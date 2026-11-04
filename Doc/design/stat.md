@@ -16,7 +16,7 @@ DPABI-derived code.
 - Every result self-describing: design, contrasts, df, smoothness, resels and
   thresholds in JSON sidecars, not in the 80-character header.
 
-Not in 2.0: non-parametric permutation inference (v2.x), mixed models,
+Not in 2.0: mixed models,
 surface data.
 
 ## 2. What a user writes
@@ -126,13 +126,20 @@ the field of view. (2) is what SPM does with its implicit mask.
 | `cluster_fwe` (default) | clusters of voxels above a cluster-forming threshold; cluster p by RFT (`spm_P_RF`, Friston 1994 / Hayasaka 2004 for T and F fields) | `cdt_p = 0.001`, `alpha = 0.05` |
 | `voxel_fwe` | voxel p by RFT (EC densities of the T/F field, `spm_uc_RF`) | `alpha = 0.05` |
 | `voxel_fdr` | Benjamini–Hochberg over the mask's voxels | `q = 0.05` |
+| `tfce_fwe` | TFCE (Smith & Nichols 2009; E 0.5, H 2, 26-connectivity, dh = max/100) of the positive T/F image; voxel FWE p from the maximum TFCE over permutations (Freedman–Lane; sign flips for `one_sample`, swaps within subjects for `paired`/`anova1_rm`, row permutations otherwise; whitened data when non-sphericity is estimated). All distinct permutations when fewer than `n_perm` exist; fixed seed. Not with image covariates | `tfce.n_perm = 5000`, `alpha = 0.05` |
 | `none` | maps only | |
 
 - T contrasts are one-sided, as in SPM; the default contrast pairs (`A>B`,
   `B>A`) cover both directions. `two_tailed = true` (default) splits `alpha`
   over the pair (each tested at alpha / 2), so the familywise rate for the
   two-sided question stays at `alpha`. F contrasts are not split.
-- Clusters use 18-connectivity (SPM). See S3.
+- Clusters use 18-connectivity (SPM). See S3. TFCE enhancement uses
+  26-connectivity (as FSL); its surviving voxels are then grouped into
+  clusters with 18-connectivity for the table.
+- `tfce_fwe` is the only method that is slow (about 0.2 s per permutation
+  and contrast for 52 000 voxels at 3 mm). The analysis is one unit, so
+  `seecat.run` keeps it on the client and the permutations use the
+  parallel pool (`n_workers`).
 - Cluster-forming p 0.001 by default: lenient thresholds (p 0.01, 0.05) give
   inflated false-positive rates with RFT (Eklund et al. 2016). Values above
   0.001 are allowed with a warning in the log and the JSON.

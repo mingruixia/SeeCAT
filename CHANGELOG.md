@@ -3,6 +3,18 @@
 ## Unreleased: 2.0 development
 
 ### Added
+- **Statistics: TFCE correction (`tfce_fwe`).** Threshold-free cluster
+  enhancement with voxel FWE p from permutations (Freedman-Lane; sign
+  flips, row permutations or swaps within subjects by design), as FSL
+  randomise. `tfce.n_perm` (5000), `tfce.E`, `tfce.H`. Writes the TFCE map,
+  -log10 FWE p, the thresholded map and a cluster table. Parallel workers
+  now share the permutations (a single-unit pipeline runs on the client).
+- **Statistics: Maps as fixed fields.** Map (desc), Statistic, Suffix,
+  Space, Task and Other replace the key=value text; each lists the values
+  found in the derivatives folder, and a line counts the matching maps.
+- **Help everywhere.** Every option of every page has a full description
+  with examples; the help column scrolls, and each page has a longer
+  overview there.
 - **Parallel workers: auto.** Every pipeline takes `n_workers = 'auto'`
   (all workers of the default cluster profile) besides 0 (serial) and a
   number.
@@ -11,6 +23,10 @@
   map smoothing has an On box (off = `smooth_fwhm` 0). The Degree page and
   the shared Output/Selection/Run options have full descriptions with
   examples.
+- **Fixed: viewer.** Going from Mosaic back to Orthogonal left the mosaic
+  over the top-left view (a hidden axes still shows its image), which also
+  hid later redraws such as a new colour map. hot and gray colour maps no
+  longer start at black, so voxels just above the threshold stay visible.
 - **Fixed: Degree run failed with "distance_edges must be increasing".**
   JSON has no Inf, so the window's config file (handed to the run) turned
   `[0 Inf]` into `[0 null]`. `save_config` now writes numbers with Inf or

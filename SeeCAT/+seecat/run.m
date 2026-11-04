@@ -56,7 +56,11 @@ status = cell(n, 1);
 message = cell(n, 1);
 seconds = nan(n, 1);
 results = cell(n, 1);
-parfor (i = 1:n, nWorkers)
+outer = nWorkers;
+if n == 1
+    outer = 0;          % one unit (group statistics): the pool is left to the unit, e.g. TFCE permutations
+end
+parfor (i = 1:n, outer)
     [status{i}, message{i}, seconds(i), results{i}] = runUnit(units(i), cfg, cfgHash, logDir, runId);
 end
 

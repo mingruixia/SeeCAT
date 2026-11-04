@@ -163,6 +163,8 @@ cfg.design_tsv = fullfile(root, 'design.tsv');
 cfg.output_dir = fullfile(root, 'out');
 cfg.mask = 'brain';
 cfg.contrasts = struct('name', 'BgtA', 'type', 't', 'weights', [-1 1]);
+cfg.inference = {'cluster_fwe', 'tfce_fwe'};
+cfg.tfce.n_perm = 200;
 S = quiet(@() seecat.run(cfg));
 tc.verifyEqual(S.status, {'ok'});
 tc.verifyEqual(S.n_voxels, prod(dim) - 2 * 20 * 20);
@@ -171,10 +173,77 @@ g = fullfile(root, 'out', 'group', 'planted');
 Tab = seecat.io.read_tsv(fullfile(g, 'planted_contrast-BgtA_desc-clusterFWE_clusters.tsv'));
 first = Tab(find(Tab.survives, 1), :);
 tc.verifyLessThan(norm([first.x first.y first.z] - (M(1:3, :) * [10; 10; 10; 1])'), 7);
+Tf = seecat.io.read_tsv(fullfile(g, 'planted_contrast-BgtA_desc-tfceFWE_clusters.tsv'));
+tc.verifyGreaterThanOrEqual(height(Tf), 1);
+tc.verifyLessThan(norm([Tf.x(1) Tf.y(1) Tf.z(1)] - (M(1:3, :) * [10; 10; 10; 1])'), 7);
+tc.verifyLessThan(Tf.p_peak_tfce_fwe(1), 0.05);
+tc.verifyTrue(exist(fullfile(g, 'planted_contrast-BgtA_desc-tfceFWE_stat-p_statmap.nii.gz'), 'file') == 2);
 j = jsondecode(fileread(fullfile(g, 'planted_contrast-BgtA_stat-t_statmap.json')));
 tc.verifyEqual(j.DegreesOfFreedom(:)', [1 n - 2]);
 V = spm_vol(gunzipTo(fullfile(g, 'planted_contrast-BgtA_stat-t_statmap.nii.gz'), root));
 tc.verifySubstring(V.descrip, sprintf('CAT{T_[%.1f]}{dLh_', n - 2));
+end
+
+function testTfceAgainstDefinition(tc)
+% Two blobs; TFCE by its definition, cluster sizes found voxel by voxel
+rng(3);
+v = zeros(9, 9, 9);
+v(2:4, 2:4, 2:4) = 1 + rand(3, 3, 3);
+v(7, 7, 7) = 2.5;
+v(5, 5, 5) = -3;                               % negative: no enhancement
+E = 0.5; H = 2; dh = max(v(:)) / 100;
+ref = zeros(size(v));
+for h = dh:dh:max(v(:))
+    [lab, nc] = spm_bwlabel(double(v >= h), 26);
+    for k = 1:nc
+        in = lab == k;
+        ref(in) = ref(in) + nnz(in) ^ E * h ^ H * dh;
+    end
+end
+t = seecat.stat.tfce(v, E, H, 26);
+tc.verifyEqual(t, ref, 'AbsTol', 1e-10);
+tc.verifyEqual(t(5, 5, 5), 0);
+end
+
+function testPermutationTfce(tc)
+% One-sample: every sign flip of 8 maps is used (2^8 = 256 < n_perm) and a
+% planted effect survives; null data give p >= alpha almost everywhere.
+rng(7);
+dim = [12 12 12];
+mask = true(dim);
+n = 8;
+X = ones(n, 1);
+con = struct('name', 'pos', 'type', 't', 'weights', 1);
+blob = zeros(dim);
+blob(4:8, 4:8, 4:8) = 1.5;
+Y = randn(n, prod(dim)) + blob(:)';
+G = seecat.stat.glm(Y, X, con);
+P = seecat.stat.permutation(Y, X, G.con, mask, struct('scheme', 'flip', 'n_perm', 1000));
+tc.verifyEqual(P.n_perm, 256);
+tc.verifyLessThan(median(P.p_fwe(blob(:) > 0)), 0.05);
+tc.verifyGreaterThan(median(P.p_fwe(blob(:) == 0)), 0.5);
+tc.verifyGreaterThanOrEqual(min(P.p_fwe), 1 / 256);
+% two-sample with random permutations: reproducible (fixed seed), F works
+g = [zeros(10, 1); ones(10, 1)];
+X2 = [1 - g, g];
+Y2 = randn(20, prod(dim)) + 1.5 * g * blob(:)';
+c2 = struct('name', {'BgtA', 'diff'}, 'type', {'t', 'F'}, 'weights', {[-1 1], [-1 1]});
+G2 = seecat.stat.glm(Y2, X2, c2);
+o = struct('scheme', 'perm', 'n_perm', 200);
+A = seecat.stat.permutation(Y2, X2, G2.con, mask, o);
+B = seecat.stat.permutation(Y2, X2, G2.con, mask, o);
+tc.verifyEqual(A(1).max_null, B(1).max_null);
+tc.verifyLessThan(median(A(1).p_fwe(blob(:) > 0)), 0.05);
+tc.verifyLessThan(median(A(2).p_fwe(blob(:) > 0)), 0.05);
+% paired: swaps within subjects, all 2^6 of them
+s = repelem((1:6)', 2);
+lv = repmat([1; 0], 6, 1);
+X3 = [lv, 1 - lv, double(s == 1:6)];
+Y3 = randn(12, prod(dim)) + lv * blob(:)' + s * ones(1, prod(dim));
+c3 = struct('name', 'AgtB', 'type', 't', 'weights', [1 -1 zeros(1, 6)]);
+G3 = seecat.stat.glm(Y3, X3, c3);
+P3 = seecat.stat.permutation(Y3, X3, G3.con, mask, struct('scheme', 'within', 'blocks', s, 'n_perm', 500));
+tc.verifyEqual(P3.n_perm, 64);
 end
 
 %% Helpers -------------------------------------------------------------------

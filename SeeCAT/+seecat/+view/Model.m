@@ -558,7 +558,7 @@ for side = 1:2
             col = cat(3, zeros(size(t)), t, ones(size(t)));          % negative: blue -> cyan
         end
     else
-        cm = feval(cmap, 256);
+        cm = seecat.view.colours(cmap, 256);
         k = max(1, min(256, round(t * 255) + 1));
         col = reshape(cm(k, :), [size(t) 3]);
     end

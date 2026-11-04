@@ -4,9 +4,10 @@ function I = inference(c, mask, hdr, S, opt)
 %
 % C is one element of G.con (seecat.stat.glm), MASK the 3D analysis mask,
 % HDR its header, S the smoothness (seecat.stat.smoothness). OPT fields:
-%   method  'cluster_fwe', 'voxel_fwe' or 'voxel_fdr'
+%   method  'cluster_fwe', 'voxel_fwe', 'voxel_fdr' or 'tfce_fwe'
 %   alpha   familywise / FDR level (already split for two tails by the caller)
 %   cdt_p   cluster-forming threshold, uncorrected p (cluster_fwe)
+%   perm    tfce_fwe: this contrast's element of seecat.stat.permutation
 % Random field theory and FDR use SPM's functions on SPM's definitions, so
 % the numbers equal SPM's results table for the same model (decision S1):
 % spm_u / spm_uc (heights), spm_P (cluster and peak p, stationary fields),
@@ -51,6 +52,9 @@ switch opt.method
             k = k + 1;
         end
         I.extent = k;
+    case 'tfce_fwe'
+        keep = opt.perm.p_fwe(:) < opt.alpha & stat > 0;
+        u = min([stat(keep); Inf]);              % the lowest surviving statistic
     otherwise
         error('SeeCAT:stat', 'Unknown inference method "%s".', opt.method);
 end
@@ -72,6 +76,10 @@ label = zeros(size(mask));
 label(lab > 0) = newLab(lab(lab > 0));
 I.label = label;
 I.keep = label(idx) > 0;
+if strcmp(opt.method, 'tfce_fwe')
+    I.table = tfceTable(c, stat, opt.perm.p_fwe(:), mask, hdr, label);
+    return
+end
 I.table = clusterTable(c, stat, mask, hdr, lab, S, u, df, STAT);
 I.table.survives = ismember(I.table.cluster, survive);
 I.table.cluster = newLab(I.table.cluster) .* I.table.survives;
@@ -143,4 +151,52 @@ for cl = 1:nc
 end
 [~, order] = sort(peak, 'descend');
 order = order(:)';
+end
+
+function T = tfceTable(c, stat, pfwe, mask, hdr, label)
+% Surviving clusters (18-connectivity) with up to 3 local maxima more than
+% 8 mm apart: statistic, Z, TFCE FWE p of the voxel, mm
+names = {'cluster', 'voxels', 'peak_stat', 'peak_z', 'p_peak_tfce_fwe', 'x', 'y', 'z'};
+T = cell2table(cell(0, numel(names)), 'VariableNames', names);
+T.survives = false(0, 1);
+nc = max(label(:));
+if nc == 0
+    return
+end
+vol = zeros(size(mask));
+vol(mask) = stat;
+pv = ones(size(mask));
+pv(mask) = pfwe;
+zv = zeros(size(mask));
+zv(mask) = c.z;
+in = find(label > 0);
+[i, j, k] = ind2sub(size(mask), in);
+[~, ~, XYZ] = spm_max(vol(in)', [i j k]');
+lin = sub2ind(size(mask), XYZ(1, :), XYZ(2, :), XYZ(3, :));
+mm = hdr.mat(1:3, :) * [XYZ; ones(1, size(XYZ, 2))];
+clusterOf = label(lin);
+rows = {};
+for cl = sortClusters(label, vol, nc)
+    m = find(clusterOf == cl);
+    [~, o] = sort(vol(lin(m)), 'descend');
+    m = m(o);
+    chosen = [];
+    for q = m
+        if isempty(chosen) || all(sqrt(sum((mm(:, chosen) - mm(:, q)) .^ 2, 1)) > 8)
+            chosen(end+1) = q; %#ok<AGROW>
+        end
+        if numel(chosen) == 3
+            break
+        end
+    end
+    for q = chosen
+        nv = NaN;
+        if q == chosen(1)
+            nv = nnz(label == cl);
+        end
+        rows(end+1, :) = {cl, nv, vol(lin(q)), zv(lin(q)), pv(lin(q)), mm(1, q), mm(2, q), mm(3, q)}; %#ok<AGROW>
+    end
+end
+T = cell2table(rows, 'VariableNames', names);
+T.survives = true(height(T), 1);
 end

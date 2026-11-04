@@ -46,6 +46,24 @@ for s = 1:numel(secs)
     heights(s) = sum(rows) + 6 * (numel(rows) - 1) + 22 + 2;
 end
 g.RowHeight = num2cell(heights);
+iMaps = find(strcmp({F.widget}, 'maps'), 1);
+iIn = find(strcmp({F.path}, 'input_dir'), 1);
+if ~isempty(iMaps) && ~isempty(iIn)
+    m = ctl{iMaps};
+    in = ctl{iIn};
+    % the maps fields list what the derivatives folder holds and count the matches
+    recount = @() countMaps(m, in, false);
+    for h = [num2cell(m.dd), {m.other}]
+        old = h{1}.ValueChangedFcn;               % the help call
+        h{1}.ValueChangedFcn = @(s, e) both(old, recount, s, e);
+    end
+    for h = m.dd
+        h.DropDownOpeningFcn = @(~, ~) fillMaps(m, in);
+    end
+    old = in.ValueChangedFcn;
+    in.ValueChangedFcn = @(s, e) both(old, @() countMaps(m, in, true), s, e);
+    countMaps(m, in, false);
+end
 total = pad(2) + pad(4) + sum(heights) + g.RowSpacing * (numel(heights) - 1);
 parent.AutoResizeChildren = 'off';               % otherwise SizeChangedFcn never runs
 parent.SizeChangedFcn = @(~, ~) fit();
@@ -93,6 +111,8 @@ switch f.widget
         h = 176;
     case 'contrasts'
         h = 110;
+    case 'maps'
+        h = 4 * 26 + 3 * 4;
     otherwise
         h = seecat.gui.theme().row;
 end
@@ -198,6 +218,30 @@ switch f.widget
         uilabel(bar, 'Text', 'Spheres and masks can be mixed', ...
             'FontColor', T.muted, 'FontSize', T.size.small);
         recheck(c);
+    case 'maps'                                   % entity selector: fixed fields
+        holder = uigridlayout(cg, [4 4], 'ColumnWidth', {64, '1x', 64, '1x'}, 'RowHeight', {26, 26, 26, 26}, ...
+            'Padding', [0 0 0 0], 'RowSpacing', 4, 'ColumnSpacing', 8, 'BackgroundColor', T.panel);
+        keys = {'desc', 'stat', 'suffix', 'space', 'task'};
+        names = {'Map (desc)', 'Statistic', 'Suffix', 'Space', 'Task'};
+        tips = {'desc label of the maps, e.g. PCC or degPosBinR0p2Sm6', 'stat label, e.g. z or raw', ...
+            'file type, e.g. connectivity', 'e.g. MNI152NLin2009cAsym; empty: any', 'e.g. rest; empty: any'};
+        if ~isstruct(v), v = struct(); end
+        c = struct('keys', {keys}, 'dd', gobjects(1, numel(keys)), 'other', [], 'count', [], 'cache', []);
+        for q = 1:numel(keys)
+            uilabel(holder, 'Text', names{q}, 'FontColor', T.text2, 'Tooltip', tips{q});
+            val = '';
+            if isfield(v, keys{q}), val = char(string(v.(keys{q}))); end
+            c.dd(q) = uidropdown(holder, 'Editable', 'on', 'Items', unique({'', val}, 'stable'), 'Value', val, ...
+                'BackgroundColor', T.panel, 'FontColor', T.text, 'Tooltip', [tips{q} '. Type, or open the list for the values found.'], ...
+                'ValueChangedFcn', @(~, ~) help());
+        end
+        rest = rmfield(v, intersect(fieldnames(v), keys));
+        uilabel(holder, 'Text', 'Other', 'FontColor', T.text2, 'Tooltip', 'Any other entity, e.g. ses=1, run=1');
+        c.other = uieditfield(holder, 'text', 'Value', seecat.gui.format(rest, 'maps'), ...
+            'Placeholder', 'e.g. ses=1, run=1', edit{:});
+        c.count = uilabel(holder, 'Text', '', 'FontColor', T.muted, 'FontSize', T.size.small);
+        c.count.Layout.Row = 4;
+        c.count.Layout.Column = [1 4];
     case 'contrasts'
         c = uitable(cg, 'Data', contrastTable(v), 'ColumnEditable', true, 'RowName', {}, ...
             'ColumnName', {'Name', 'Type', 'Weights'}, 'Tooltip', tipText, ...
@@ -234,6 +278,9 @@ function browse(c, kind)
 if strcmp(kind, 'folder')
     p = uigetdir(c.Value);
     if ~isequal(p, 0), c.Value = p; end
+    if ~isequal(p, 0) && ~isempty(c.ValueChangedFcn)
+        c.ValueChangedFcn(c, []);                 % as if typed (e.g. the maps fields list the folder)
+    end
 else
     [f, p] = uigetfile('*.*');
     if ~isequal(f, 0), c.Value = fullfile(p, f); end
@@ -289,10 +336,98 @@ switch f.widget
         end
     case 'seeds'
         v = seedsFrom(c.Data);
+    case 'maps'
+        v = mapsFrom(c);
     case 'contrasts'
         v = contrastsFrom(c.Data);
     otherwise
         v = seecat.gui.parse(c.Value, f.widget, old);
+end
+end
+
+% ---- maps: entity selector of the per-subject maps ---------------------
+
+function v = mapsFrom(c)
+v = seecat.gui.parse(c.other.Value, 'maps', struct());
+for q = 1:numel(c.keys)
+    s = strtrim(char(c.dd(q).Value));
+    if ~isempty(s)
+        v.(c.keys{q}) = s;
+    end
+end
+end
+
+function both(f1, f2, s, e)
+f1(s, e);
+f2();
+end
+
+function F = mapFiles(dirField, fresh)
+% Image files of the derivatives folder that can be maps (cached per folder)
+persistent cacheDir cacheFiles
+F = [];
+d = strtrim(dirField.Value);
+if isempty(d) || ~exist(d, 'dir')
+    return
+end
+if isequal(cacheDir, d) && ~fresh
+    F = cacheFiles;
+    return
+end
+try
+    L = seecat.bids.layout(d);
+catch
+    return
+end
+F = seecat.bids.query(L, 'ext', {'.nii', '.nii.gz'});
+F = F(~ismember({F.suffix}, {'bold', 'boldref', 'mask', 'dseg', 'probseg', 'T1w', 'T2w'}));
+cacheDir = d;
+cacheFiles = F;
+end
+
+function fillMaps(c, dirField)
+F = mapFiles(dirField, false);
+if isempty(F)
+    return
+end
+for q = 1:numel(c.keys)
+    k = c.keys{q};
+    if strcmp(k, 'suffix')
+        vals = {F.suffix};
+    else
+        vals = arrayfun(@(f) ent(f, k), F, 'UniformOutput', false);
+    end
+    vals = unique(vals(~cellfun(@isempty, vals)));
+    cur = char(c.dd(q).Value);
+    c.dd(q).Items = unique([{''}, vals(:)', {cur}], 'stable');
+    c.dd(q).Value = cur;
+end
+end
+
+function countMaps(c, dirField, fresh)
+F = mapFiles(dirField, fresh);
+if isempty(F)
+    c.count.Text = 'Set the derivatives folder above, then open a list to pick from the maps found there.';
+    return
+end
+v = mapsFrom(c);
+keep = true(size(F));
+for k = fieldnames(v)'
+    if strcmp(k{1}, 'suffix')
+        have = {F.suffix};
+    else
+        have = arrayfun(@(f) ent(f, k{1}), F, 'UniformOutput', false);
+    end
+    keep = keep & strcmp(have, v.(k{1}));
+end
+subs = unique(arrayfun(@(f) ent(f, 'sub'), F(keep), 'UniformOutput', false));
+c.count.Text = sprintf('%d map(s) of %d subject(s) match.', nnz(keep), numel(subs));
+end
+
+function x = ent(f, k)
+x = '';
+if isfield(f.ent, k)
+    x = f.ent.(k);
 end
 end
 

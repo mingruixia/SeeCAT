@@ -452,6 +452,7 @@ end
             place(app.ax.coronal, 1, 2);
             place(app.ax.axial, 2, 1);
             place(info, 2, 2);
+            cla(app.ax.main);                     % a hidden axes still shows its image (the mosaic)
             app.ax.main.Visible = 'off';
             app.ax.main.Layout.Row = 1;
             app.ax.main.Layout.Column = 1;
@@ -1021,7 +1022,7 @@ if strcmp(L.colormap, 'auto')
     pos = [ones(128, 1), t', zeros(128, 1)];
     neg = [zeros(128, 1), t', ones(128, 1)];
 else
-    pos = feval(L.colormap, 128);
+    pos = seecat.view.colours(L.colormap, 128);
     neg = pos;
 end
 if hasPos && hasNeg

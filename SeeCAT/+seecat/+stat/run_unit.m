@@ -93,6 +93,11 @@ seecat.io.write_tsv(dsg, tsv);
 seecat.util.publish_output(tsv, fullfile(out, [cfg.name '_design.tsv']), [], pub);
 put(uint8(mask), [cfg.name '_desc-mask_mask'], struct('Description', 'analysis mask'), 'uint8');
 
+perm = [];
+if ismember('tfce_fwe', cfg.inference)
+    perm = permutations(Y, D.X, G.con, mask, opt, cfg, maps, q, log);
+end
+
 dLh = (4 * reallog(2)) ^ 1.5 / prod(S.FWHM);   % reallog: 'log' is the logger here
 report.contrasts = {};
 nClusters = 0;
@@ -127,12 +132,26 @@ for k = 1:numel(G.con)
     end
     entry = struct('name', c.name, 'type', STAT, 'df', c.df, 'methods', {{}});
     for method = cfg.inference
-        I = seecat.stat.inference(c, mask, hdr, S, struct('method', method{1}, 'alpha', alpha, 'cdt_p', cfg.cdt_p));
-        tag = struct('cluster_fwe', 'clusterFWE', 'voxel_fwe', 'voxelFWE', 'voxel_fdr', 'voxelFDR').(method{1});
+        io = struct('method', method{1}, 'alpha', alpha, 'cdt_p', cfg.cdt_p);
+        if strcmp(method{1}, 'tfce_fwe')
+            io.perm = perm(k);
+        end
+        I = seecat.stat.inference(c, mask, hdr, S, io);
+        tag = struct('cluster_fwe', 'clusterFWE', 'voxel_fwe', 'voxelFWE', 'voxel_fdr', 'voxelFDR', ...
+            'tfce_fwe', 'tfceFWE').(method{1});
         mm = meta;
         mm.Inference = struct('Method', method{1}, 'Alpha', alpha, 'TwoTailedSplit', STAT == 'T' && cfg.two_tailed, ...
             'ClusterFormingP', cfg.cdt_p * strcmp(method{1}, 'cluster_fwe'), 'HeightThreshold', I.height, ...
             'ExtentThresholdVoxels', I.extent, 'Connectivity', 18);
+        if strcmp(method{1}, 'tfce_fwe')
+            mm.Inference.TFCE = struct('E', cfg.tfce.E, 'H', cfg.tfce.H, 'Connectivity', 26, ...
+                'Permutations', perm(k).n_perm, 'Scheme', perm(k).scheme, 'Method', 'Freedman-Lane');
+            m = mm;
+            m.Statistic = 'TFCE of the positive statistic';
+            put(onMask(perm(k).tfce, mask), sprintf('%s_desc-tfce_stat-tfce_statmap', stem), m);
+            m.Statistic = '-log10(p), TFCE FWE (permutations)';
+            put(onMask(-log10(perm(k).p_fwe), mask), sprintf('%s_desc-tfceFWE_stat-p_statmap', stem), m);
+        end
         s = zeros(size(mask));
         s(mask) = c.stat;
         s(I.label == 0) = 0;
@@ -162,6 +181,40 @@ seecat.util.write_json(rj, report);
 seecat.util.publish_output(rj, fullfile(out, [cfg.name '_report.json']), [], pub);
 result = struct('n_maps', n, 'n_dropped', numel(unit.dropped), 'n_voxels', nnz(mask), ...
     'df', G.erdf, 'fwhm_mm', mean(S.FWHMmm), 'surviving_clusters', nClusters);
+end
+
+function P = permutations(Y, X, con, mask, opt, cfg, maps, q, log)
+% TFCE FWE for every contrast, sharing one set of permutations
+if q
+    error('SeeCAT:stat', 'tfce_fwe does not support image covariates; use another correction.');
+end
+switch cfg.design
+    case 'one_sample'
+        scheme = 'flip';
+    case {'paired', 'anova1_rm'}
+        scheme = 'within';
+    otherwise
+        scheme = 'perm';
+end
+workers = 0;
+if ~isequal(cfg.n_workers, 0) && license('test', 'Distrib_Computing_Toolbox')
+    pool = gcp('nocreate');
+    if ~isempty(pool)
+        workers = pool.NumWorkers;
+        if isnumeric(cfg.n_workers)
+            workers = min(workers, cfg.n_workers);
+        end
+    end
+end
+po = struct('scheme', scheme, 'blocks', {maps.sub}, 'n_perm', cfg.tfce.n_perm, 'E', cfg.tfce.E, ...
+    'H', cfg.tfce.H, 'workers', workers, 'seed', 0);
+if isfield(opt, 'V')
+    po.V = opt.V;
+end
+t = tic;
+P = seecat.stat.permutation(Y, X, con, mask, po);
+log('TFCE: %d permutations (%s), %d contrast(s), %d worker(s), %.0f s', P(1).n_perm, scheme, ...
+    numel(con), workers, toc(t));
 end
 
 function m = analysisMask(spec, hdr)
