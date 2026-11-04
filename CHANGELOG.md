@@ -3,6 +3,24 @@
 ## Unreleased: 2.0 development
 
 ### Added
+- **Gradients page (`gradient` pipeline).** Connectivity gradients by
+  diffusion map embedding with BrainSpace's steps (top-10% row sparsity,
+  normalized-angle or cosine affinity, alpha 0.5). Nodes are voxels of a
+  coarser MNI grid (node size 3-12 mm, in a grey-matter, brain or own mask)
+  or atlas parcels. Runs are aligned to the gradients of the group-mean
+  matrix (default) or to each other (generalized Procrustes). Writes
+  desc-grad<k><nodes> maps per run, the group reference and a table of
+  eigenvalues. Checks free memory first. The embedding equals the exact
+  diffusion map to 1e-10; BrainSpace differs from it by up to 0.4% (it runs
+  a symmetric eigensolver on the row-normalised matrix); Procrustes equals
+  BrainSpace's.
+- **Harmonize page (`harmonize` pipeline).** Multi-site harmonisation of
+  per-subject maps between the measures and Statistics: ComBat with
+  parametric or non-parametric empirical Bayes, without EB, location only,
+  ComBat-GAM (spline covariates), CovBat, and linear regression; optional
+  reference site. Results equal neuroCombat's (fixtures in
+  tests/fixtures/combat). Writes desc-<name>ComBat maps and reports the
+  share of voxels with a site effect before and after.
 - **Statistics: TFCE correction (`tfce_fwe`).** Threshold-free cluster
   enhancement with voxel FWE p from permutations (Freedman-Lane; sign
   flips, row permutations or swaps within subjects by design), as FSL

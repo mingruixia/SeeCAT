@@ -2,7 +2,8 @@
 
 SeeCAT (Seed-based Connectivity Analysis Toolbox) is a MATLAB toolbox for
 resting-state fMRI: preprocessing, denoising, seed-based functional
-connectivity, voxel-wise degree centrality, group statistics and viewing,
+connectivity, voxel-wise degree centrality, connectivity gradients,
+multi-site harmonisation, group statistics and viewing,
 from a BIDS dataset to BIDS-derivatives outputs.
 
 Version 2.0 is a rewrite. It needs only SPM; it no longer uses DPABI or the
@@ -70,7 +71,9 @@ seecat.viewer('group/.../..._stat-t_statmap.nii.gz')
 | `fmriprep` | the same denoising, from fMRIPrep outputs |
 | `fc` | seed-based connectivity maps (r and Fisher z) |
 | `degree` | voxel-wise degree and strength |
-| `stat` | GLM group statistics (one-sample, two-sample, paired, ANOVA, regression) with RFT and FDR inference |
+| `gradient` | connectivity gradients (diffusion map embedding, as BrainSpace) on voxel or atlas nodes, aligned across runs |
+| `harmonize` | multi-site harmonisation of per-subject maps: ComBat (parametric, non-parametric, no EB, location only), ComBat-GAM, CovBat, linear regression |
+| `stat` | GLM group statistics (one-sample, two-sample, paired, ANOVA, regression) with RFT, FDR and TFCE (permutation) inference |
 
 DICOM to BIDS: `seecat.bids.from_dicom(dicom_dir, bids_dir)` finds the
 subjects from the DICOM headers and the folder tree (one folder per subject,

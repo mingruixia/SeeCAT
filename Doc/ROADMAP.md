@@ -117,5 +117,6 @@ Thresholding and the cluster report in the viewer are not cut.
 
 - Image calculator (moved from v2.0).
 - Light VBM (DARTEL/Shooting, modulated GM, TIV) and structural covariance.
-- TFCE and permutation tests, ComBat, linear mixed models.
+- Linear mixed models. (TFCE, ComBat-family harmonisation and connectivity
+  gradients moved into v2.0, 2026-11-04.)
 - lFCD, fECM, dynamic FC.

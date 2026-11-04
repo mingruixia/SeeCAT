@@ -11,7 +11,8 @@ end
 
 function testEveryOptionIsInTheForm(tc)
 % Options deliberately left to config files (not in the window)
-batchOnly = struct('prep', {{}}, 'fmriprep', {{}}, 'fc', {{}}, 'degree', {{}}, ...
+batchOnly = struct('prep', {{}}, 'fmriprep', {{}}, 'fc', {{}}, 'degree', {{}}, 'gradient', {{}}, ...
+    'harmonize', {{'sessions', 'task', 'runs', 'n_workers'}}, ...
     'stat', {{'sessions', 'task', 'runs', 'image_covariates'}});
 for p = fieldnames(batchOnly)'
     cfg = seecat.config(p{1});

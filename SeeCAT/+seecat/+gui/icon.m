@@ -64,6 +64,10 @@ switch name
         b = '<circle cx="12" cy="12" r="1"/><circle cx="12" cy="12" r="5"/><circle cx="12" cy="12" r="9"/>';
     case 'network'
         b = '<circle cx="12" cy="5" r="2"/><circle cx="5" cy="18" r="2"/><circle cx="19" cy="18" r="2"/><circle cx="12" cy="13" r="2"/><path d="M12 7v4M10.4 14.2l-3.8 2.6M13.6 14.2l3.8 2.6"/>';
+    case 'gradient'    % an axis with nodes spread along it
+        b = '<path d="M3 20L21 4"/><circle cx="6" cy="17.3" r="1.6"/><circle cx="12" cy="12" r="1.6"/><circle cx="18" cy="6.7" r="1.6"/><path d="M5 9h4M15 19h4"/>';
+    case 'merge'       % several sites brought to one scale
+        b = '<path d="M4 5h5l6 7h5M4 19h5l6-7M4 12h16"/><path d="M17 9l3 3-3 3"/>';
     case 'stat'        % scatter
         b = '<path d="M4 4v16h16"/><circle cx="9" cy="14" r="1.4"/><circle cx="13" cy="10" r="1.4"/><circle cx="17.5" cy="6.5" r="1.4"/><circle cx="16" cy="14.5" r="1.4"/>';
     case 'brain'
