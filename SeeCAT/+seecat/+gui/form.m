@@ -90,7 +90,7 @@ end
 function h = rowHeight(f)
 switch f.widget
     case 'seeds'
-        h = 132;
+        h = 176;
     case 'contrasts'
         h = 110;
     otherwise
@@ -100,7 +100,7 @@ end
 
 function c = makeRow(cg, f, v, r, T, help)
 tipText = tip(f);
-if any(strcmp(f.widget, {'seeds', 'contrasts'}))
+if strcmp(f.widget, 'contrasts')
     lg = uigridlayout(cg, [3 1], 'RowHeight', {T.row, 26, '1x'}, 'Padding', [0 0 0 0], ...
         'RowSpacing', 4, 'BackgroundColor', T.panel);
     uilabel(lg, 'Text', f.label, 'FontColor', T.text2, 'Tooltip', tipText);
@@ -108,7 +108,7 @@ if any(strcmp(f.widget, {'seeds', 'contrasts'}))
         'FontColor', T.text2);
     lg.Layout.Row = r;
     lg.Layout.Column = 1;
-else
+elseif ~strcmp(f.widget, 'seeds')                 % the seed table is as wide as its card
     lab = uilabel(cg, 'Text', f.label, 'FontColor', T.text2, 'Tooltip', tipText);
     lab.Layout.Row = r;
     lab.Layout.Column = 1;
@@ -151,10 +151,25 @@ switch f.widget
         uibutton(holder, 'Text', '', 'Icon', seecat.gui.icon('folder'), 'BackgroundColor', T.panel, ...
             'Tooltip', 'Browse', 'ButtonPushedFcn', @(~, ~) browse(c, f.widget));
     case 'seeds'
-        c = uitable(cg, 'Data', seedTable(v), 'ColumnEditable', true, 'RowName', {}, ...
-            'ColumnName', {'Name', 'x', 'y', 'z', 'Radius', 'File'}, 'Tooltip', tipText, ...
-            'ColumnWidth', {110, 50, 50, 50, 56, 'auto'}, 'CellEditCallback', @(~, ~) help());
-        add.ButtonPushedFcn = @(~, ~) set(c, 'Data', [c.Data; {'', 0, 0, 0, 6, ''}]);
+        holder = uigridlayout(cg, [2 1], 'RowHeight', {26, '1x'}, 'Padding', [0 0 0 0], ...
+            'RowSpacing', 4, 'BackgroundColor', T.panel);
+        bar = uigridlayout(holder, [1 5], 'ColumnWidth', {104, 124, 116, 84, '1x'}, 'Padding', [0 0 0 0], ...
+            'ColumnSpacing', 6, 'BackgroundColor', T.panel);
+        c = uitable(holder, 'Data', seedTable(v), 'RowName', {}, ...
+            'ColumnName', {'Name', 'Type', 'Centre x y z (mm)', 'Radius (mm)', 'Check', 'Mask file'}, ...
+            'ColumnEditable', [true true true true false true], ...
+            'ColumnFormat', {'char', {'Sphere', 'Mask'}, 'char', 'char', 'char', 'char'}, ...
+            'ColumnWidth', {100, 80, 130, 86, 120, 400}, 'Tooltip', tipText);
+        c.CellEditCallback = @(~, e) seedEdited(c, e, help);
+        c.CellSelectionCallback = @(~, e) set(c, 'UserData', unique(e.Indices(:, 1))');
+        seedButton(bar, 'Add sphere', 'target', 'Add a sphere seed (centre and radius in MNI mm)', @() addSphere(c, help));
+        seedButton(bar, 'Add mask files', 'image', 'Add one seed per mask image (NIfTI in MNI space; voxels > 0)', ...
+            @() addMasks(c, help));
+        seedButton(bar, 'Choose file', 'folder', 'Choose the mask file of the selected row', @() chooseMask(c, help));
+        seedButton(bar, 'Remove', 'minus', 'Remove the selected rows', @() removeSeeds(c, help));
+        uilabel(bar, 'Text', 'Spheres and masks can be mixed', ...
+            'FontColor', T.muted, 'FontSize', T.size.small);
+        recheck(c);
     case 'contrasts'
         c = uitable(cg, 'Data', contrastTable(v), 'ColumnEditable', true, 'RowName', {}, ...
             'ColumnName', {'Name', 'Type', 'Weights'}, 'Tooltip', tipText, ...
@@ -169,6 +184,9 @@ if isempty(holder)
 else
     holder.Layout.Row = r;
     holder.Layout.Column = 2;
+    if strcmp(f.widget, 'seeds')
+        holder.Layout.Column = [1 2];
+    end
 end
 end
 
@@ -214,28 +232,188 @@ switch f.widget
 end
 end
 
+% ---- seeds: one row per seed, a sphere or a mask image ----------------
+% Columns: name, type ('Sphere' or 'Mask'), centre ('x y z'), radius, check
+% (what is wrong with the row, or 'OK'), mask file
+
 function T = seedTable(s)
 T = cell(0, 6);
 for i = 1:numel(s)
-    c = [NaN NaN NaN];
-    rad = NaN;
-    file = '';
-    if isfield(s, 'center') && ~isempty(s(i).center), c = s(i).center(:)'; end
-    if isfield(s, 'radius') && ~isempty(s(i).radius), rad = s(i).radius; end
-    if isfield(s, 'file') && ~isempty(s(i).file), file = s(i).file; end
-    T(end+1, :) = {s(i).name, c(1), c(2), c(3), rad, file}; %#ok<AGROW>
+    if isfield(s, 'file') && ~isempty(s(i).file)
+        T(end+1, :) = {s(i).name, 'Mask', '', '', '', s(i).file}; %#ok<AGROW>
+    else
+        T(end+1, :) = {s(i).name, 'Sphere', sprintf('%g %g %g', s(i).center), sprintf('%g', s(i).radius), '', ''}; %#ok<AGROW>
+    end
 end
 end
 
 function s = seedsFrom(T)
 s = struct('name', {}, 'center', {}, 'radius', {}, 'file', {});
 for i = 1:size(T, 1)
-    if isempty(T{i, 1}), continue, end
-    if ~isempty(T{i, 6})
-        s(end+1) = struct('name', T{i, 1}, 'center', [], 'radius', [], 'file', T{i, 6}); %#ok<AGROW>
-    else
-        s(end+1) = struct('name', T{i, 1}, 'center', [T{i, 2:4}], 'radius', T{i, 5}, 'file', ''); %#ok<AGROW>
+    if all(cellfun(@(x) isempty(strtrim(char(x))), T(i, [1 3 6]))), continue, end   % a blank row
+    [msg, c, r] = seedCheck(T(i, :), T(:, 1));
+    if ~strcmp(msg, 'OK')
+        error('SeeCAT:gui', 'Seed %d (%s): %s.', i, strtrim(char(T{i, 1})), msg);
     end
+    if strcmp(T{i, 2}, 'Mask')
+        s(end+1) = struct('name', strtrim(T{i, 1}), 'center', [], 'radius', [], 'file', strtrim(T{i, 6})); %#ok<AGROW>
+    else
+        s(end+1) = struct('name', strtrim(T{i, 1}), 'center', c, 'radius', r, 'file', ''); %#ok<AGROW>
+    end
+end
+end
+
+function [msg, c, r] = seedCheck(row, names)
+% 'OK', or what is wrong with one row; C and R are the sphere's centre and
+% radius
+c = [];
+r = [];
+name = strtrim(char(row{1}));
+if isempty(regexp(name, '^[a-zA-Z0-9]+$', 'once'))
+    msg = 'name: letters and digits';
+    return
+end
+if nnz(strcmp(strtrim(cellstr(names)), name)) > 1
+    msg = 'name used twice';
+    return
+end
+if strcmp(row{2}, 'Mask')
+    f = strtrim(char(row{6}));
+    if isempty(f)
+        msg = 'choose a mask file';
+    elseif ~exist(f, 'file')
+        msg = 'file not found';
+    elseif isempty(regexpi(f, '\.nii(\.gz)?$', 'once'))
+        msg = 'not a .nii or .nii.gz';
+    else
+        msg = 'OK';
+    end
+    return
+end
+c = sscanf(regexprep(char(row{3}), '[,;\[\]]', ' '), '%f')';
+r = str2double(row{4});
+if numel(c) ~= 3 || any(~isfinite(c))
+    msg = 'centre: three numbers, x y z';
+elseif ~isfinite(r) || r <= 0
+    msg = 'radius: a number above 0';
+else
+    msg = 'OK';
+end
+end
+
+function recheck(c)
+% Fill the Check column and colour the rows that need fixing
+D = c.Data;
+for i = 1:size(D, 1)
+    D{i, 5} = seedCheck(D(i, :), D(:, 1));
+end
+c.Data = D;
+removeStyle(c);
+bad = find(~strcmp(D(:, 5), 'OK'));
+if ~isempty(bad)
+    addStyle(c, uistyle('FontColor', [0.75 0.1 0.1]), 'cell', [bad(:), repmat(5, numel(bad), 1)]);
+end
+end
+
+function seedButton(parent, text, iconName, tipText, fn)
+T = seecat.gui.theme();
+uibutton(parent, 'Text', text, 'Icon', seecat.gui.icon(iconName), 'Tooltip', tipText, ...
+    'BackgroundColor', T.panel, 'FontColor', T.text2, 'ButtonPushedFcn', @(~, ~) fn());
+end
+
+function seedEdited(c, e, help)
+r = e.Indices(1);
+D = c.Data;
+if e.Indices(2) == 2 && strcmp(D{r, 2}, 'Sphere') && isempty(strtrim(D{r, 3}))
+    D(r, [3 4 6]) = {'0 0 0', '6', ''};               % switched to a sphere: a centre to edit
+    c.Data = D;
+elseif e.Indices(2) == 2 && strcmp(D{r, 2}, 'Mask') && isempty(strtrim(D{r, 6}))
+    c.UserData = r;                               % switched to a mask: pick the file now
+    chooseMask(c, help);
+    return
+elseif e.Indices(2) == 6 && ~isempty(strtrim(D{r, 6}))
+    D{r, 2} = 'Mask';                             % a path typed in: it is a mask
+    c.Data = D;
+end
+recheck(c);
+help();
+end
+
+function addSphere(c, help)
+c.Data = [c.Data; {newName(c.Data(:, 1), 'Seed'), 'Sphere', '0 0 0', '6', '', ''}];
+recheck(c);
+help();
+end
+
+function addMasks(c, help)
+[f, p] = uigetfile({'*.nii;*.nii.gz', 'NIfTI images (*.nii, *.nii.gz)'}, 'Seed masks', 'MultiSelect', 'on');
+figure(ancestor(c, 'figure'));
+if isequal(f, 0), return, end
+D = c.Data;
+for k = cellstr(f)
+    D(end+1, :) = {newName(D(:, 1), maskName(k{1})), 'Mask', '', '', '', fullfile(p, k{1})}; %#ok<AGROW>
+end
+c.Data = D;
+recheck(c);
+help();
+end
+
+function chooseMask(c, help)
+rows = c.UserData;
+if ~isscalar(rows) || rows > size(c.Data, 1)
+    uialert(ancestor(c, 'figure'), 'Select one row of the seed table first.', 'Seeds', 'Icon', 'info');
+    return
+end
+[f, p] = uigetfile({'*.nii;*.nii.gz', 'NIfTI images (*.nii, *.nii.gz)'}, 'Seed mask');
+figure(ancestor(c, 'figure'));
+D = c.Data;
+if isequal(f, 0)
+    if strcmp(D{rows, 2}, 'Mask') && isempty(strtrim(D{rows, 6}))
+        D(rows, 2:4) = {'Sphere', '0 0 0', '6'};  % nothing chosen: back to a sphere
+        c.Data = D;
+        recheck(c);
+    end
+    return
+end
+D(rows, [2 3 4 6]) = {'Mask', '', '', fullfile(p, f)};
+if isempty(strtrim(D{rows, 1})) || ~isempty(regexp(D{rows, 1}, '^Seed\d*$', 'once'))
+    D{rows, 1} = newName(D([1:rows-1, rows+1:end], 1), maskName(f));
+end
+c.Data = D;
+recheck(c);
+help();
+end
+
+function removeSeeds(c, help)
+rows = c.UserData;
+if isempty(rows) || any(rows > size(c.Data, 1))
+    uialert(ancestor(c, 'figure'), 'Select the rows to remove first.', 'Seeds', 'Icon', 'info');
+    return
+end
+c.Data(rows, :) = [];
+c.UserData = [];
+recheck(c);
+help();
+end
+
+function n = maskName(file)
+% A seed name from a mask file name: PCC_sphere6mm_mask.nii.gz -> PCCsphere6mm
+n = regexprep(file, '(?i)\.nii(\.gz)?$', '');
+n = regexprep(n, '(?i)([_\-. ]?(mask|roi|seed|bin|binary))+$', '');
+n = regexprep(n, '[^a-zA-Z0-9]', '');
+if isempty(n)
+    n = 'Seed';
+end
+end
+
+function n = newName(names, base)
+% BASE, or BASE2, BASE3, ... when taken ('Seed' always gets a number)
+taken = strtrim(cellstr(names));
+n = base;
+k = 1;
+while any(strcmp(taken, n)) || (strcmp(base, 'Seed') && k == 1)
+    n = sprintf('%s%d', base, k);
+    k = k + 1;
 end
 end
 

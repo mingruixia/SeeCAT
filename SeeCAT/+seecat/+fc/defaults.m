@@ -9,6 +9,9 @@ function [cfg, spec] = defaults()
 % (letters and digits) and either center (mm) + radius (mm), or file (a
 % mask image):
 %   cfg.seeds = struct('name', {'PCC', 'mPFC'}, 'center', {[0 -53 26], [0 52 -6]}, 'radius', 6);
+% Spheres and masks mix; a mask row leaves center and radius empty:
+%   cfg.seeds = struct('name', {'PCC', 'Hippo'}, 'center', {[0 -53 26], []}, ...
+%       'radius', {6, []}, 'file', {'', 'D:/masks/hippocampus_L.nii'});
 
 [cfg, spec] = seecat.util.common_defaults();
 cfg = catstruct(struct('pipeline', 'fc', 'input_dir', ''), cfg);

@@ -3,6 +3,13 @@
 ## Unreleased: 2.0 development
 
 ### Added
+- **Seed table: spheres and masks side by side.** Each row has a Type
+  (Sphere or Mask). A sphere takes its centre as one "x y z" cell and a
+  radius; a mask takes a NIfTI file. Add sphere, Add mask files (several at
+  once, named after the files), Choose file (for the selected row) and
+  Remove replace the old Add row button and typed paths. A Check column
+  says what a row still needs, and Run refuses a bad row with that message.
+  The table spans the card's width.
 - **DICOM to BIDS: resting-state names and reruns.** The default BOLD rule
   also knows RS as a word (`ge_func_..._RS`, `RS_bold`). A series that
   matches no rule but looks like BOLD (2D EPI, 20+ volumes, not diffusion)
