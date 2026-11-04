@@ -27,9 +27,36 @@ if ~isempty(ctx.files.t1w)
         anat = struct('Sources', {{bidsUri(t1, opt.bids_dir)}});
         put(ctx.files.biascorr, name(t1, 'datatype', 'anat', 'desc', 'preproc', 'suffix', 'T1w'), anat);
         labels = {'GM', 'WM', 'CSF'};
+        vol = tissueVolumes(ctx.files);             % mL, from the native maps
         for k = 1:3
+            m = anat;
+            m.VolumeML = vol(k);
+            if k == 1
+                m.TissueVolumesML = struct('GM', vol(1), 'WM', vol(2), 'CSF', vol(3), 'TIV', sum(vol));
+            end
             put(ctx.files.(sprintf('c%d', k)), ...
-                name(t1, 'datatype', 'anat', 'label', labels{k}, 'suffix', 'probseg'), anat);
+                name(t1, 'datatype', 'anat', 'label', labels{k}, 'suffix', 'probseg'), m);
+        end
+        if isfield(ctx.files, 'vbm1')               % VBM maps, normalised (and smoothed)
+            desc = 'warped';
+            if opt.vbm.modulated, desc = 'modulated'; end
+            for k = 1:3
+                f = ctx.files.(sprintf('vbm%d', k));
+                Vv = spm_vol(f);
+                res = seecat.util.number_label(round(mean(sqrt(sum(Vv.mat(1:3, 1:3) .^ 2))), 2));
+                m = anat;
+                m.Description = sprintf('%s %s probability in IXI549Space (SPM segmentation)', desc, labels{k});
+                m.Modulated = opt.vbm.modulated;
+                m.TIV_ML = sum(vol);
+                sp = {'datatype', 'anat', 'space', 'IXI549Space', 'res', res, 'label', labels{k}, 'suffix', 'probseg'};
+                put(f, name(t1, sp{:}, 'desc', desc), m);
+                if any(opt.vbm.fwhm > 0)
+                    fs = fullfile(ctx.work_dir, sprintf('s%s_%d.nii', desc, k));
+                    spm_smooth(f, fs, opt.vbm.fwhm);
+                    m.SmoothingFWHM = opt.vbm.fwhm;
+                    put(fs, name(t1, sp{:}, 'desc', [desc 'Sm' seecat.util.number_label(opt.vbm.fwhm)]), m);
+                end
+            end
         end
         anat.Software = spm('Ver');
         put(ctx.files.deform, name(t1, 'datatype', 'anat', 'from', 'T1w', 'to', 'IXI549Space', ...
@@ -48,4 +75,13 @@ end
 function u = bidsUri(f, root)
 rel = strrep(f(numel(root) + 2:end), '\', '/');
 u = ['bids:raw:' rel];
+end
+
+function v = tissueVolumes(files)
+% GM, WM, CSF in mL: sum of the native probability maps times the voxel volume
+v = zeros(1, 3);
+for k = 1:3
+    [p, V] = seecat.io.read_nii(files.(sprintf('c%d', k)));
+    v(k) = sum(double(p(:))) * abs(det(V(1).mat(1:3, 1:3))) / 1000;
+end
 end

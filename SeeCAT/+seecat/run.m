@@ -53,7 +53,10 @@ if ischar(cfg.n_workers) || isstring(cfg.n_workers)  % 'auto': as many as memory
     log('Parallel workers (auto): %s', note);
 end
 nWorkers = seecat.util.start_pool(cfg.n_workers);
-hashCfg = rmfield(cfg, {'n_workers', 'overwrite', 'keep_work'});
+if isfield(cfg, 'qc_excluded') && ~isempty(cfg.qc_excluded)
+    log('Left out by QC (reports/qc_exclusions.tsv): %s', strjoin(cfg.qc_excluded, ', '));
+end
+hashCfg = rmfield(cfg, intersect(fieldnames(cfg), {'n_workers', 'overwrite', 'keep_work', 'qc_excluded'}));
 cfgHash = seecat.util.hash(hashCfg);
 n = numel(units);
 status = cell(n, 1);

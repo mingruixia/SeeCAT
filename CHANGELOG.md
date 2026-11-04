@@ -3,6 +3,30 @@
 ## Unreleased: 2.0 development
 
 ### Added
+- **Image quality metrics (MRIQC) in Preprocessing (`qc.iqm`, on).** BOLD:
+  tSNR, SNR, FBER, EFC, ghost-to-signal (x, y), standardised DVARS, FD,
+  AFNI outlier ratio and quality index, global correlation, smoothness; T1w:
+  CNR, CJV, SNR (tissue, Dietrich), EFC, FBER, bias-field median and range,
+  WM-to-max, volume fractions, partial-volume residuals, smoothness, TIV.
+  Computed from what preprocessing already makes (segmentation,
+  realignment, coregistration), on the raw data without slice timing.
+  The formula-based IQMs equal MRIQC 24.0.2's own functions on the same
+  inputs (fixtures in tests/fixtures/iqm); AFNI-based ones (aor, aqi, gcor,
+  fwhm) are re-implemented from their definitions.
+- **QC exclusions.** The group QC report now shows largest translation and
+  rotation, coverage of the template brain (total, top, bottom), the IQM
+  distributions per site, and writes reports/qc_exclusions.tsv: runs that
+  break a rule (`qc.max_translation` 3 mm, `qc.max_rotation` 3 deg,
+  `qc.max_mean_fd` 0.5 mm, too little data, `qc.min_coverage` 0.9) are
+  suggested for exclusion, IQM outliers within a site are warned about. The
+  QC reports page lists every run with these numbers and an Exclude box;
+  saved decisions survive a new run. Seed FC, Degree, Gradients, Harmonize
+  and Statistics leave excluded runs out (`qc_exclusions`, on) and log them.
+- **VBM maps (`vbm.enable`).** The T1w segmentation also writes GM/WM/CSF
+  normalised to IXI549Space (1.5 mm), modulated or not, and smoothed
+  (desc-modulatedSm8). Tissue volumes and TIV are written for every T1w
+  (reports/anat_volumes.tsv); Statistics and Harmonize can use tiv_ml as a
+  covariate directly.
 - **Parallel workers 'auto' chooses by memory.** seecat.util.auto_workers
   estimates the memory of one task (from the largest run and brain mask,
   the node count for gradients, the maps for TFCE) plus 1 GB per worker and

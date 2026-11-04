@@ -15,6 +15,7 @@ cfg.space = 'MNI152NLin2009cAsym';   % fMRIPrep output space to use
 cfg.res = '';                        % res label, needed only when there are several
 cfg.dummy_scans = 'auto';            % 'auto' = fMRIPrep's leading non-steady-state volumes
 [cfg, dspec] = seecat.util.denoise_defaults(cfg);
+[cfg, qspec] = seecat.util.qc_defaults(cfg, false); % exclusion rules (no IQMs: no raw data)
 
 v = seecat.util.validators;
 spec = [
@@ -26,6 +27,7 @@ spec = [
     'dummy_scans',   @(x) v.auto(x) || v.count(x),                 '''auto'' or a non-negative integer'
     }
     dspec
+    qspec
     spec];
 end
 

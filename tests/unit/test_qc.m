@@ -89,7 +89,12 @@ tc.verifySubstring(html, 'class="shade"');              % censored frames in the
 tc.verifyNumElements(strsplit(strtrim(fileread(R.manifest)), newline), 4);   % 2 figures, page, metrics
 G = seecat.qc.group_report(out, 'prep', table({'sub-02_task-rest'}, {'failed'}, {'boom'}, ...
     'VariableNames', {'unit', 'status', 'message'}));
-tc.verifyEqual(G.flag, {'high FD, little data'});
+tc.verifySubstring(G.reasons{1}, 'too little data after censoring');   % (a tiny synthetic volume
+tc.verifySubstring(G.reasons{1}, 'coverage < 90%');                    % covers little of the brain)
+tc.verifyFalse(contains(G.reasons{1}, 'mean FD'));                    % mean FD 0.3: a warning only
+tc.verifySubstring(G.warnings{1}, 'mean FD > 0.25 mm');
+tc.verifyTrue(isfield(Mt, 'coverage') && Mt.coverage >= 0 && Mt.coverage <= 1);
+tc.verifyTrue(exist(fullfile(out, 'reports', 'qc_exclusions.tsv'), 'file') == 2);
 g = fileread(fullfile(out, 'reports', 'prep_qc.html'));
 tc.verifySubstring(g, 'href="../sub-01/sub-01_task-rest_desc-qc_report.html"');
 tc.verifySubstring(g, 'sub-02_task-rest: boom');

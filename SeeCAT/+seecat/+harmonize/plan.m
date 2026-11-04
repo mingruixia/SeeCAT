@@ -7,7 +7,8 @@ if strcmp(cfg.method, 'combat_gam') && isempty(cfg.nonlinear)
     error('SeeCAT:harmonize', 'combat_gam needs "nonlinear" (e.g. age): the covariates fitted as splines.');
 end
 cols = unique([{cfg.site}, cfg.covariates(:)', cfg.nonlinear(:)'], 'stable');
-[maps, dropped, root] = seecat.bids.select_maps(cfg.input_dir, cfg.maps, cfg.subjects, cfg.participants, cols);
+[maps, dropped, root] = seecat.bids.select_maps(cfg.input_dir, cfg.maps, cfg.subjects, cfg.participants, cols, ...
+    cfg.qc_exclusions);
 if isempty(cfg.output_dir)
     cfg.output_dir = root;
 end

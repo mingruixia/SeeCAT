@@ -2,7 +2,9 @@ function ctx = step_segment(ctx, opt, log)
 % SPM unified segmentation with the SPM tissue probability maps. Source is
 % the coregistered T1w ('segment') or the mean EPI ('epi'). Writes native
 % GM/WM/CSF (c1-c3), the bias-corrected image (m) and the forward
-% deformation to IXI549Space (y_).
+% deformation to IXI549Space (y_). With opt.vbm (T1w only), also the GM, WM
+% and CSF maps normalised to IXI549Space at the TPM resolution (1.5 mm):
+% modulated (mwc, opt.modulated) or not (wc).
 
 if strcmp(opt.source, 'segment')
     src = ctx.files.t1w;
@@ -10,10 +12,14 @@ else
     src = ctx.files.mean;
 end
 tpm = fullfile(spm('dir'), 'tpm', 'TPM.nii');
+vbm = isfield(opt, 'vbm') && opt.vbm && strcmp(opt.source, 'segment');
 ngaus = [1 1 2 3 4 2];
 for k = 1:6
     tissue(k) = struct('tpm', {{sprintf('%s,%d', tpm, k)}}, 'ngaus', ngaus(k), ...
         'native', [k <= 3, 0], 'warped', [0 0]); %#ok<AGROW>
+    if vbm && k <= 3
+        tissue(k).warped = [~opt.modulated, opt.modulated];
+    end
 end
 p.channel = struct('vols', {{[src ',1']}}, 'biasreg', 0.001, 'biasfwhm', 60, 'write', [0 1]);
 p.tissue = tissue;
@@ -28,5 +34,12 @@ for k = 1:3
 end
 ctx.files.biascorr = fullfile(d, ['m' n '.nii']);
 ctx.files.deform = fullfile(d, ['y_' n '.nii']);
+if vbm
+    pre = 'wc';
+    if opt.modulated, pre = 'mwc'; end
+    for k = 1:3
+        ctx.files.(sprintf('vbm%d', k)) = fullfile(d, sprintf('%s%d%s.nii', pre, k, n));
+    end
+end
 log('segment: %s', opt.source);
 end

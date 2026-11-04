@@ -73,4 +73,5 @@ F(end+1) = f('smooth_fwhm', 'Smooth maps', 'optnumber', 'Output maps', 'choices'
     'as group statistics usually need. Untick On to skip smoothing. Three values, e.g. ' ...
     '6 6 8, give a different FWHM per axis.']));
 F = [F, seecat.gui.common(true)];
+F(end+1) = seecat.gui.qc_field('Selection');
 end

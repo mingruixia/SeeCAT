@@ -26,6 +26,7 @@ cfg.covbat_var = 0.95;             % covbat: share of variance of the harmonised
 cfg.mask = 'gm';                   % voxels harmonised: 'gm', 'brain' or a mask file (and non-zero in every map)
 cfg.label = 'ComBat';              % appended to the desc label of the outputs
 
+cfg.qc_exclusions = true;         % leave out runs excluded in reports/qc_exclusions.tsv
 v = seecat.util.validators;
 methods = {'combat', 'combat_nonparam', 'combat_noeb', 'combat_mean', 'combat_gam', 'covbat', 'lm'};
 spec = [
@@ -43,6 +44,7 @@ spec = [
     'covbat_var',   @(x) isnumeric(x) && isscalar(x) && x > 0 && x <= 1, 'a share in (0, 1]'
     'mask',         @(x) v.text(x) && (any(strcmp(x, {'gm', 'brain'})) || exist(x, 'file') == 2), '''gm'', ''brain'' or a mask file'
     'label',        @(x) v.text(x) && ~isempty(regexp(x, '^[a-zA-Z0-9]+$', 'once')), 'letters and digits'
+    'qc_exclusions', v.flag, 'true or false'
     }
     spec];
 end

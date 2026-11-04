@@ -31,6 +31,7 @@ cfg.tfce.n_perm = 5000;            % tfce_fwe: permutations (fewer when fewer di
 cfg.tfce.E = 0.5;                  % TFCE extent exponent (Smith & Nichols 2009)
 cfg.tfce.H = 2;                    % TFCE height exponent
 
+cfg.qc_exclusions = true;         % leave out runs excluded in reports/qc_exclusions.tsv
 v = seecat.util.validators;
 designs = {'one_sample', 'two_sample', 'paired', 'anova1', 'anova1_rm', 'regression', 'custom'};
 spec = [
@@ -57,6 +58,7 @@ spec = [
     'tfce.n_perm',       @(x) v.count(x) && x >= 100,                       'an integer >= 100'
     'tfce.E',            @(x) isnumeric(x) && isscalar(x) && x > 0,         'a positive number'
     'tfce.H',            @(x) isnumeric(x) && isscalar(x) && x > 0,         'a positive number'
+    'qc_exclusions', v.flag, 'true or false'
     }
     spec];
 end

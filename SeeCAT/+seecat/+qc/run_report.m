@@ -15,10 +15,14 @@ function M = run_report(R)
 %   tissue         {GM, WM, CSF} probability maps on the BOLD grid (optional)
 %   confounds      confounds TSV (FD, motion, censor)
 %   summary        struct of extra summary values (e.g. qc from the run)
+%   iqm            struct of MRIQC metrics (bold_*, t1_*; prep with qc.iqm)
 % Writes sub-<sub>/figures/<id>_desc-{carpet,registration,tissue}.png,
 % sub-<sub>/<id>_desc-qc_report.html and <id>_desc-qc_metrics.json. M are
 % the metrics: tSNR, DVARS and FD-DVARS correlations before/after
-% denoising, plus R.summary.
+% denoising, largest translation (mm) and rotation (degrees), coverage
+% (share of the template brain inside the field of view, also for its top,
+% z > 50 mm, and bottom, z < -30 mm: cerebellum and temporal poles), plus
+% R.summary; the JSON also holds R.iqm.
 
 pub = struct('output_dir', R.output_dir, 'work_dir', R.work_dir, 'manifest', R.manifest);
 fig = fullfile(R.work_dir, 'qcfig');
@@ -34,7 +38,9 @@ T = seecat.io.read_tsv(R.confounds);
 [Y, V] = seecat.io.read_nii(R.bold, 'Class', 'single');
 Y = Y(:, :, :, first:end);
 hdr = V(1);
-mask = logical(seecat.io.read_nii(R.mask, 'Ref', hdr)) & all(Y ~= 0 & isfinite(Y), 4);
+valid = all(Y ~= 0 & isfinite(Y), 4);              % inside the field of view in every frame
+mask = logical(seecat.io.read_nii(R.mask, 'Ref', hdr)) & valid;
+cov = coverage(valid, hdr);
 meanImg = mean(Y, 4);
 Y = reshape(Y, [], size(Y, 4))';
 Yp = double(Y(:, mask(:)));
@@ -47,6 +53,14 @@ if ismember('censor', T.Properties.VariableNames)
 end
 
 M = struct();
+mot = {'trans_x', 'trans_y', 'trans_z', 'rot_x', 'rot_y', 'rot_z'};
+if all(ismember(mot, T.Properties.VariableNames))
+    M.max_translation = max(abs(T{first:end, mot(1:3)}), [], 'all');
+    M.max_rotation = max(abs(T{first:end, mot(4:6)}), [], 'all') * 180 / pi;
+end
+M.coverage = cov.total;
+M.coverage_superior = cov.superior;
+M.coverage_inferior = cov.inferior;
 mu = mean(Yp, 1);
 M.tsnr_median = median(mu ./ std(Yp, 0, 1));
 dv = dvars(Yp);
@@ -116,14 +130,20 @@ mot(~ismember(mot, T.Properties.VariableNames)) = {''};
 tr = svg(t, cols(T, mot(1:3)), struct('ylabel', 'mm', 'names', {{'trans x', 'trans y', 'trans z'}}));
 rt = svg(t, cols(T, mot(4:6)) * 180 / pi, struct('ylabel', 'degrees', 'names', {{'rot x', 'rot y', 'rot z'}}));
 dvp = svg(t, [dv'; dvd'], struct('ylabel', 'DVARS (%)', 'shade', censor' > 0, 'names', {{'before denoising', 'after denoising'}}));
-html = page(R, M, fdp, tr, rt, dvp, [R.id '_desc-carpet.png'], captions, [R.id '_desc-registration.png'], tissueFile);
+html = page(R, M, fdp, tr, rt, dvp, [R.id '_desc-carpet.png'], captions, [R.id '_desc-registration.png'], tissueFile, cov);
 h = fullfile(R.work_dir, [R.id '_desc-qc_report.html']);
 fid = fopen(h, 'w', 'n', 'UTF-8');
 fwrite(fid, html, 'char');
 fclose(fid);
 seecat.util.publish_output(h, fullfile(rel, [R.id '_desc-qc_report.html']), [], pub);
 j = fullfile(R.work_dir, [R.id '_desc-qc_metrics.json']);
-seecat.util.write_json(j, M);
+J = M;
+if isfield(R, 'iqm') && ~isempty(R.iqm)
+    for f = fieldnames(R.iqm)'
+        J.(f{1}) = R.iqm.(f{1});
+    end
+end
+seecat.util.write_json(j, J);
 seecat.util.publish_output(j, fullfile(rel, [R.id '_desc-qc_metrics.json']), [], pub);
 end
 
@@ -180,7 +200,25 @@ function s = svg(t, Y, o)
 s = seecat.qc.svg_lines(t, Y, o);
 end
 
-function html = page(R, M, fdp, tr, rt, dvp, carpet, captions, reg, tissue)
+function c = coverage(valid, hdr)
+% Share of the template brain mask inside the field of view
+vox = mean(sqrt(sum(hdr.mat(1:3, 1:3) .^ 2)));
+res = 3;
+if abs(vox - 2) < abs(vox - 3)
+    res = 2;
+end
+here = fileparts(fileparts(fileparts(mfilename('fullpath'))));
+b = seecat.io.read_nii(fullfile(here, 'templates', sprintf('tpl-IXI549Space_res-%d_desc-brain_mask.nii', res)), ...
+    'Ref', hdr, 'Interp', 0) > 0;
+[i, j, k] = ndgrid(1:hdr.dim(1), 1:hdr.dim(2), 1:hdr.dim(3));
+z = reshape(hdr.mat(3, :) * [i(:) j(:) k(:) ones(numel(i), 1)]', hdr.dim);
+share = @(m) nnz(valid & m) / max(nnz(m), 1);
+c.total = share(b);
+c.superior = share(b & z > 50);
+c.inferior = share(b & z < -30);
+end
+
+function html = page(R, M, fdp, tr, rt, dvp, carpet, captions, reg, tissue, cov)
 rows = '';
 for f = fieldnames(M)'
     v = M.(f{1});
@@ -219,9 +257,11 @@ html = ['<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="
     'before and after denoising.</p>' dvp ...
     '<h2>Carpet plots</h2><p class="note">' order ' (Power 2017); ' strjoin(captions, ', then ') ...
     '. Each voxel detrended and z-scored on the kept frames; censored frames tinted red.</p><img src="figures/' carpet '" alt="carpet plots">' ...
-    '<h2>Registration</h2><p class="note">Mean normalised BOLD; red: template GM outline, yellow: brain mask. ' ...
-    'Rows: axial, coronal, sagittal; left on the left.</p><img src="figures/' reg '" alt="registration">' ...
-    tissueHtml '</body></html>'];
+    '<h2>Registration and coverage</h2><p class="note">Mean normalised BOLD; red: template GM outline, yellow: brain mask. ' ...
+    'Rows: axial, coronal, sagittal; left on the left. ' ...
+    sprintf('The field of view holds %.0f%% of the template brain (top, z &gt; 50 mm: %.0f%%; bottom, z &lt; -30 mm, cerebellum and temporal poles: %.0f%%).', ...
+    100 * cov.total, 100 * cov.superior, 100 * cov.inferior) '</p><img src="figures/' reg '" alt="registration">' ...
+    tissueHtml iqmHtml(R) '</body></html>'];
 end
 
 function t = label(k)
@@ -231,10 +271,51 @@ L = struct('dummy_scans', 'non-steady-state volumes dropped', 'n_frames', 'frame
     'normalise_method', 'normalisation', 'tsnr_median', 'tSNR (median)', ...
     'fd_dvars_r_preproc', 'r(FD, DVARS) before denoising', 'dvars_median_preproc', 'DVARS median before (%)', ...
     'fd_dvars_r_denoised', 'r(FD, DVARS) after denoising (kept frames)', 'dvars_median_denoised', 'DVARS median after (%)', ...
-    'wm_voxels', 'WM mask voxels', 'csf_voxels', 'CSF mask voxels');
+    'wm_voxels', 'WM mask voxels', 'csf_voxels', 'CSF mask voxels', ...
+    'max_translation', 'largest translation (mm)', 'max_rotation', 'largest rotation (degrees)', ...
+    'coverage', 'template brain in the field of view', 'coverage_superior', '... its top (z > 50 mm)', ...
+    'coverage_inferior', '... its bottom (z < -30 mm)');
 if isfield(L, k)
     t = L.(k);
 else
     t = strrep(k, '_', ' ');
 end
 end
+
+function h = iqmHtml(R)
+% The MRIQC metrics, BOLD then T1w, with a short meaning of the main ones
+h = '';
+if ~isfield(R, 'iqm') || isempty(R.iqm) || isempty(fieldnames(R.iqm))
+    return
+end
+Q = R.iqm;
+tip = struct('bold_tsnr', 'temporal SNR, higher is better', 'bold_snr', 'SNR of the mean EPI, higher is better', ...
+    'bold_fber', 'foreground to background energy, higher is better', 'bold_efc', 'entropy focus (ghosting, blurring), lower is better', ...
+    'bold_gsr_x', 'ghost to signal along x, lower is better', 'bold_gsr_y', 'ghost to signal along y (usual phase encoding), lower is better', ...
+    'bold_dvars_std', 'standardised DVARS, near 1 is good', 'bold_aor', 'share of outlier voxels per volume (AFNI), lower is better', ...
+    'bold_aqi', 'AFNI quality index, lower is better', 'bold_gcor', 'global correlation, lower is better', ...
+    'bold_fd_mean', 'mean FD (mm)', 'bold_fd_perc', '% of frames with FD > 0.2 mm', 'bold_fwhm_avg', 'smoothness (voxels)', ...
+    't1_cnr', 'GM-WM contrast to noise, higher is better', 't1_cjv', 'coefficient of joint variation of GM and WM, lower is better', ...
+    't1_snr_total', 'SNR in the tissues, higher is better', 't1_snrd_total', 'Dietrich SNR (noise from air), higher is better', ...
+    't1_efc', 'entropy focus (motion, ghosting), lower is better', 't1_fber', 'foreground to background energy, higher is better', ...
+    't1_inu_range', 'spread of the bias field, lower is better', 't1_wm2max', 'WM median over the 99.95th percentile; about 0.6-0.8 is typical', ...
+    't1_tiv_ml', 'total intracranial volume (GM + WM + CSF, mL)');
+rows = '';
+for f = fieldnames(Q)'
+    k = f{1};
+    if startsWith(k, {'bold_summary', 't1_summary'}), continue, end
+    v = Q.(k);
+    if isnumeric(v) && isscalar(v)
+        txt = sprintf('%.4g', v);
+    else
+        txt = char(string(v));
+    end
+    note = '';
+    if isfield(tip, k), note = tip.(k); end
+    rows = [rows sprintf('<tr><th>%s</th><td>%s</td><td class="note">%s</td></tr>', k, txt, note)]; %#ok<AGROW>
+end
+h = ['<h2>Image quality metrics (MRIQC)</h2><p class="note">Computed on the raw data as MRIQC defines them ' ...
+    '(bold_*: the run after dummy scans, head-motion corrected; t1_*: the T1w). Compare a run with the ' ...
+    'others of its site in the group report: the values depend on the scanner and protocol.</p><table>' rows '</table>'];
+end
+

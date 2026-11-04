@@ -17,5 +17,5 @@ F(end+1) = f('dummy_scans', 'Dummy scans', 'text', 'Input', 'advanced', true, 'h
     'Volumes removed from the start of each run.\n\n' ...
     'auto (default): those fMRIPrep marked as non-steady-state (non_steady_state_outlier ' ...
     'columns).\nA number, e.g. 5: that many from every run.']));
-F = [F, seecat.gui.denoise(), seecat.gui.common(true)];
+F = [F, seecat.gui.denoise(), seecat.gui.qc_options(false), seecat.gui.common(true)];
 end

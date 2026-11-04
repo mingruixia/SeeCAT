@@ -22,6 +22,7 @@ cfg.distance_edges = [0 Inf];         % mm; e.g. [0 75 Inf] for short and long r
 cfg.zscore = true;                    % also write maps z-scored within the mask
 cfg.smooth_fwhm = 6;                  % mm, smoothing of the maps; 0 = none
 
+cfg.qc_exclusions = true;         % leave out runs excluded in reports/qc_exclusions.tsv
 v = seecat.util.validators;
 spec = [
     {
@@ -37,6 +38,7 @@ spec = [
     'distance_edges',   @(x) isnumeric(x) && numel(x) >= 2 && x(1) >= 0 && all(diff(x) > 0), 'increasing bin edges in mm, from >= 0'
     'zscore',           v.flag,                                       'true or false'
     'smooth_fwhm',      @(x) isnumeric(x) && any(numel(x) == [1 3]) && all(x >= 0), 'a scalar or 1x3 vector (mm)'
+    'qc_exclusions', v.flag, 'true or false'
     }
     spec];
 end

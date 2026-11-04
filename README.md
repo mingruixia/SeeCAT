@@ -67,7 +67,7 @@ seecat.viewer('group/.../..._stat-t_statmap.nii.gz')
 
 | Pipeline | What it does |
 |---|---|
-| `prep` | slice timing, realign, coregistration, segmentation, normalisation, confounds, censoring, denoising, smoothing |
+| `prep` | slice timing, realign, coregistration, segmentation, normalisation, confounds, censoring, denoising, smoothing; MRIQC image quality metrics, QC exclusions, optional VBM maps |
 | `fmriprep` | the same denoising, from fMRIPrep outputs |
 | `fc` | seed-based connectivity maps (r and Fisher z) |
 | `degree` | voxel-wise degree and strength |

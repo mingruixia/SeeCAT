@@ -47,6 +47,7 @@ F = seecat.bids.query(L, args{:});
 if isempty(F)
     error('SeeCAT:stat', 'No maps in %s match the selector.', L.root);
 end
+[F, qcDropped] = dropExcluded(F, cfg, L.root);
 sub = arrayfun(@(f) f.ent.sub, F, 'UniformOutput', false);
 level = repmat({''}, numel(F), 1);
 if within
@@ -61,6 +62,7 @@ if ~isempty(dup)
 end
 maps = table({F.path}', sub, level, 'VariableNames', {'path', 'sub', 'level'});
 [maps, dropped] = joinParticipants(maps, cfg, L.root);
+dropped = [qcDropped, dropped];
 if within
     lv = cfg.levels;
     if isempty(lv)
@@ -94,7 +96,7 @@ if isempty(f)
     end
     return
 end
-P = seecat.io.read_tsv(f);
+P = seecat.bids.add_volumes(seecat.io.read_tsv(f), root);   % + gm_ml ... tiv_ml (prep)
 id = strcat('sub-', maps.sub);
 [in, row] = ismember(id, P.participant_id);
 for s = unique(id(~in))'
@@ -178,5 +180,24 @@ function v = ent(f, key)
 v = '';
 if isfield(f.ent, key)
     v = f.ent.(key);
+end
+end
+
+function [F, dropped] = dropExcluded(F, cfg, root)
+% Maps of runs (or T1w images) excluded by QC (reports/qc_exclusions.tsv)
+dropped = {};
+if ~isfield(cfg, 'qc_exclusions') || ~cfg.qc_exclusions
+    return
+end
+ex = seecat.qc.exclusions(root);
+if isempty(ex)
+    return
+end
+k = arrayfun(@(f) seecat.qc.exclusions('key', f.name), F, 'UniformOutput', false);
+out = ismember(k, ex);
+dropped = strcat(unique(k(out))', {': excluded by QC'});
+F = F(~out);
+if isempty(F)
+    error('SeeCAT:stat', 'Every matching map is excluded by QC (reports/qc_exclusions.tsv).');
 end
 end

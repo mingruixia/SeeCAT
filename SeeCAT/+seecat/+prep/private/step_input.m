@@ -27,6 +27,7 @@ if n > 0
     bold = trimmed;
 end
 ctx.files.bold = bold;
+ctx.files.bold_input = bold;                    % before slice timing (for the IQMs)
 ctx.dummy_scans = n;
 ctx.n_frames = nAll - n;
 log('input: %d volume(s) kept', ctx.n_frames);

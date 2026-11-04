@@ -24,6 +24,7 @@ cfg.kernel = 'normalized_angle'; % 'normalized_angle', 'cosine' or 'none'
 cfg.alpha = 0.5;                 % diffusion map anisotropy
 cfg.align = 'group';             % 'group' (to the group-mean matrix), 'procrustes' or 'none'
 
+cfg.qc_exclusions = true;         % leave out runs excluded in reports/qc_exclusions.tsv
 v = seecat.util.validators;
 spec = [
     {
@@ -41,6 +42,7 @@ spec = [
     'kernel',       v.oneof({'normalized_angle', 'cosine', 'none'}), '''normalized_angle'', ''cosine'' or ''none'''
     'alpha',        @(x) isnumeric(x) && isscalar(x) && x >= 0 && x <= 1, 'a number in [0, 1]'
     'align',        v.oneof({'group', 'procrustes', 'none'}),      '''group'', ''procrustes'' or ''none'''
+    'qc_exclusions', v.flag, 'true or false'
     }
     spec];
 end

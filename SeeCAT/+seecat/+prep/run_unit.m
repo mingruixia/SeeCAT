@@ -14,6 +14,7 @@ function result = run_unit(unit, cfg, log)
 %   normalise   BOLD and tissue maps to IXI549Space with the deformation
 %   masks       brain, WM and CSF masks in output space
 %   confounds   motion, FD, censor flags, tissue signals, aCompCor
+%   iqm         MRIQC image quality metrics of the raw BOLD and T1w (qc.iqm)
 %   denoise     interpolation of flagged frames + detrend + regression + band-pass
 %   smooth      Gaussian smoothing of the denoised series
 %   outputs     .nii.gz derivatives with JSON sidecars, confounds TSV
@@ -59,12 +60,17 @@ ctx = step(ctx, 'realign', @step_realign, cfg.realign);
 if strcmp(method, 'segment')
     ctx = step(ctx, 'coreg', @step_coreg, struct());
 end
-ctx = step(ctx, 'segment', @step_segment, struct('source', method));
+ctx = step(ctx, 'segment', @step_segment, struct('source', method, 'vbm', cfg.vbm.enable, ...
+    'modulated', cfg.vbm.modulated));
 ctx = step(ctx, 'tissue_masks', @step_tissue_masks, cfg.masks);
 ctx = step(ctx, 'normalise', @step_normalise, cfg.normalise);
 ctx = step(ctx, 'masks', @step_masks, struct());
 ctx = step(ctx, 'confounds', @step_confounds, struct('censor', cfg.censor, ...
     'acompcor_n', cfg.denoise.acompcor_n, 'detrend_order', cfg.denoise.detrend_order));
+ctx.iqm = struct();
+if cfg.qc.iqm
+    ctx = step(ctx, 'iqm', @step_iqm, struct());
+end
 if cfg.denoise.enable
     ctx = step(ctx, 'denoise', @seecat.steps.denoise, struct('denoise', cfg.denoise, 'censor', cfg.censor));
 end
@@ -73,7 +79,7 @@ if cfg.smooth.enable && any(cfg.smooth.fwhm > 0)
 end
 out = struct('output_dir', cfg.output_dir, 'bids_dir', cfg.bids_dir, 'write_anat', unit.write_anat, ...
     'voxel_size', cfg.normalise.voxel_size, 'smooth', cfg.smooth, 'denoise', cfg.denoise, ...
-    'censor', cfg.censor, 'meta', unit.meta, 'manifest', unit.manifest);
+    'censor', cfg.censor, 'meta', unit.meta, 'manifest', unit.manifest, 'vbm', cfg.vbm);
 % Not through run_step: seecat.run deletes the previous outputs before a
 % unit runs, so this step must always write them.
 ctx = step_outputs(ctx, out, log);
@@ -85,7 +91,7 @@ f = ctx.files;
 R = struct('id', unit.id, 'sub', unit.sub, 'output_dir', cfg.output_dir, 'work_dir', ctx.work_dir, ...
     'manifest', unit.manifest, 'pipeline', 'prep', 'tr', ctx.tr, 'bold', f.wbold, 'mask', f.mask_brain, ...
     'wm', f.mask_wm, 'csf', f.mask_csf, 'tissue', {{f.wc1, f.wc2, f.wc3}}, 'confounds', f.confounds, ...
-    'fd_threshold', cfg.censor.fd_threshold, 'summary', result);
+    'fd_threshold', cfg.censor.fd_threshold, 'summary', result, 'iqm', ctx.iqm);
 if isfield(f, 'denoised')
     R.denoised = f.denoised;
 end

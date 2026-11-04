@@ -9,6 +9,7 @@ function [n, note] = auto_workers(cfg, units)
 % Fewer than 2 workers gives 0 (one after another, no pool). NOTE explains
 % the choice for the log. The estimates per pipeline (GB):
 %   prep, fmriprep  1.5 + 4 copies of the run's output series in double
+%                   (prep with IQMs: at least 10 copies of the largest T1w)
 %   fc              0.5 + 3 copies of the run's series in the brain mask
 %   degree          fc + 4 blocks of 1000 x brain-mask voxels
 %   gradient        3 node x node matrices per run (4 with group alignment);
@@ -70,6 +71,16 @@ switch cfg.pipeline
                 bb = cfg.normalise.bounding_box;
                 v = max(v, prod(floor(diff(bb, 1, 1) ./ vs) + 1));
                 perTask = 1.5 + 4 * 8 * v * t / GB;
+                if isfield(cfg, 'qc') && isfield(cfg.qc, 'iqm') && cfg.qc.iqm   % T1w IQMs: ~10 copies
+                    t1 = 0;
+                    for i = 1:numel(units)
+                        if ~isempty(units(i).t1w)
+                            h = seecat.io.nii_info(units(i).t1w);
+                            t1 = max(t1, prod(h.dim(1:3)));
+                        end
+                    end
+                    perTask = max(perTask, 1.5 + 10 * 8 * t1 / GB);
+                end
             case 'fmriprep'
                 perTask = 1.5 + 4 * 8 * v * t / GB;
             case 'fc'

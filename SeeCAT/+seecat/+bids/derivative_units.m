@@ -8,7 +8,9 @@ function [units, cfg] = derivative_units(cfg, desc)
 % series (*_desc-<desc>_bold, e.g. 'denoised' or 'denoisedSm6'); one space
 % must be present, or cfg.space chooses. Each unit has id, bold, mask
 % (desc-brain_mask), confounds (desc-confounds_timeseries) and space. All
-% problems are collected into one SeeCAT:bids error.
+% problems are collected into one SeeCAT:bids error. With
+% cfg.qc_exclusions, runs excluded in reports/qc_exclusions.tsv are left out
+% and listed in cfg.qc_excluded.
 
 L = seecat.bids.layout(cfg.input_dir);
 cfg.input_dir = L.root;
@@ -23,6 +25,18 @@ B = seecat.bids.query(L, 'suffix', 'bold', 'desc', desc, 'ext', img, ...
     'sub', cfg.subjects, 'ses', cfg.sessions, 'run', cfg.runs, 'task', cfg.task, 'space', cfg.space);
 if isempty(B)
     raise({sprintf('No *_desc-%s_bold images in %s for this selection.', desc, L.root)});
+end
+if isfield(cfg, 'qc_exclusions') && cfg.qc_exclusions          % runs excluded by QC
+    ex = seecat.qc.exclusions(L.root);
+    if ~isempty(ex)
+        k = arrayfun(@(b) seecat.qc.exclusions('key', b.name), B, 'UniformOutput', false);
+        out = ismember(k, ex);
+        cfg.qc_excluded = unique(k(out))';
+        B = B(~out);
+        if isempty(B)
+            raise({'Every run is excluded by QC (reports/qc_exclusions.tsv).'});
+        end
+    end
 end
 spaces = unique(arrayfun(@(f) ent(f, 'space'), B, 'UniformOutput', false));
 if numel(spaces) > 1

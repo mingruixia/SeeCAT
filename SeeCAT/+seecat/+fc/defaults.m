@@ -19,6 +19,7 @@ cfg.input = 'denoised';      % desc of the input series, e.g. 'denoised' or 'den
 cfg.space = '';              % needed only when several spaces are present
 cfg.seeds = struct('name', {}, 'center', {}, 'radius', {}, 'file', {});
 
+cfg.qc_exclusions = true;         % leave out runs excluded in reports/qc_exclusions.tsv
 v = seecat.util.validators;
 spec = [
     {
@@ -27,6 +28,7 @@ spec = [
     'input',     @(x) v.text(x) && ~isempty(regexp(x, '^[a-zA-Z0-9]+$', 'once')), 'a desc label, e.g. denoised'
     'space',     v.text,                                          'empty or a space label'
     'seeds',     @validSeeds,                                     'a non-empty struct array of seeds: name + center + radius, or name + file'
+    'qc_exclusions', v.flag, 'true or false'
     }
     spec];
 end

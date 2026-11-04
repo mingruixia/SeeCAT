@@ -26,7 +26,7 @@ pages = struct( ...
     'Group GLM: t tests, ANOVA and regression, with RFT, FDR or TFCE correction.', ...
     'Slices, thresholds, clusters and surfaces of statistic maps.', ...
     'Volumes, TR and head motion of every BOLD run; open a run to step through its volumes.', ...
-    'The HTML quality-control reports of a derivatives folder.'}, ...
+    'Confirm or change which runs are excluded, from motion, coverage and image quality metrics.'}, ...
     'about', {['Convert DICOM folders to a BIDS dataset with dcm2niix. Point it at a folder of ' ...
     'subjects in any common layout (one folder per subject, modality folders with subject ' ...
     'folders inside, or deeper trees); Find subjects shows what was found before converting. ' ...
@@ -70,7 +70,12 @@ pages = struct( ...
     ['Check the data: for every BOLD run of a BIDS dataset or a derivatives folder, the ' ...
     'volumes, TR and, where a confounds table exists, head motion (mean and maximum FD, flagged ' ...
     'frames). Runs with high motion are highlighted. Open a run to step through its volumes.'], ...
-    ['The HTML quality-control reports of a derivatives folder: one per run (registration, ' ...
+    ['Decide which runs (and T1w images) take part in the analyses. After Preprocessing or ' ...
+    'fMRIPrep denoising, the group QC report suggests exclusions by rules (largest translation and ' ...
+    'rotation, mean FD, too little data, brain coverage) and warns about image quality outliers ' ...
+    '(MRIQC metrics within each site). Here you see every run with these numbers, tick or untick ' ...
+    'Exclude, add a note and save; Seed FC, Degree, Gradients, Harmonize and Statistics then leave ' ...
+    'the excluded runs out. The HTML reports: one per run (registration, ' ...
     'tissue masks, carpet plot, tSNR, motion and censoring) and a group page that lists every run, so outliers are ' ...
     'easy to spot. Reports open in your web browser.']});
 here = fileparts(fileparts(fileparts(mfilename('fullpath'))));   % SeeCAT/
@@ -735,38 +740,122 @@ show();
     end
 
     function qcPage()
-        g = pageGrid(22 + T.row + 180 + 32 + 6 * 3 + 24);
-        cg = pageCard(g, 'Reports', {T.row, 180, 32});
+        g = uigridlayout(host, [1 1], 'Padding', [16 14 16 14], 'BackgroundColor', T.page);
+        cg = pageCard(g, 'Quality control', {T.row, '1x', 18, 32});
         uilabel(cg, 'Text', 'Derivatives folder', 'FontColor', T.text2);
-        ed = uieditfield(cg, 'text', 'BackgroundColor', T.panel, 'FontColor', T.text, ...
-            'ValueChangedFcn', @(~, ~) listQc());
-        uibutton(cg, 'Text', '', 'Icon', seecat.gui.icon('folder'), 'BackgroundColor', T.panel, ...
-            'ButtonPushedFcn', @(~, ~) pickAndList());
-        lb = uilistbox(cg, 'Items', {}, 'FontColor', T.text);
-        lb.Layout.Row = 3;
-        lb.Layout.Column = 2;
-        holder = uigridlayout(cg, [1 2], 'ColumnWidth', {150, '1x'}, 'Padding', [0 0 0 0], 'BackgroundColor', T.panel);
-        holder.Layout.Row = 4;
-        holder.Layout.Column = 2;
-        button(holder, 'Open report', 'external', @(~, ~) openQc());
+        ed = uieditfield(cg, 'text', 'Value', state.output, 'BackgroundColor', T.panel, 'FontColor', T.text, ...
+            'Tooltip', 'The output folder of Preprocessing or fMRIPrep denoising', 'ValueChangedFcn', @(~, ~) loadList());
+        uibutton(cg, 'Text', '', 'Icon', seecat.gui.icon('folder'), 'BackgroundColor', T.panel, 'Tooltip', 'Browse', ...
+            'ButtonPushedFcn', @(~, ~) pickAndLoad());
+        tb = uitable(cg, 'RowName', {}, 'CellSelectionCallback', @(~, e) pickRow(e), ...
+            'CellEditCallback', @(~, ~) edited());
+        tb.Layout.Row = 3;
+        tb.Layout.Column = [1 3];
+        note = uilabel(cg, 'Text', ['Tick Exclude to leave a run (or T1w) out of Seed FC, Degree, Gradients, ' ...
+            'Harmonize and Statistics; untick to keep it. Red: excluded; yellow: warnings. Save writes ' ...
+            'reports/qc_exclusions.tsv; your decisions survive a new run of the pipeline.'], ...
+            'FontColor', T.icon, 'FontSize', T.size.small);
+        note.Layout.Row = 4;
+        note.Layout.Column = [1 3];
+        bg = uigridlayout(cg, [1 5], 'ColumnWidth', {150, 150, 130, 130, '1x'}, 'Padding', [0 0 0 0], ...
+            'ColumnSpacing', 8, 'BackgroundColor', T.panel);
+        bg.Layout.Row = 5;
+        bg.Layout.Column = [1 3];
+        saveB = uibutton(bg, 'Text', 'Save decisions', 'Icon', seecat.gui.icon('save', '#FFFFFF'), 'FontWeight', 'bold', ...
+            'BackgroundColor', T.accent, 'FontColor', [1 1 1], 'Enable', 'off', 'ButtonPushedFcn', @(~, ~) saveList());
+        button(bg, 'Group report', 'external', @(~, ~) openGroup());
+        button(bg, 'Run report', 'external', @(~, ~) openRun());
+        button(bg, 'Reload', 'refresh', @(~, ~) loadList());
+        status = uilabel(bg, 'Text', '', 'FontColor', T.muted);
         seecat.gui.style(fig);
-
-        function pickAndList()
-            pick(ed, 'folder');
-            listQc();
+        X = table();
+        row = [];
+        if ~isempty(ed.Value)
+            drawnow;
+            loadList();
         end
-        function listQc()
-            q = dir(fullfile(ed.Value, 'reports', '*_qc.html'));
-            lb.Items = {q.name};
-            lb.ItemsData = fullfile({q.folder}, {q.name});
-            if isempty(q)
-                lb.Items = {'No reports/*_qc.html in this folder'};
-                lb.ItemsData = {''};
+
+        function pickAndLoad()
+            pick(ed, 'folder');
+            loadList();
+        end
+        function loadList()
+            tb.Data = table();
+            removeStyle(tb);
+            saveB.Enable = 'off';
+            try
+                X = seecat.qc.exclusion_list(strtrim(ed.Value));
+            catch err
+                status.Text = err.message;
+                X = table();
+                return
+            end
+            D = table(X.exclude == 1, X.id, X.kind, X.site, X.mean_fd, X.max_translation, X.max_rotation, ...
+                X.coverage, X.minutes_kept, X.bold_tsnr, X.t1_cnr, X.reasons, X.warnings, X.note, ...
+                'VariableNames', {'Exclude', 'Run / image', 'Kind', 'Site', 'Mean FD', 'Max trans (mm)', ...
+                'Max rot (deg)', 'Coverage', 'Minutes kept', 'tSNR (IQM)', 'CNR (T1w)', 'Reasons', 'Warnings', 'Note'});
+            tb.Data = D;
+            tb.ColumnEditable = [true, false(1, 12), true];
+            tb.ColumnWidth = {60, 230, 50, 50, 70, 90, 85, 70, 85, 75, 75, 220, 220, 160};
+            restyle();
+            status.Text = sprintf('%d run(s), %d T1w; %d excluded', nnz(strcmp(X.kind, 'bold')), ...
+                nnz(strcmp(X.kind, 'T1w')), nnz(X.exclude == 1));
+        end
+        function restyle()
+            removeStyle(tb);
+            D = tb.Data;
+            w = find(~cellfun(@isempty, D.Warnings) & ~D.Exclude);
+            if ~isempty(w), addStyle(tb, uistyle('BackgroundColor', [1 0.96 0.85]), 'row', w); end
+            e = find(D.Exclude);
+            if ~isempty(e), addStyle(tb, uistyle('BackgroundColor', [0.99 0.88 0.87]), 'row', e); end
+        end
+        function edited()
+            restyle();
+            saveB.Enable = 'on';
+            status.Text = 'Changed; Save to keep.';
+        end
+        function saveList()
+            D = tb.Data;
+            try
+                seecat.qc.exclusion_list(strtrim(ed.Value), 'set', D.('Run / image'), D.Exclude, D.Note);
+            catch err
+                uialert(fig, err.message, 'Save decisions');
+                return
+            end
+            loadList();
+            status.Text = [status.Text '. Saved.'];
+        end
+        function pickRow(e)
+            row = [];
+            if ~isempty(e.Indices)
+                row = e.Indices(1, 1);
             end
         end
-        function openQc()
-            if ~isempty(lb.Value)
-                web(lb.Value, '-browser');
+        function openGroup()
+            q = [dir(fullfile(ed.Value, 'reports', 'prep_qc.html')); dir(fullfile(ed.Value, 'reports', 'fmriprep_qc.html'))];
+            if isempty(q)
+                uialert(fig, 'No reports/prep_qc.html or fmriprep_qc.html in this folder.', 'Group report');
+                return
+            end
+            web(fullfile(q(1).folder, q(1).name), '-browser');
+        end
+        function openRun()
+            if isempty(row) || isempty(X)
+                uialert(fig, 'Select a run in the table first.', 'Run report');
+                return
+            end
+            id = X.id{row};
+            sub = regexp(id, '^sub-[a-zA-Z0-9]+', 'match', 'once');
+            f = fullfile(ed.Value, sub, [id '_desc-qc_report.html']);
+            if strcmp(X.kind{row}, 'T1w')
+                r = dir(fullfile(ed.Value, sub, '*_desc-qc_report.html'));
+                if isempty(r)
+                    return
+                end
+                f = fullfile(r(1).folder, r(1).name);      % the T1w IQMs are in its runs' reports
+            end
+            if exist(f, 'file')
+                web(f, '-browser');
             end
         end
     end
