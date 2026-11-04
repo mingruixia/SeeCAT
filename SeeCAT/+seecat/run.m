@@ -48,6 +48,10 @@ log('SeeCAT %s, pipeline "%s", %d unit(s)', seecat.version(), p, numel(units));
 log('MATLAB %s; %s', version, spmVersion());
 log('Output: %s', cfg.output_dir);
 
+if ischar(cfg.n_workers) || isstring(cfg.n_workers)  % 'auto': as many as memory allows
+    [cfg.n_workers, note] = seecat.util.auto_workers(cfg, units);
+    log('Parallel workers (auto): %s', note);
+end
 nWorkers = seecat.util.start_pool(cfg.n_workers);
 hashCfg = rmfield(cfg, {'n_workers', 'overwrite', 'keep_work'});
 cfgHash = seecat.util.hash(hashCfg);

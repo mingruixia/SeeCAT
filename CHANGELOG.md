@@ -3,6 +3,18 @@
 ## Unreleased: 2.0 development
 
 ### Added
+- **Parallel workers 'auto' chooses by memory.** seecat.util.auto_workers
+  estimates the memory of one task (from the largest run and brain mask,
+  the node count for gradients, the maps for TFCE) plus 1 GB per worker and
+  what the main MATLAB keeps, and starts as many workers as fit in 85 % of
+  the free memory (at most one per core and per task; fewer than 2 means
+  serial). The log shows the estimate. Pools now give each worker
+  cores/workers threads: 5 gradient workers on 32 cores took 68 s instead of
+  275 s with one thread each (134 s serial).
+- **Gradients: group alignment iterates.** It starts from the gradients of
+  the group-mean matrix (also written as desc-grad<k>_groupmatrix) and then
+  updates the reference to the mean of the aligned runs, as procrustes
+  does (up to 10 rounds, tolerance 1e-5).
 - **Gradients page (`gradient` pipeline).** Connectivity gradients by
   diffusion map embedding with BrainSpace's steps (top-10% row sparsity,
   normalized-angle or cosine affinity, alpha 0.5). Nodes are voxels of a

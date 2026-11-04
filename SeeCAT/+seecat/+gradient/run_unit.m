@@ -6,9 +6,12 @@ function result = run_unit(unit, cfg, log)
 %    node; censored frames left out), kept in the work folder.
 % 2. Per run: Pearson r between nodes, seecat.gradient.embed. With
 %    align = 'group', Fisher z of r is also summed over runs.
-% 3. Alignment (seecat.gradient.align): 'group' rotates each run to the
-%    gradients of the group-mean matrix (tanh of the mean z) in one step;
-%    'procrustes' aligns the runs to each other (generalized Procrustes);
+% 3. Alignment (seecat.gradient.align, generalized Procrustes): the runs
+%    are rotated onto a reference, the reference becomes the mean of the
+%    aligned runs, and this repeats (at most 10 times, until it changes by
+%    less than 1e-5). 'group' starts from the gradients of the group-mean
+%    matrix (tanh of the mean z; also written as desc-grad<k>_groupmatrix),
+%    'procrustes' from the first run;
 %    'none' keeps each run's own gradients (their order and sign may differ
 %    between runs).
 % Writes per run *_desc-grad<k><tag>_connectivity.nii.gz (k = 1..n_maps) with
@@ -72,12 +75,9 @@ switch cfg.align
         clear Zsum
         Gr = seecat.gradient.embed(Rm, eo);
         clear Rm
-        ref = nan(N.n, cfg.n_components);
-        ref(common, :) = Gr;
-        A = cell(nr, 1);
-        for r = 1:nr
-            A{r} = alignTo(G{r}, ref);
-        end
+        gm = nan(N.n, cfg.n_components);
+        gm(common, :) = Gr;
+        [A, ref] = seecat.gradient.align(G, gm, 10);   % iterate from it, as procrustes
     case 'procrustes'
         [A, ref] = seecat.gradient.align(G);
     otherwise
@@ -121,13 +121,23 @@ for r = 1:nr
     end
 end
 gdir = fullfile('group', ['gradients' N.tag]);
+if group
+    for k = 1:cfg.n_maps
+        f = fullfile(unit.work_dir, sprintf('groupmatrix_grad%d.nii', k));
+        writeMap(gm(:, k), N, f);
+        m = base;
+        m.Component = k;
+        m.Description = sprintf('gradient %d of the group-mean connectivity (the starting reference)', k);
+        seecat.util.publish_output(f, fullfile(gdir, sprintf('gradients%s_desc-grad%d_groupmatrix.nii.gz', N.tag, k)), m, opt);
+    end
+end
 if ~isempty(ref)
     for k = 1:cfg.n_maps
         f = fullfile(unit.work_dir, sprintf('reference_grad%d.nii', k));
         writeMap(ref(:, k), N, f);
         m = base;
         m.Component = k;
-        m.Description = sprintf('reference gradient %d (%s alignment)', k, cfg.align);
+        m.Description = sprintf('reference gradient %d: mean of the aligned runs (%s alignment)', k, cfg.align);
         seecat.util.publish_output(f, fullfile(gdir, sprintf('gradients%s_desc-grad%d_reference.nii.gz', N.tag, k)), m, opt);
     end
 end
@@ -182,12 +192,6 @@ if size(Z, 2) > 8000
     Z = single(Z);
 end
 R = Z' * Z;
-end
-
-function a = alignTo(g, ref)
-ok = all(isfinite(g), 2) & all(isfinite(ref), 2);
-[u, ~, v] = svd((ref(ok, :)' * g(ok, :))');
-a = g * (u * v');
 end
 
 function c = corrOk(a, b)

@@ -27,7 +27,15 @@ try
     pool = gcp('nocreate');
     if isempty(pool)
         if isfinite(n)
-            pool = parpool(n);
+            % Workers compute with one thread by default; share the cores
+            % among them so that matrix work (degree, gradients) keeps its
+            % speed: e.g. 5 workers on 32 cores get 6 threads each.
+            c = parcluster;
+            try
+                c.NumThreads = max(1, floor(c.NumWorkers / n));
+            catch
+            end
+            pool = parpool(c, n);
         elseif auto
             c = parcluster;                       % all workers of the default profile,
             pool = parpool(c, c.NumWorkers);      % not only its preferred pool size

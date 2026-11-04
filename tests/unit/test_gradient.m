@@ -75,6 +75,16 @@ tc.verifyEqual(numel(unique(signs)), 1);          % aligned: same orientation in
 j = jsondecode(fileread(strrep(f('01', 1), '.nii.gz', '.json')));
 tc.verifyEqual(numel(j.Lambdas), 10);
 tc.verifyTrue(exist(fullfile(in, 'group', 'gradientsVox3', 'gradientsVox3_desc-grad1_reference.nii.gz'), 'file') == 2);
+tc.verifyTrue(exist(fullfile(in, 'group', 'gradientsVox3', 'gradientsVox3_desc-grad1_groupmatrix.nii.gz'), 'file') == 2);
+
+% n_workers = 'auto': a choice from the memory estimate, with a note for the log
+[units, c2] = seecat.gradient.plan(seecat.config(cfg));
+c2.n_workers = 'auto';
+[n, note] = seecat.util.auto_workers(c2, units);
+tc.verifyGreaterThanOrEqual(n, 0);
+tc.verifyLessThanOrEqual(n, 3);                    % never more than the runs
+tc.verifyNotEqual(n, 1);                          % 1 worker is never chosen
+tc.verifySubstring(note, 'worker');
 
 % an atlas with one label per voxel gives the voxel result
 [m, V] = seecat.io.read_nii(mask);
