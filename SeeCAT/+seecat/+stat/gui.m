@@ -14,7 +14,10 @@ F(end+1) = f('covariates', 'Covariates', 'labels', 'Model', 'help', 'participant
 F(end+1) = f('design_tsv', 'Design TSV', 'file', 'Model', 'advanced', true, 'help', 'custom design: path column + design columns');
 F(end+1) = f('contrasts', 'Contrasts', 'contrasts', 'Model', 'advanced', true, 'help', 'Empty: the design''s defaults');
 F(end+1) = f('variance', 'Variance', 'choice', 'Model', 'choices', {'auto', 'equal', 'unequal'}, 'advanced', true);
-F(end+1) = f('mask', 'Mask', 'text', 'Inference', 'help', '''gm'', ''brain'' or a mask file');
+F(end+1) = f('mask', 'Mask', 'mask', 'Inference', 'help', sprintf([ ...
+    'The voxels tested. Grey matter (gm): SeeCAT''s grey-matter mask; Whole brain (brain): no extra ' ...
+    'mask; Mask file: your own NIfTI image in MNI space (voxels > 0). In every case only ' ...
+    'voxels that are non-zero in every subject''s map are kept.']));
 F(end+1) = f('inference', 'Correction', 'multi', 'Inference', 'choices', {'cluster_fwe', 'voxel_fwe', 'voxel_fdr'});
 F(end+1) = f('cdt_p', 'Cluster-forming p', 'number', 'Inference');
 F(end+1) = f('alpha', 'Alpha', 'number', 'Inference');

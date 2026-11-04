@@ -52,6 +52,33 @@ tc.verifyEqual(back, cfg);
 seecat.check_config(back);
 end
 
+function testInfSurvivesJson(tc)
+% JSON has no Inf: the GUI hands its config to the run through a file
+cfg = seecat.config('degree');
+cfg.input_dir = tc.TestData.tmp;
+cfg.distance_edges = [0 75 Inf];
+f = fullfile(tc.TestData.tmp, 'degree.json');
+seecat.save_config(cfg, f);
+tc.verifySubstring(fileread(f), '"[0 75 Inf]"');
+back = seecat.config(f);
+tc.verifyEqual(back.distance_edges, [0 75 Inf]);
+seecat.check_config(back);
+end
+
+function testWorkersAuto(tc)
+cfg = seecat.config('degree');
+cfg.input_dir = tc.TestData.tmp;
+cfg.n_workers = 'auto';
+seecat.check_config(cfg);
+f = fullfile(tc.TestData.tmp, 'auto.json');
+seecat.save_config(cfg, f);
+tc.verifyEqual(seecat.config(f).n_workers, 'auto');
+cfg.n_workers = 'many';
+tc.verifySubstring(errorMessage(@() seecat.check_config(cfg)), 'n_workers must be');
+tc.verifyEqual(seecat.gui.parse('auto', 'number', 0), 'auto');
+tc.verifyEqual(seecat.gui.parse('4', 'number', 'auto'), 4);
+end
+
 function testPartialJsonTakesDefaults(tc)
 f = fullfile(tc.TestData.tmp, 'partial.json');
 fid = fopen(f, 'w');

@@ -39,6 +39,9 @@ for f = fieldnames(in)'
     val = in.(k);
     if isfield(def, k)
         d = def.(k);
+        if isnumeric(d) && ischar(val)
+            val = numbers(val);                        % e.g. "[0 75 Inf]" (save_config)
+        end
         if isstruct(d) && ~isscalar(d)                % a list of records (e.g. seeds)
             val = records(d, val);
         elseif isstruct(d) && isstruct(val) && isscalar(val)
@@ -86,5 +89,18 @@ for i = 1:numel(val)
         end
         out(i).(f{1}) = v;
     end
+end
+end
+
+function v = numbers(s)
+% Text written by save_config for numbers with Inf or NaN; other text (e.g.
+% 'auto') is kept as it is.
+v = s;
+if isempty(regexp(s, '^\s*\[?(\s*[-+]?(Inf|NaN|\d+\.?\d*(e[-+]?\d+)?|\.\d+(e[-+]?\d+)?)\s*[,;]?)+\]?\s*$', 'once'))
+    return
+end
+n = str2num(s, 'Evaluation', 'restricted'); %#ok<ST2NM>
+if ~isempty(n)
+    v = n;
 end
 end

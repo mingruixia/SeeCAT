@@ -3,6 +3,18 @@
 ## Unreleased: 2.0 development
 
 ### Added
+- **Parallel workers: auto.** Every pipeline takes `n_workers = 'auto'`
+  (all workers of the default cluster profile) besides 0 (serial) and a
+  number.
+- **Mask and smoothing controls.** The Mask of Degree and Statistics is a
+  menu (grey matter, whole brain, mask file) with a file button; Degree's
+  map smoothing has an On box (off = `smooth_fwhm` 0). The Degree page and
+  the shared Output/Selection/Run options have full descriptions with
+  examples.
+- **Fixed: Degree run failed with "distance_edges must be increasing".**
+  JSON has no Inf, so the window's config file (handed to the run) turned
+  `[0 Inf]` into `[0 null]`. `save_config` now writes numbers with Inf or
+  NaN as text (`"[0 75 Inf]"`) and `seecat.config` reads them back.
 - **Seed table: spheres and masks side by side.** Each row has a Type
   (Sphere or Mask). A sphere takes its centre as one "x y z" cell and a
   radius; a mask takes a NIfTI file. Add sphere, Add mask files (several at

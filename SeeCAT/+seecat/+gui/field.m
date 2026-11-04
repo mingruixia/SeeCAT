@@ -4,8 +4,10 @@ function f = field(path, label, widget, section, varargin)
 %                        'help', 'Band-pass filter; empty = none', 'advanced', false)
 %
 % WIDGET: folder, file, text, labels, number, range, flag, choice, multi,
-% seeds, contrasts, maps. Options: 'help', 'advanced' (false), 'choices'
-% (choice and multi).
+% seeds, contrasts, maps, mask ('gm', 'brain' or a file), optnumber (a
+% number with an On box; off = 0). Options: 'help', 'advanced' (false),
+% 'choices' (choice and multi; for optnumber the value offered when
+% switched on).
 p = inputParser;
 p.addParameter('help', '');
 p.addParameter('advanced', false);

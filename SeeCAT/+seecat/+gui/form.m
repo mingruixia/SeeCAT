@@ -145,6 +145,34 @@ switch f.widget
             c(i) = uicheckbox(holder, 'Text', f.choices{i}, 'Value', any(strcmp(cellstr(v), f.choices{i})), ...
                 'FontColor', T.text, 'Tooltip', tipText, 'ValueChangedFcn', @(~, ~) help());
         end
+    case 'mask'                                   % 'gm', 'brain' or a mask file
+        holder = row(cg, {170, '1x', 30}, T);
+        isFile = ~any(strcmp(char(v), {'gm', 'brain'}));
+        dd = uidropdown(holder, 'Items', {'Grey matter (gm)', 'Whole brain (brain)', 'Mask file'}, ...
+            'ItemsData', {'gm', 'brain', 'file'}, 'BackgroundColor', T.panel, 'FontColor', T.text, 'Tooltip', tipText);
+        ed = uieditfield(holder, 'text', 'Value', '', 'Placeholder', 'NIfTI mask in MNI space (voxels > 0)', edit{:});
+        if isFile
+            dd.Value = 'file';
+            ed.Value = char(v);
+        else
+            dd.Value = char(v);
+        end
+        ed.Enable = isFile;
+        uibutton(holder, 'Text', '', 'Icon', seecat.gui.icon('folder'), 'BackgroundColor', T.panel, ...
+            'Tooltip', 'Choose a mask file', 'ButtonPushedFcn', @(~, ~) browseMask(dd, ed, help));
+        dd.ValueChangedFcn = @(~, ~) maskChoice(dd, ed, help);
+        c = {dd, ed};
+    case 'optnumber'                              % a number that can be switched off (0)
+        holder = row(cg, {56, 90, '1x'}, T);
+        on = any(v(:) > 0);
+        cb = uicheckbox(holder, 'Text', 'On', 'Value', on, 'FontColor', T.text, 'Tooltip', tipText);
+        shown = v;
+        if ~on
+            shown = f.choices;                        % the value offered when switched on
+        end
+        ed = uieditfield(holder, 'text', 'Value', seecat.gui.format(shown, 'number'), 'Enable', on, edit{:});
+        cb.ValueChangedFcn = @(~, ~) switchNumber(cb, ed, help);
+        c = {cb, ed};
     case {'folder', 'file'}
         holder = row(cg, {'1x', 30}, T);
         c = uieditfield(holder, 'text', 'Value', char(v), edit{:});
@@ -212,6 +240,32 @@ else
 end
 end
 
+function switchNumber(cb, ed, help)
+ed.Enable = cb.Value;
+help();
+end
+
+function maskChoice(dd, ed, help)
+ed.Enable = strcmp(dd.Value, 'file');
+if strcmp(dd.Value, 'file') && isempty(strtrim(ed.Value))
+    browseMask(dd, ed, help);
+end
+help();
+end
+
+function browseMask(dd, ed, help)
+[f, p] = uigetfile({'*.nii;*.nii.gz', 'NIfTI images (*.nii, *.nii.gz)'; '*.*', 'All files'}, 'Choose a mask', ed.Value);
+if ~isequal(f, 0)
+    dd.Value = 'file';
+    ed.Enable = true;
+    ed.Value = fullfile(p, f);
+elseif isempty(strtrim(ed.Value)) && strcmp(dd.Value, 'file')
+    dd.Value = 'gm';                              % cancelled: back to a mask that needs no file
+    ed.Enable = false;
+end
+help();
+end
+
 function v = readControl(f, c, old)
 switch f.widget
     case {'flag', 'choice'}
@@ -223,6 +277,16 @@ switch f.widget
         v = seecat.gui.parse(strtrim([c(1).Value ' ' c(2).Value]), 'range', old);
     case {'folder', 'file'}
         v = strtrim(c.Value);
+    case 'mask'
+        v = c{1}.Value;
+        if strcmp(v, 'file')
+            v = strtrim(c{2}.Value);
+        end
+    case 'optnumber'
+        v = 0;
+        if c{1}.Value
+            v = seecat.gui.parse(c{2}.Value, 'number', old);
+        end
     case 'seeds'
         v = seedsFrom(c.Data);
     case 'contrasts'

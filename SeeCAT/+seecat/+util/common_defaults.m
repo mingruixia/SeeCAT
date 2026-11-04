@@ -11,7 +11,7 @@ cfg.subjects   = {};      % labels without "sub-"; empty = all
 cfg.sessions   = {};
 cfg.task       = '';      % empty = the only task present
 cfg.runs       = {};
-cfg.n_workers  = 0;       % 0 = serial
+cfg.n_workers  = 0;       % 0 = serial; 'auto' = as many as the computer allows
 cfg.overwrite  = false;
 cfg.keep_work  = false;
 
@@ -23,7 +23,7 @@ spec = {
     'sessions',   v.labels,  'a cell array of labels without "ses-"'
     'task',       v.text,    'a task label'
     'runs',       v.labels,  'a cell array of run labels'
-    'n_workers',  v.count,   'a non-negative integer'
+    'n_workers',  @(x) v.count(x) || (ischar(x) && strcmpi(x, 'auto')), 'a non-negative integer or ''auto'''
     'overwrite',  v.flag,    'true or false'
     'keep_work',  v.flag,    'true or false'
     };

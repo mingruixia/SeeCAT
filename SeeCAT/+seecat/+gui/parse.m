@@ -27,6 +27,8 @@ switch widget
 end
 if iscell(old)
     v = splitList(s);
+elseif isnumeric(old) && strcmpi(s, 'auto')
+    v = 'auto';                                   % e.g. n_workers; check_config says where it is not allowed
 elseif isnumeric(old) || islogical(old)
     v = numbers(s);
     if isempty(v) && ~isempty(s)
