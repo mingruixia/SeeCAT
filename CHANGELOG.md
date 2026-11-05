@@ -3,6 +3,15 @@
 ## Unreleased: 2.0 development
 
 ### Added
+- **PDF manual layout.** A cover, a contents page with page numbers (a
+  second pass reads each heading's page with pdftotext), running headers
+  with the chapter and page numbers, chapter openers, booktabs tables and
+  Noto Serif/Sans (SC for Chinese) type; the HTML manual is unchanged.
+  Screenshots are retaken full-resolution and checked against the window's
+  own content, so another window in front can no longer end up in them
+  (the main-window picture showed a PDF reader); pages start at the top,
+  help and log match each picture. The manual no longer mentions DPABI.
+  The help column shows tick-box defaults as on/off.
 - **Fixes from the 2026-11-05 review** (regression tests in
   tests/unit/test_audit.m, tests/gui/page_drafts.m):
   - *Resume checked only the options.* A finished unit is now skipped only

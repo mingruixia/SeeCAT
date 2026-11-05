@@ -293,7 +293,12 @@ show();
         if isempty(txt)
             txt = 'No further description; see the manual.';
         end
-        def = seecat.gui.format(getPath(state.defaults, f.path), f.widget);
+        dv = getPath(state.defaults, f.path);
+        if islogical(dv) && isscalar(dv)          % a tick box: on/off, not 1/0
+            def = char(string(onOff(dv)));
+        else
+            def = seecat.gui.format(dv, f.widget);
+        end
         if isempty(def)
             def = '(empty)';
         end

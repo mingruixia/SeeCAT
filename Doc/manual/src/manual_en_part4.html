@@ -230,11 +230,11 @@ seecat_work/                               work files (next to the output folder
 <h3>Coming from SeeCAT 1.x</h3>
 <table>
 <tr><th>1.x</th><th>2.0</th></tr>
-<tr><td>DPABI-style folders (<code>FunRaw</code>, <code>FunImgARW…</code>)</td><td>a BIDS dataset; DICOM to BIDS converts DICOM folders</td></tr>
-<tr><td>preprocessing through DPABI functions</td><td>Preprocessing with SPM only; outputs in <code>derivatives/seecat</code></td></tr>
+<tr><td>folders by processing stage (<code>FunRaw</code>, <code>FunImgARW…</code>)</td><td>a BIDS dataset; DICOM to BIDS converts DICOM folders</td></tr>
+<tr><td>preprocessing through external toolbox functions</td><td>Preprocessing with SPM only; outputs in <code>derivatives/seecat</code></td></tr>
 <tr><td>VoxDeg</td><td>Degree (same definition: thresholded correlations, binary and weighted)</td></tr>
 <tr><td>FuncConnect</td><td>Seed FC (spheres and masks, r and Fisher z)</td></tr>
-<tr><td>Stat with DPABI's GRF/AlphaSim</td><td>Statistics with SPM's random field theory, FDR or TFCE</td></tr>
-<tr><td>DPABI viewer</td><td>SeeCAT's own viewer, BrainNet Viewer for surfaces</td></tr>
+<tr><td>Stat with GRF/AlphaSim correction</td><td>Statistics with SPM's random field theory, FDR or TFCE</td></tr>
+<tr><td>an external viewer</td><td>SeeCAT's own viewer, BrainNet Viewer for surfaces</td></tr>
 <tr><td>settings in the GUI only</td><td>every setting is a JSON configuration that runs from scripts</td></tr>
 </table>

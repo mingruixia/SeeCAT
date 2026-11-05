@@ -3,6 +3,13 @@
     python Doc/manual/src/build.py          # writes Doc/manual/{en,zh}/index.html and index.html
     python Doc/manual/src/build.py --pdf    # also the PDFs (Microsoft Edge or Chrome, headless)
 
+The PDF has its own layout (print.css): a cover, a contents page with page
+numbers, running headers and page numbers. It is made in two passes: the
+first PDF gives each heading's page (pdftotext, from poppler; Git for
+Windows ships it), the second prints them in the contents. On Windows, run
+it from PowerShell or cmd: a headless browser started from Git Bash may
+write no PDF.
+
 Sources (this folder):
     manual_en.html, manual_zh.html  chapter text; <h2>/<h3> make the table of contents
     params.json                     every form entry (export_params.m, from the software itself)
@@ -25,6 +32,24 @@ MAN = os.path.dirname(HERE)
 P = json.load(open(os.path.join(HERE, 'params.json'), encoding='utf-8'))
 ZH = json.load(open(os.path.join(HERE, 'params_zh.json'), encoding='utf-8'))
 VERSION = '2.0'
+
+COVER = {
+    'en': dict(kind='User Manual', subtitle='Seed-based Connectivity Analysis Toolbox',
+               blurb='Resting-state fMRI from DICOM or BIDS to group statistics: preprocessing, quality control, '
+                     'seed connectivity, degree, gradients, multi-site harmonisation and statistics.',
+               version='Version 2.0 \u00b7 November 2026', who='Mingrui Xia',
+               aff='National Key Laboratory of Cognitive Neuroscience and Learning<br>'
+                   'Beijing Key Laboratory of Brain Imaging and Connectomics<br>'
+                   'IDG/McGovern Institute for Brain Research<br>Beijing Normal University, Beijing, China',
+               herocap='Principal connectivity gradient of the worked example (chapter 7)', about='About this manual', runhead='SeeCAT 2.0 \u00b7 User Manual'),
+    'zh': dict(kind='使用手册', subtitle='种子点连接分析工具箱 Seed-based Connectivity Analysis Toolbox',
+               blurb='静息态功能磁共振从 DICOM 或 BIDS 数据到组水平统计的完整流程：预处理、质量控制、种子点连接、'
+                     '度中心性、连接梯度、多中心校正与统计分析。',
+               version='版本 2.0 \u00b7 2026 年 11 月', who='夏明睿',
+               aff='认知神经科学与学习国家重点实验室<br>脑成像与连接组学北京市重点实验室<br>'
+                   '北京师范大学 IDG/麦戈文脑科学研究院<br>北京师范大学，中国北京',
+               herocap='实例中的主连接梯度（第 7 章）', about='关于本手册', runhead='SeeCAT 2.0 \u00b7 使用手册'),
+}
 
 UI = {
     'en': dict(title='SeeCAT 2.0 User Manual', contents='Contents', option='Option (window)', field='Batch field',
@@ -150,38 +175,115 @@ def build(lang):
     os.makedirs(d, exist_ok=True)
     open(os.path.join(d, 'index.html'), 'w', encoding='utf-8').write(out)
     print('%s: %d sections, %d figures' % (lang, len(toc), nfig[0]))
+    return src, toc
 
 
-def pdf(lang):
+def print_html(lang, src, toc, pages):
+    """The PDF layout: cover, about + contents, one <section> per chapter."""
+    u, c = UI[lang], COVER[lang]
+    m = re.search(r'<p class="lead">.*?</p>', src, flags=re.S)
+    lead = m.group(0) if m else ''
+    body = src.replace(lead, '', 1) if lead else src
+    # chapters: split before every <h2>, each on its own named page (running header)
+    pieces = re.split(r'(?=<h2 id="s\d+")', body)
+    chapters = [x for x in pieces if x.startswith('<h2')]
+    sects, rules = [], []
+    for k, ch in enumerate(chapters, 1):
+        title = next(plain for level, num, ident, plain in toc if level == '2' and num == str(k))
+        rules.append('@page ch%d{@top-right{content:"%d  %s"}}' % (k, k, title.replace('"', '\\"')))
+        sects.append('<section class="chapter" style="page:ch%d">%s</section>' % (k, ch))
+    items = []
+    for level, num, ident, plain in toc:
+        cls = 'l2' if level == '2' else 'l3'
+        pg = pages.get(ident, '') if pages else ''
+        items.append('<li class="%s"><a href="#%s"><span class="n">%s</span>%s</a><span class="dots"></span>'
+                     '<span class="pg">%s</span></li>' % (cls, ident, num, esc(plain), pg))
+    css = open(os.path.join(HERE, 'print.css'), encoding='utf-8').read()
+    css = css.replace('{{RUNHEAD}}', c['runhead']).replace('{{CHAPTER_PAGES}}', '\n'.join(rules))
+    cover = ('<section class="cover"><div class="band"></div>'
+             '<div class="logo"><img src="../images/logo.png" alt=""></div>'
+             '<div class="brand">SeeCAT<span>%s</span></div>'
+             '<div class="title">%s</div>'
+             '<div class="hero"></div><div class="herocap">%s</div>'
+             '<div class="sub"><b>%s</b>%s</div>'
+             '<div class="meta"><div class="who">%s</div>%s<br><br>%s</div></section>'
+             % ('Seed-based Connectivity Analysis Toolbox', c['kind'], c['herocap'], c['version'], c['blurb'], c['who'], c['aff'],
+                'GPL-3.0-or-later \u00b7 www.nitrc.org/projects/seecat' if lang == 'en'
+                else 'GPL-3.0-or-later 自由软件 \u00b7 www.nitrc.org/projects/seecat'))
+    front = ('<section class="front"><h1>%s</h1><div class="lead">%s</div>'
+             '<ol class="contents">%s</ol></section>' % (u['contents'], re.sub(r'</?p[^>]*>', '', lead), '\n'.join(items)))
+    return ('<!doctype html><html lang="%s"><head><meta charset="utf-8"><title>%s</title><style>%s</style></head>'
+            '<body>%s%s%s</body></html>' % (u['lang'], u['title'], css, cover, front, '\n'.join(sects)))
+
+
+def heading_pages(pdf_file, toc):
+    """Page (1-based) of each heading in a PDF: its number and title at the start of a line."""
+    exe = shutil.which('pdftotext') or r'C:\Program Files\Git\mingw64\bin\pdftotext.exe'
+    txt = subprocess.run([exe, '-layout', '-enc', 'UTF-8', pdf_file, '-'], capture_output=True, check=True).stdout
+    pages = txt.decode('utf-8', 'replace').split('\f')
+    found, start = {}, 0
+    for level, num, ident, plain in toc:
+        words = html.unescape(plain).split()
+        first = r'\s+'.join(re.escape(w) for w in words[:3])
+        # the heading line; a contents line ends in its page number instead
+        pat = re.compile(r'^\s*%s\s+%s(?!.*\s\d+\s*$)' % (re.escape(num), first), re.M)
+        for i in range(start, len(pages)):
+            if pat.search(pages[i]) and (level != '2' or i > 1):
+                found[ident] = i + 1
+                start = i
+                break
+        else:
+            print('  page not found for', num, plain)
+    return found
+
+
+def pdf(lang, src, toc):
     browsers = [r'C:\Program Files (x86)\Microsoft\Edge\Application\msedge.exe',
                 r'C:\Program Files\Microsoft\Edge\Application\msedge.exe',
                 r'C:\Program Files\Google\Chrome\Application\chrome.exe']
     exe = next((b for b in browsers if os.path.exists(b)), None) or shutil.which('msedge') or shutil.which('chrome')
     if exe is None:
         raise SystemExit('No Edge or Chrome found for the PDF.')
-    src = os.path.join(MAN, lang, 'index.html')
     name = {'en': 'SeeCAT_Manual_EN.pdf', 'zh': 'SeeCAT_Manual_ZH.pdf'}[lang]
     out = os.path.join(MAN, name)
+    page = os.path.join(MAN, lang, '_print.html')
+    shutil.copyfile(os.path.join(MAN, '..', '..', 'SeeCAT', 'resources', 'logo_256.png'),
+                    os.path.join(MAN, 'images', 'logo.png'))
+    pages = {}
+    try:
+        for attempt in range(3):                  # page numbers settle in the second pass
+            open(page, 'w', encoding='utf-8').write(print_html(lang, src, toc, pages))
+            render(exe, page, out)
+            new = heading_pages(out, toc)
+            if new == pages:
+                break
+            pages = new
+    finally:
+        if os.path.exists(page):
+            os.remove(page)
+    print('PDF', out, os.path.getsize(out) // 1024, 'kB')
+
+
+def render(exe, page, out):
     if os.path.exists(out):
         os.remove(out)
     profile = tempfile.mkdtemp()                  # a fresh profile: works while the browser is open
     try:
         subprocess.run([exe, '--headless=new', '--disable-gpu', '--no-pdf-header-footer', '--user-data-dir=' + profile,
                         '--print-to-pdf=' + out, '--virtual-time-budget=20000', '--generate-pdf-document-outline',
-                        'file:///' + src.replace('\\', '/')], check=True, timeout=600)
+                        'file:///' + page.replace('\\', '/')], check=True, timeout=600)
     finally:
         shutil.rmtree(profile, ignore_errors=True)
     if not os.path.exists(out):
         raise SystemExit('The browser wrote no PDF: ' + out)
-    print('PDF', out, os.path.getsize(out) // 1024, 'kB')
 
 
 if __name__ == '__main__':
     for lang in ('en', 'zh'):
         if any(f.startswith('manual_%s_part' % lang) for f in os.listdir(HERE)):
-            build(lang)
+            src, toc = build(lang)
             if '--pdf' in sys.argv:
-                pdf(lang)
+                pdf(lang, src, toc)
     open(os.path.join(MAN, 'index.html'), 'w', encoding='utf-8').write(
         '<!doctype html><html><head><meta charset="utf-8"><title>SeeCAT Manual</title>'
         '<meta name="viewport" content="width=device-width,initial-scale=1">'

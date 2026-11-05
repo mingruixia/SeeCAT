@@ -230,11 +230,11 @@ seecat_work/                               工作文件（在输出文件夹旁�
 <h3>从 SeeCAT 1.x 迁移</h3>
 <table>
 <tr><th>1.x</th><th>2.0</th></tr>
-<tr><td>DPABI 风格的目录（<code>FunRaw</code>、<code>FunImgARW…</code>）</td><td>BIDS 数据集；DICOM to BIDS 可转换 DICOM 文件夹</td></tr>
-<tr><td>通过 DPABI 函数预处理</td><td>只用 SPM 的 Preprocessing；输出在 <code>derivatives/seecat</code></td></tr>
+<tr><td>按处理阶段分的目录（<code>FunRaw</code>、<code>FunImgARW…</code>）</td><td>BIDS 数据集；DICOM to BIDS 可转换 DICOM 文件夹</td></tr>
+<tr><td>通过外部工具箱的函数预处理</td><td>只用 SPM 的 Preprocessing；输出在 <code>derivatives/seecat</code></td></tr>
 <tr><td>VoxDeg</td><td>Degree（定义相同：阈值化的相关，二值和加权）</td></tr>
 <tr><td>FuncConnect</td><td>Seed FC（球形和 mask 种子点，r 和 Fisher z）</td></tr>
-<tr><td>使用 DPABI 的 GRF/AlphaSim 的 Stat</td><td>使用 SPM 随机场理论、FDR 或 TFCE 的 Statistics</td></tr>
-<tr><td>DPABI 查看器</td><td>SeeCAT 自己的查看器；皮层表面用 BrainNet Viewer</td></tr>
+<tr><td>使用 GRF/AlphaSim 校正的 Stat</td><td>使用 SPM 随机场理论、FDR 或 TFCE 的 Statistics</td></tr>
+<tr><td>外部查看器</td><td>SeeCAT 自己的查看器；皮层表面用 BrainNet Viewer</td></tr>
 <tr><td>设置只在界面中</td><td>每个设置都是可用脚本运行的 JSON 配置</td></tr>
 </table>
