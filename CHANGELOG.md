@@ -3,6 +3,13 @@
 ## Unreleased: 2.0 development
 
 ### Added
+- **Fixed: leaving the QC reports page broke the window.** The page's Save
+  decisions button was stored in the same variable as the toolbar's Save
+  button (nested functions share the launcher's variables); every page
+  opened afterwards stopped with "Unrecognized property 'Visible'". A unit
+  test now rejects page functions that assign a window variable, and
+  tests/gui/page_switch.m visits every page from every other page (110
+  switches) and uses each one.
 - **Registration QC.** Each run report gives the Dice of the brain mask
   with the template brain (normalisation), the correlation and Dice of the
   normalised GM/WM/CSF with SPM's TPM, and the Dice of a brain mask from the

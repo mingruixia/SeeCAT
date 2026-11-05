@@ -761,7 +761,7 @@ show();
             'ColumnSpacing', 8, 'BackgroundColor', T.panel);
         bg.Layout.Row = 5;
         bg.Layout.Column = [1 3];
-        saveB = uibutton(bg, 'Text', 'Save decisions', 'Icon', seecat.gui.icon('save', '#FFFFFF'), 'FontWeight', 'bold', ...
+        qcSaveB = uibutton(bg, 'Text', 'Save decisions', 'Icon', seecat.gui.icon('save', '#FFFFFF'), 'FontWeight', 'bold', ...
             'BackgroundColor', T.accent, 'FontColor', [1 1 1], 'Enable', 'off', 'ButtonPushedFcn', @(~, ~) saveList());
         button(bg, 'Group report', 'external', @(~, ~) openGroup());
         button(bg, 'Run report', 'external', @(~, ~) openRun());
@@ -782,7 +782,7 @@ show();
         function loadList()
             tb.Data = table();
             removeStyle(tb);
-            saveB.Enable = 'off';
+            qcSaveB.Enable = 'off';
             try
                 X = seecat.qc.exclusion_list(strtrim(ed.Value));
             catch err
@@ -812,7 +812,7 @@ show();
         end
         function edited()
             restyle();
-            saveB.Enable = 'on';
+            qcSaveB.Enable = 'on';
             status.Text = 'Changed; Save to keep.';
         end
         function saveList()
