@@ -42,7 +42,7 @@
 "*.sessions": {"label": "Session", "help": "不带 \"ses-\" 的标签，逗号分隔，如 1, 2。留空：全部 session。"},
 "*.task": {"label": "任务", "help": "run 的任务标签，如 rest。留空：数据中唯一的任务；如果有多个任务，请指定一个。"},
 "*.runs": {"label": "Run", "help": "run 标签，逗号分隔，如 1, 2。留空：全部 run。"},
-"*.n_workers": {"label": "并行 worker 数", "help": "同时处理多少个单元（run 或被试），每个由并行池中的一个 worker 处理（需要 Parallel Computing Toolbox）。\n\n0：逐个处理，不开并行池（默认）。\nauto：在内存允许的范围内尽量多开。SeeCAT 估算一个单元需要的内存（依据最大的 run），再加上每个 worker 约 1 GB，最多使用空闲内存的 85%，且不超过核数和单元数；日志会写明估算结果和选择。内存不够开两个 worker 时就逐个处理。\n一个数字，如 4：最多开这么多个 worker，不考虑内存。\n\n没有该工具箱时 SeeCAT 逐个处理。已经打开的并行池会原样沿用。"},
+"*.n_workers": {"label": "并行 worker 数", "help": "同时处理多少个单元（run 或被试），每个由并行池中的一个 worker 处理（需要 Parallel Computing Toolbox）。\n\nauto（默认）：在内存允许的范围内尽量多开。SeeCAT 估算一个单元需要的内存（依据最大的 run），再加上每个 worker 约 1 GB，最多使用空闲内存的 85%，且不超过核数和单元数；日志会写明估算结果和选择。只有一个单元，或内存不够开两个 worker 时，就逐个处理，不开并行池。\n0：逐个处理，不开并行池（如需让电脑留给其他工作）。\n一个数字，如 4：最多开这么多个 worker，不考虑内存。\n\n没有该工具箱时 SeeCAT 逐个处理。已经打开的并行池会原样沿用。"},
 "*.overwrite": {"label": "覆盖已完成的单元", "help": "设置相同、已经完成的单元会被跳过。勾选则无论如何重新计算。设置有变化的单元总会重做。"},
 "*.keep_work": {"label": "保留工作文件", "help": "保留成功单元的工作文件夹，例如用于查看中间图像。"},
 "*.fmriprep_dir": {"label": "fMRIPrep 文件夹", "help": "fMRIPrep 的输出文件夹，如 D:/study/bids/derivatives/fmriprep。SeeCAT 为每个 BOLD run 读取 *_space-<space>_desc-preproc_bold.nii.gz、它的脑 mask 和混杂变量表；不重复 fMRIPrep 自己的步骤。\n\n未设置 Output folder 时，结果写到它旁边的 derivatives/seecat，文件名与 Preprocessing 页相同，因此 Seed FC、Degree 和 Statistics 的用法完全一样。"},
@@ -77,7 +77,7 @@
 "*.kernel": {"label": "亲和度", "help": "如何衡量两个节点连接模式的相似性。\n\nnormalized_angle（默认）：1 - 两模式夹角/π；BrainSpace 推荐。\ncosine：余弦相似度，负值置 0（Margulies et al. 2016）。\nnone：稀疏化后的连接矩阵本身（对称化）。"},
 "gradient.alpha": {"label": "扩散 alpha", "help": "扩散映射的各向异性参数：0.5（默认）减弱节点采样密度的影响（Coifman & Lafon 2006）；0 相当于拉普拉斯特征映射，1 为 Laplace-Beltrami 算子。"},
 "*.align": {"label": "对齐方式", "help": "各 run 单独得到的梯度可能顺序或正负号不同；对齐使梯度 k 在各 run 间可比，组统计需要这一步。\n\ngroup 和 procrustes 都使用广义 Procrustes 对齐（与 BrainSpace 相同）：把每个 run 旋转（只做旋转和翻转，不缩放）到参考上，再以旋转后各 run 的平均作为新参考，重复最多 10 次，或直到参考的变化小于 1e-5。两者的区别在于首次参考：\ngroup（默认）：组平均连接矩阵的梯度，因此梯度 k 保持组水平的含义。多占一个节点×节点矩阵的内存。这些初始梯度也会写出（desc-grad<k>_groupmatrix）。\nprocrustes：第一个 run 的梯度；不需要组矩阵。\nnone：各 run 自己的梯度；只适合查看单个 run。"},
-"gradient.n_workers": {"label": "并行 worker 数", "help": "同时计算的 run 数，每个由并行池中的一个 worker 计算。每个 worker 需要一个 run 的内存（见 Node size）再加约 1 GB；group 对齐时，主进程还要保留约四个节点×节点矩阵用于组水平计算。\n\n0：逐个计算（默认）。\nauto：在扣除上述内存后的空闲内存 85% 内尽量多开（不超过核数和 run 数）；如 4 mm 节点、空闲 64 GB 时约 5 个。日志会写明估算结果。\n一个数字：最多开这么多个；放不下时 SeeCAT 在开始前就会停下。"},
+"gradient.n_workers": {"label": "并行 worker 数", "help": "同时计算的 run 数，每个由并行池中的一个 worker 计算。每个 worker 需要一个 run 的内存（见 Node size）再加约 1 GB；group 对齐时，主进程还要保留约四个节点×节点矩阵用于组水平计算。\n\nauto（默认）：在扣除上述内存后的空闲内存 85% 内尽量多开（不超过核数和 run 数）；如 4 mm 节点、空闲 64 GB 时约 5 个。日志会写明估算结果。\n0：逐个计算。\n一个数字：最多开这么多个；放不下时 SeeCAT 在开始前就会停下。"},
 "harmonize.input_dir": {"label": "Derivatives 文件夹", "help": "包含要校正的被试图的 SeeCAT derivatives 文件夹（Seed FC、Degree 或 Gradients 的输出），如 D:/study/bids/derivatives/seecat。未设置 Output folder 时，校正后的图写在原图旁边。"},
 "harmonize.maps": {"label": "被试图", "help": "要校正哪些图，按文件名的各部分选择，与 Statistics 相同：如种子点功能连接选 Map PCC、Statistic z，第一梯度选 Map grad1Vox4。打开下拉列表可从已有的值中选；下方一行显示匹配到的图数。\n\n每种图分别校正（每种指标运行一次本页）。所有中心的图要放在一起校正。"},
 "harmonize.participants": {"label": "participants.tsv", "help": "包含 participant_id、中心列和协变量的表格。留空：derivatives 来源的 BIDS 数据集中的 participants.tsv。"},
@@ -111,6 +111,6 @@
 "*.tfce.n_perm": {"label": "TFCE 置换次数", "help": "仅 tfce_fwe：用多少次置换（单样本为符号翻转，配对设计为被试内交换）构建零分布。默认 5000，与 FSL randomise 相同；最小可能的 p 为 1/置换次数。可能的不同置换少于该数时（如 n 张图共 2^n 种符号翻转），全部使用。\n\n时间随置换次数、对比数和 mask 大小增长：几分钟到一小时。并行 worker（Run 区）分担置换计算。随机种子固定，结果可完全重复。"},
 "*.tfce.E": {"label": "TFCE 范围指数 E", "help": "TFCE 中团块范围的权重，默认 0.5（Smith & Nichols 2009；FSL 对三维数据的设置）。"},
 "*.tfce.H": {"label": "TFCE 高度指数 H", "help": "TFCE 中高度的权重，默认 2（Smith & Nichols 2009；与 FSL 相同）。"},
-"stat.n_workers": {"label": "并行 worker 数", "help": "只用于 tfce_fwe：置换计算由这么多个并行 worker 分担（需要 Parallel Computing Toolbox）。其他校正几秒内完成，不使用它。\n\n0：不开并行池（默认）。\nauto：在内存允许的范围内尽量多开（每个 worker 保存所有被试的图，再加约 1 GB），不超过核数；日志会写明估算结果。\n一个数字，如 8：最多开这么多个。"},
+"stat.n_workers": {"label": "并行 worker 数", "help": "只用于 tfce_fwe：置换计算由这么多个并行 worker 分担（需要 Parallel Computing Toolbox）。其他校正几秒内完成，不使用它。\n\nauto（默认）：在内存允许的范围内尽量多开（每个 worker 保存所有被试的图，再加约 1 GB），不超过核数；日志会写明估算结果。不选 tfce_fwe 时不开并行池。\n0：不开并行池。\n一个数字，如 8：最多开这么多个。"},
 "stat.subjects": {"label": "被试", "help": "只用这些被试：不带 \"sub-\" 的编号，逗号分隔。留空：所有有匹配图的被试。"}
 }

@@ -11,7 +11,7 @@ cfg.subjects   = {};      % labels without "sub-"; empty = all
 cfg.sessions   = {};
 cfg.task       = '';      % empty = the only task present
 cfg.runs       = {};
-cfg.n_workers  = 0;       % 0 = serial; 'auto' = as many as the computer allows
+cfg.n_workers  = 'auto';  % as many as memory and cores allow; 0 = serial
 cfg.overwrite  = false;
 cfg.keep_work  = false;
 

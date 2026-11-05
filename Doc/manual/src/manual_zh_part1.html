@@ -120,9 +120,9 @@ seecat.run('my_prep.json');                  % 运行从窗口保存的配置</c
 <h3>并行计算与内存</h3>
 <p>每个页面的 <b>Parallel workers</b> 选项决定同时运行多少个单元：</p>
 <ul>
-<li><code>0</code>：逐个运行（默认）；</li>
-<li>一个数字：最多这么多个 worker；</li>
-<li><code>auto</code>：在内存允许的范围内尽量多开。SeeCAT 估算一个单元需要的内存（依据最大的 run、脑 mask、Gradients 的节点数、Statistics 的被试图），加上每个 worker 约 1 GB，扣除主进程需要的部分，最多使用空闲内存的 85%，且不超过核数和单元数。日志会写明估算结果和选择。</li>
+<li><code>auto</code>（默认）：在内存允许的范围内尽量多开。SeeCAT 估算一个单元需要的内存（依据最大的 run、脑 mask、Gradients 的节点数、Statistics 的被试图），加上每个 worker 约 1 GB，扣除主进程需要的部分，最多使用空闲内存的 85%，且不超过核数和单元数。日志会写明估算结果和选择。只有一个单元（Harmonize、不含 TFCE 的 Statistics）、内存不够开两个 worker，或没有 Parallel Computing Toolbox 时，逐个运行，不开并行池；</li>
+<li><code>0</code>：逐个运行，如需让电脑留给其他工作；</li>
+<li>一个数字：最多这么多个 worker。</li>
 </ul>
 <p>每个 worker 按比例分得 CPU 核作为计算线程（如 32 核开 5 个 worker，每个 6 个线程），矩阵运算的速度不受影响。Gradients 和 TFCE 只有一个单元，worker 分担的是该单元内的各个 run 或各次置换。并行池启动失败时，SeeCAT 会用一半的 worker 再试一次，仍不行才改为逐个运行，并在日志中写明原因。</p>
 

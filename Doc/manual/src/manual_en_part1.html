@@ -120,9 +120,9 @@ seecat.run('my_prep.json');                  % a configuration saved from the wi
 <h3>Parallel processing and memory</h3>
 <p>The <b>Parallel workers</b> option of each page sets how many units run at the same time:</p>
 <ul>
-<li><code>0</code>: one after another (default);</li>
-<li>a number: at most that many workers;</li>
-<li><code>auto</code>: as many as fit in memory. SeeCAT estimates the memory one unit needs (from the size of the largest run, the brain mask, the node count of Gradients, the maps of Statistics), adds about 1 GB per worker, keeps what the main MATLAB needs, and uses at most 85 % of the free memory, one worker per core and one per unit. The log states the estimate and the choice.</li>
+<li><code>auto</code> (default): as many as fit in memory. SeeCAT estimates the memory one unit needs (from the size of the largest run, the brain mask, the node count of Gradients, the maps of Statistics), adds about 1 GB per worker, keeps what the main MATLAB needs, and uses at most 85 % of the free memory, one worker per core and one per unit. The log states the estimate and the choice. With only one unit (Harmonize, Statistics without TFCE), with too little memory for two workers, or without the Parallel Computing Toolbox, it runs one after another without a pool;</li>
+<li><code>0</code>: one after another, e.g. to leave the computer free for other work;</li>
+<li>a number: at most that many workers.</li>
 </ul>
 <p>Each worker is given its share of the computer's cores as threads (e.g. 5 workers on 32 cores get 6 threads each), so matrix work keeps its speed. For Gradients and TFCE, which are one unit, the workers share the runs or the permutations of that unit. If a pool fails to start, SeeCAT tries once more with half the workers and only then runs one after another, and the log says why.</p>
 

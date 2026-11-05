@@ -106,7 +106,7 @@ Common fields:
 | `output_dir` | `<bids_dir>/derivatives/seecat` | derivatives root |
 | `work_dir` | `<output_dir>/../seecat_work` | intermediate files |
 | `subjects`, `sessions`, `task`, `run` | all | BIDS selection |
-| `n_workers` | 0 | 0 = serial; >0 = subject-level `parfor` |
+| `n_workers` | 'auto' | 'auto' = as many as memory and cores allow; 0 = serial; >0 = at most that many (`parfor` over units) |
 | `overwrite` | false | redo steps whose outputs exist |
 | `keep_work` | false | keep intermediate files after a subject succeeds |
 

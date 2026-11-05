@@ -142,6 +142,11 @@ end
 
 function shot(f, file)
 figure(f);
+s = get(0, 'ScreenSize');
+p = f.Position;
+if p(1) < 1 || p(2) < 1 || p(1) + p(3) > s(3) || p(2) + p(4) > s(4)
+    f.Position(1:2) = [40 40];                    % e.g. opened on a second monitor: back to the main one
+end
 drawnow;
 pause(1);
 r = java.awt.Robot;

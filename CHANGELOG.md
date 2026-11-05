@@ -3,6 +3,11 @@
 ## Unreleased: 2.0 development
 
 ### Added
+- **Parallel workers default to auto** on every page and in batch
+  configurations (`n_workers = 'auto'`): as many workers as memory and
+  cores allow. One-unit runs (Harmonize, Statistics without TFCE), too
+  little memory, or no Parallel Computing Toolbox still run serially
+  without a pool; 0 keeps the computer free.
 - **User manual, English and Chinese** (Doc/manual: HTML with a language
   chooser, and SeeCAT_Manual_EN.pdf / SeeCAT_Manual_ZH.pdf in the release).
   Overview, concepts, every module with its algorithm, every option (tables

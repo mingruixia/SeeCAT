@@ -453,8 +453,8 @@
       "section": "Run",
       "advanced": false,
       "widget": "number",
-      "default": "0",
-      "help": "How many units (runs or subjects) are processed at the same time, each by a worker of a parallel pool (Parallel Computing Toolbox).\n\n0: one after another, no pool (the default).\nauto: as many workers as fit in memory. SeeCAT estimates the memory one unit needs (from the size of the largest run) plus about 1 GB per worker, and uses at most 85% of the free memory, one worker per core and one per unit; the log shows the estimate and the choice. With too little memory for two workers it runs one after another.\nA number, e.g. 4: at most that many workers, whatever the memory.\n\nWithout the toolbox SeeCAT runs one after another. A pool that is already open is reused as it is.",
+      "default": "auto",
+      "help": "How many units (runs or subjects) are processed at the same time, each by a worker of a parallel pool (Parallel Computing Toolbox).\n\nauto (the default): as many workers as fit in memory. SeeCAT estimates the memory one unit needs (from the size of the largest run) plus about 1 GB per worker, and uses at most 85% of the free memory, one worker per core and one per unit; the log shows the estimate and the choice. With one unit, or too little memory for two workers, it runs one after another without a pool.\n0: one after another, no pool (e.g. to leave the computer free for other work).\nA number, e.g. 4: at most that many workers, whatever the memory.\n\nWithout the toolbox SeeCAT runs one after another. A pool that is already open is reused as it is.",
       "choices": []
     },
     {
@@ -788,8 +788,8 @@
       "section": "Run",
       "advanced": false,
       "widget": "number",
-      "default": "0",
-      "help": "How many units (runs or subjects) are processed at the same time, each by a worker of a parallel pool (Parallel Computing Toolbox).\n\n0: one after another, no pool (the default).\nauto: as many workers as fit in memory. SeeCAT estimates the memory one unit needs (from the size of the largest run) plus about 1 GB per worker, and uses at most 85% of the free memory, one worker per core and one per unit; the log shows the estimate and the choice. With too little memory for two workers it runs one after another.\nA number, e.g. 4: at most that many workers, whatever the memory.\n\nWithout the toolbox SeeCAT runs one after another. A pool that is already open is reused as it is.",
+      "default": "auto",
+      "help": "How many units (runs or subjects) are processed at the same time, each by a worker of a parallel pool (Parallel Computing Toolbox).\n\nauto (the default): as many workers as fit in memory. SeeCAT estimates the memory one unit needs (from the size of the largest run) plus about 1 GB per worker, and uses at most 85% of the free memory, one worker per core and one per unit; the log shows the estimate and the choice. With one unit, or too little memory for two workers, it runs one after another without a pool.\n0: one after another, no pool (e.g. to leave the computer free for other work).\nA number, e.g. 4: at most that many workers, whatever the memory.\n\nWithout the toolbox SeeCAT runs one after another. A pool that is already open is reused as it is.",
       "choices": []
     },
     {
@@ -920,8 +920,8 @@
       "section": "Run",
       "advanced": false,
       "widget": "number",
-      "default": "0",
-      "help": "How many units (runs or subjects) are processed at the same time, each by a worker of a parallel pool (Parallel Computing Toolbox).\n\n0: one after another, no pool (the default).\nauto: as many workers as fit in memory. SeeCAT estimates the memory one unit needs (from the size of the largest run) plus about 1 GB per worker, and uses at most 85% of the free memory, one worker per core and one per unit; the log shows the estimate and the choice. With too little memory for two workers it runs one after another.\nA number, e.g. 4: at most that many workers, whatever the memory.\n\nWithout the toolbox SeeCAT runs one after another. A pool that is already open is reused as it is.",
+      "default": "auto",
+      "help": "How many units (runs or subjects) are processed at the same time, each by a worker of a parallel pool (Parallel Computing Toolbox).\n\nauto (the default): as many workers as fit in memory. SeeCAT estimates the memory one unit needs (from the size of the largest run) plus about 1 GB per worker, and uses at most 85% of the free memory, one worker per core and one per unit; the log shows the estimate and the choice. With one unit, or too little memory for two workers, it runs one after another without a pool.\n0: one after another, no pool (e.g. to leave the computer free for other work).\nA number, e.g. 4: at most that many workers, whatever the memory.\n\nWithout the toolbox SeeCAT runs one after another. A pool that is already open is reused as it is.",
       "choices": []
     },
     {
@@ -1139,8 +1139,8 @@
       "section": "Run",
       "advanced": false,
       "widget": "number",
-      "default": "0",
-      "help": "How many units (runs or subjects) are processed at the same time, each by a worker of a parallel pool (Parallel Computing Toolbox).\n\n0: one after another, no pool (the default).\nauto: as many workers as fit in memory. SeeCAT estimates the memory one unit needs (from the size of the largest run) plus about 1 GB per worker, and uses at most 85% of the free memory, one worker per core and one per unit; the log shows the estimate and the choice. With too little memory for two workers it runs one after another.\nA number, e.g. 4: at most that many workers, whatever the memory.\n\nWithout the toolbox SeeCAT runs one after another. A pool that is already open is reused as it is.",
+      "default": "auto",
+      "help": "How many units (runs or subjects) are processed at the same time, each by a worker of a parallel pool (Parallel Computing Toolbox).\n\nauto (the default): as many workers as fit in memory. SeeCAT estimates the memory one unit needs (from the size of the largest run) plus about 1 GB per worker, and uses at most 85% of the free memory, one worker per core and one per unit; the log shows the estimate and the choice. With one unit, or too little memory for two workers, it runs one after another without a pool.\n0: one after another, no pool (e.g. to leave the computer free for other work).\nA number, e.g. 4: at most that many workers, whatever the memory.\n\nWithout the toolbox SeeCAT runs one after another. A pool that is already open is reused as it is.",
       "choices": []
     },
     {
@@ -1382,8 +1382,8 @@
       "section": "Run",
       "advanced": false,
       "widget": "number",
-      "default": "0",
-      "help": "Runs computed at the same time, each on a worker of a parallel pool. Every worker needs the memory of one run (see Node size) plus about 1 GB, and with group alignment the main MATLAB keeps about four node x node matrices for the group step.\n\n0: one after another (default).\nauto: as many workers as fit in 85% of the free memory after that (at most one per core and per run); e.g. with 4 mm nodes and 64 GB free, about 5 workers. The log shows the estimate.\nA number: at most that many; SeeCAT stops before starting if they cannot fit.",
+      "default": "auto",
+      "help": "Runs computed at the same time, each on a worker of a parallel pool. Every worker needs the memory of one run (see Node size) plus about 1 GB, and with group alignment the main MATLAB keeps about four node x node matrices for the group step.\n\nauto (default): as many workers as fit in 85% of the free memory after that (at most one per core and per run); e.g. with 4 mm nodes and 64 GB free, about 5 workers. The log shows the estimate.\n0: one after another.\nA number: at most that many; SeeCAT stops before starting if they cannot fit.",
       "choices": []
     },
     {
@@ -1851,8 +1851,8 @@
       "section": "Run",
       "advanced": false,
       "widget": "number",
-      "default": "0",
-      "help": "Used only by tfce_fwe: the permutations are shared among this many workers of a parallel pool (Parallel Computing Toolbox). The other corrections run in seconds and ignore it.\n\n0: no pool (default).\nauto: as many workers as fit in memory (each holds the maps of all subjects, plus about 1 GB), at most one per core; the log shows the estimate.\nA number, e.g. 8: at most that many.",
+      "default": "auto",
+      "help": "Used only by tfce_fwe: the permutations are shared among this many workers of a parallel pool (Parallel Computing Toolbox). The other corrections run in seconds and ignore it.\n\nauto (default): as many workers as fit in memory (each holds the maps of all subjects, plus about 1 GB), at most one per core; the log shows the estimate. Without tfce_fwe no pool is started.\n0: no pool.\nA number, e.g. 8: at most that many.",
       "choices": []
     },
     {
