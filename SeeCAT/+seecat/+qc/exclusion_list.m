@@ -40,7 +40,8 @@ if nargin > 1 && strcmp(action, 'set')
 end
 T = X;
 q = [dir(fullfile(folder, 'reports', 'prep_qc.tsv')); dir(fullfile(folder, 'reports', 'fmriprep_qc.tsv'))];
-cols = {'site', 'mean_fd', 'max_translation', 'max_rotation', 'coverage', 'minutes_kept', 'tsnr_median', ...
+cols = {'site', 'mean_fd', 'max_translation', 'max_rotation', 'coverage', 'reg_brain_dice', 'reg_gm_corr', ...
+    'reg_epi_t1_dice', 'minutes_kept', 'tsnr_median', ...
     'bold_tsnr', 'bold_dvars_std', 't1_cnr', 't1_cjv'};
 for c = cols
     if strcmp(c{1}, 'site')

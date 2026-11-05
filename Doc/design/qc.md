@@ -55,6 +55,25 @@ derivative of an excluded run, and the VBM maps of an excluded T1w, are left
 out. The list of excluded runs is logged and kept out of the options hash, so
 editing the list does not rerun finished units.
 
+## Registration measures
+
+`seecat.qc.registration`, in every run report (output space):
+
+| measure | what it checks | DIDA, 6 runs, 3 sites |
+|---|---|---|
+| reg_brain_dice | brain mask vs template brain mask (normalisation) | 0.956-0.983 |
+| reg_gm_corr / wm / csf | normalised tissue maps vs SPM TPM | GM 0.64-0.74, WM 0.79-0.83 |
+| reg_gm_dice | GM > 0.5 vs TPM GM > 0.5 | 0.71-0.75 |
+| reg_epi_t1_dice | brain from the mean EPI's intensity (> 20 % of its 98th percentile) vs T1w brain | 0.85-0.92 |
+
+Brain Dice < `qc.min_brain_dice` (0.85) suggests exclusion; outliers of the
+three main measures within a site are warnings. Tried and dropped: the GM/WM
+contrast of the mean EPI with the T1w tissue maps, and a one-voxel shift test
+on it. At 3 mm the contrast was near zero or negative on 4 of 6 runs, and the
+shift test flagged 5 of 6, so it gave false alarms. The EPI-T1w Dice drops by
+about 0.005-0.01 for a 3 mm shift and 0.03 for 6 mm: an outlier measure
+within a site, not an absolute one.
+
 ## VBM
 
 `vbm.enable` asks SPM's segmentation for normalised tissue maps (TPM grid,

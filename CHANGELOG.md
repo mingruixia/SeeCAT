@@ -3,6 +3,15 @@
 ## Unreleased: 2.0 development
 
 ### Added
+- **Registration QC.** Each run report gives the Dice of the brain mask
+  with the template brain (normalisation), the correlation and Dice of the
+  normalised GM/WM/CSF with SPM's TPM, and the Dice of a brain mask from the
+  mean EPI's own intensity with the T1w brain (EPI-T1w alignment). A brain
+  Dice below `qc.min_brain_dice` (0.85) suggests exclusion; outliers within
+  a site are warnings. fMRIPrep runs use fMRIPrep's tissue maps. On 6 DIDA
+  runs (3 sites): brain Dice 0.956-0.983, GM r 0.64-0.74, EPI-T1w Dice
+  0.85-0.92. A GM/WM contrast measure of the mean EPI was tried and dropped:
+  at 3 mm it was near zero on 4 of 6 runs.
 - **Image quality metrics (MRIQC) in Preprocessing (`qc.iqm`, on).** BOLD:
   tSNR, SNR, FBER, EFC, ghost-to-signal (x, y), standardised DVARS, FD,
   AFNI outlier ratio and quality index, global correlation, smoothness; T1w:

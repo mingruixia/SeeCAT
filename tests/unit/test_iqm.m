@@ -133,6 +133,29 @@ u = seecat.stat.plan(seecat.config(s));
 tc.verifyEqual(height(u.maps), 3);
 end
 
+function testRegistrationMetrics(tc)
+% The template's own tissue maps as a perfectly normalised subject; a
+% T2*-like EPI (GM brighter than WM); then the EPI moved by two voxels
+here = fileparts(mfilename('fullpath'));
+[b, V] = seecat.io.read_nii(fullfile(here, '..', '..', 'SeeCAT', 'templates', 'tpl-IXI549Space_res-3_desc-brain_mask.nii'));
+hdr = V(1);
+T = seecat.io.read_nii(fullfile(spm('dir'), 'tpm', 'TPM.nii'), 'Volumes', 1:3, 'Ref', hdr, 'Interp', 1);
+P = {T(:, :, :, 1), T(:, :, :, 2), T(:, :, :, 3)};
+rng(1);
+epi = 1.3 * P{1} + 1.0 * P{2} + 1.6 * P{3} + 0.02 * randn(size(P{1}));
+valid = true(hdr.dim);
+Q = seecat.qc.registration(epi, b > 0, P, hdr, valid);
+tc.verifyEqual(Q.reg_brain_dice, 1, 'AbsTol', 1e-12);
+tc.verifyGreaterThan(Q.reg_gm_corr, 0.999);
+tc.verifyGreaterThan(Q.reg_epi_t1_dice, 0.9);
+moved = circshift(epi, 2, 1);
+Q2 = seecat.qc.registration(moved, circshift(b > 0, 2, 1), P, hdr, valid);
+tc.verifyLessThan(Q2.reg_brain_dice, 0.95);
+tc.verifyLessThan(Q2.reg_epi_t1_dice, Q.reg_epi_t1_dice - 0.03);   % the EPI off its T1w by 6 mm
+Q3 = seecat.qc.registration(epi, b > 0, {}, hdr, valid);   % no tissue maps: only the Dice
+tc.verifyTrue(isnan(Q3.reg_gm_corr) && isfinite(Q3.reg_brain_dice));
+end
+
 function compare(tc, Q, R)
 for f = fieldnames(R)'
     k = f{1};

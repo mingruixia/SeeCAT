@@ -11,10 +11,12 @@ function T = group_report(output_dir, pipeline, summary, qc)
 %                        decision ('auto' or 'user'), note
 % Exclusion is suggested (exclude = 1, decision auto) when a run breaks a
 % rule of QC (seecat.util.qc_defaults): largest translation or rotation,
-% mean FD, too little data after censoring, or coverage of the template
-% brain below the minimum. Warnings, which do not exclude: mean FD above
+% mean FD, too little data after censoring, coverage of the template
+% brain below the minimum, or a brain-mask Dice with the template below
+% QC.min_brain_dice (failed normalisation). Warnings, which do not exclude: mean FD above
 % 0.25 mm (Parkes et al. 2018, lenient), coverage of the bottom of the brain
-% below 80 %, and IQMs whose robust z (median, MAD) within the run's site
+% below 80 %, a registration measure (seecat.qc.registration) that is an
+% outlier, and IQMs whose robust z (median, MAD) within the run's site
 % (participants.tsv column "site", with at least 5 runs there; otherwise
 % the whole dataset) is beyond QC.iqm_z in the bad direction. T1w rows
 % carry only warnings. Rows whose decision is 'user' (changed on the QC
@@ -81,6 +83,18 @@ for k = 1:size(boldIqm, 1)
     for i = find(hit)'
         warns{i}{end+1} = sprintf('%s outlier', strrep(boldIqm{k, 1}, 'bold_', ''));
     end
+end
+
+regIqm = {'reg_brain_dice', -1; 'reg_gm_corr', -1; 'reg_epi_t1_dice', -1};
+zr = robustZ(T, regIqm, qc.iqm_z);
+for k = 1:size(regIqm, 1)
+    for i = find(zr(:, k))'
+        warns{i}{end+1} = sprintf('registration: %s outlier', strrep(regIqm{k, 1}, 'reg_', ''));
+    end
+end
+if ismember('reg_brain_dice', T.Properties.VariableNames)
+    [reasons, ~] = apply(reasons, rule('reg_brain_dice', @(x) x < qc.min_brain_dice, ...
+        sprintf('brain Dice with template < %.2f (failed normalisation)', qc.min_brain_dice)));
 end
 
 % T1w rows: one per T1w file, IQMs from its first run
@@ -157,7 +171,7 @@ if nargin > 2 && ~isempty(summary) && ismember('status', summary.Properties.Vari
     k = strcmp(summary.status, 'failed');
     failed = strcat(summary.unit(k), {': '}, summary.message(k));   % {': '} keeps the space
 end
-html = page(T, X, A, t1s, boldIqm, t1Iqm, failed, pipeline, qc, quantized);
+html = page(T, X, A, t1s, [regIqm; boldIqm], t1Iqm, failed, pipeline, qc, quantized);
 fid = fopen(fullfile(d, [pipeline '_qc.html']), 'w', 'n', 'UTF-8');
 fwrite(fid, html, 'char');
 fclose(fid);
@@ -236,9 +250,10 @@ for i = 1:height(T)
     if ex, decision = 'EXCLUDE'; end
     if strcmp(X.decision{k}, 'user'), decision = [decision ' (by user)']; end
     rows = [rows sprintf(['<tr%s><td><a href="../%s/%s_desc-qc_report.html">%s</a></td><td>%s</td>' ...
-        '<td>%s</td><td>%s</td><td>%s</td><td>%s</td><td>%s</td><td>%s</td><td>%s</td><td><b>%s</b> %s</td><td>%s</td></tr>'], ...
+        '<td>%s</td><td>%s</td><td>%s</td><td>%s</td><td>%s</td><td>%s</td><td>%s</td><td>%s</td><td>%s</td><td><b>%s</b> %s</td><td>%s</td></tr>'], ...
         cls, sub, T.run{i}, T.run{i}, T.site{i}, num('mean_fd', i, '%.3f'), num('max_translation', i, '%.2f'), ...
-        num('max_rotation', i, '%.2f'), num('coverage', i, '%.2f'), num('minutes_kept', i, '%.1f'), ...
+        num('max_rotation', i, '%.2f'), num('coverage', i, '%.2f'), num('reg_brain_dice', i, '%.3f'), ...
+        num('reg_gm_corr', i, '%.3f'), num('minutes_kept', i, '%.1f'), ...
         num('tsnr_median', i, '%.1f'), num('fd_dvars_r_denoised', i, '%.2f'), decision, T.reasons{i}, T.warnings{i})]; %#ok<AGROW>
 end
 fails = '';
@@ -275,15 +290,17 @@ if ~isempty(t1s)
         'warning limit within its site. Arrows show the good direction.' qnote '</p><div class="grid">' t1Plots '</div>'];
 end
 if ~isempty(iqmPlots)
-    iqmPlots = ['<h2>BOLD quality (MRIQC IQMs)</h2><p class="note">One dot per run, coloured by site; red ' ...
+    iqmPlots = ['<h2>Registration and BOLD quality</h2><p class="note">reg_*: registration measures ' ...
+        '(brain mask Dice with the template, normalised GM vs SPM''s TPM, Dice of the EPI''s own brain with the ' ...
+        'T1w brain); the others are MRIQC IQMs. One dot per run, coloured by site; red ' ...
         'outline: robust z beyond ' sprintf('%g', qc.iqm_z) ' within its site in the bad direction (a warning, ' ...
         'not an exclusion). Hover a dot for the run.</p><div class="grid">' iqmPlots '</div>'];
 end
 rules = sprintf(['Suggested for exclusion when: largest translation &gt; %g mm, largest rotation &gt; %g&deg;, ' ...
-    'mean FD &gt; %g mm, too little data after censoring, or less than %.0f%% of the template brain in the field ' ...
-    'of view. Change any decision on the QC reports page of SeeCAT; later steps (Seed FC, Degree, Gradients, ' ...
+    'mean FD &gt; %g mm, too little data after censoring, less than %.0f%% of the template brain in the field ' ...
+    'of view, or a brain mask Dice with the template below %.2f. Change any decision on the QC reports page of SeeCAT; later steps (Seed FC, Degree, Gradients, ' ...
     'Harmonize, Statistics) leave excluded runs out.'], qc.max_translation, qc.max_rotation, qc.max_mean_fd, ...
-    100 * qc.min_coverage);
+    100 * qc.min_coverage, qc.min_brain_dice);
 nEx = nnz(X.exclude == 1 & strcmp(X.kind, 'bold'));
 css = ['<style>:root{--bg:#fff;--fg:#1d2433;--mute:#5d6678;--line:#d9dde5;--warn:#fff4dc;--excl:#fdecea;--ref:#c0392b;--shade:#f2c4c4}' ...
     '@media (prefers-color-scheme:dark){:root{--bg:#14171f;--fg:#e4e7ee;--mute:#9aa3b5;--line:#343a48;--warn:#43381d;--excl:#4a2323;--ref:#ff7b6b;--shade:#5a2a2a}}' ...
@@ -297,7 +314,7 @@ html = ['<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="
     '<title>' pipeline ' QC</title>' css '</head><body><h1>QC: ' pipeline '</h1>' ...
     sprintf('<p class="note">SeeCAT %s, %d run(s), %d excluded. %s</p>', seecat.version(), height(T), nEx, rules) plots ...
     '<div class="wrap"><table><tr><th>run</th><th>site</th><th>mean FD</th><th>max trans (mm)</th><th>max rot (&deg;)</th>' ...
-    '<th>coverage</th><th>minutes kept</th><th>tSNR</th><th>r(FD, DVARS) after</th><th>decision, reasons</th><th>warnings</th></tr>' ...
+    '<th>coverage</th><th>brain Dice</th><th>GM r (TPM)</th><th>minutes kept</th><th>tSNR</th><th>r(FD, DVARS) after</th><th>decision, reasons</th><th>warnings</th></tr>' ...
     rows '</table></div>' iqmPlots t1Plots fails '</body></html>'];
 end
 

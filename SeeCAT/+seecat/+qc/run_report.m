@@ -75,6 +75,19 @@ if isfield(R, 'tissue') && ~isempty(R.tissue)
     end
     [~, groups] = max(P, [], 2);
 end
+Preg = {};
+if isfield(R, 'tissue') && ~isempty(R.tissue)
+    for k = 1:3
+        Preg{k} = seecat.io.read_nii(R.tissue{k}, 'Ref', hdr, 'Interp', 1); %#ok<AGROW>
+    end
+end
+reg = seecat.qc.registration(meanImg, logical(seecat.io.read_nii(R.mask, 'Ref', hdr)), Preg, hdr, valid);
+if isfield(R, 'summary') && isfield(R.summary, 'normalise_method') && strcmp(R.summary.normalise_method, 'epi')
+    reg.reg_epi_t1_dice = NaN;                     % tissue maps from the EPI itself: no EPI-T1 check
+end
+for f = fieldnames(reg)'
+    M.(f{1}) = reg.(f{1});
+end
 imgs = {carpetRows(Yp, groups, censor == 0)};
 captions = {'before denoising'};
 dvd = nan(nT, 1);
@@ -260,7 +273,7 @@ html = ['<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="
     '<h2>Registration and coverage</h2><p class="note">Mean normalised BOLD; red: template GM outline, yellow: brain mask. ' ...
     'Rows: axial, coronal, sagittal; left on the left. ' ...
     sprintf('The field of view holds %.0f%% of the template brain (top, z &gt; 50 mm: %.0f%%; bottom, z &lt; -30 mm, cerebellum and temporal poles: %.0f%%).', ...
-    100 * cov.total, 100 * cov.superior, 100 * cov.inferior) '</p><img src="figures/' reg '" alt="registration">' ...
+    100 * cov.total, 100 * cov.superior, 100 * cov.inferior) regText(M) '</p><img src="figures/' reg '" alt="registration">' ...
     tissueHtml iqmHtml(R) '</body></html>'];
 end
 
@@ -274,7 +287,10 @@ L = struct('dummy_scans', 'non-steady-state volumes dropped', 'n_frames', 'frame
     'wm_voxels', 'WM mask voxels', 'csf_voxels', 'CSF mask voxels', ...
     'max_translation', 'largest translation (mm)', 'max_rotation', 'largest rotation (degrees)', ...
     'coverage', 'template brain in the field of view', 'coverage_superior', '... its top (z > 50 mm)', ...
-    'coverage_inferior', '... its bottom (z < -30 mm)');
+    'coverage_inferior', '... its bottom (z < -30 mm)', ...
+    'reg_brain_dice', 'registration: brain mask Dice with template', 'reg_gm_corr', 'registration: GM r with TPM', ...
+    'reg_wm_corr', 'registration: WM r with TPM', 'reg_csf_corr', 'registration: CSF r with TPM', ...
+    'reg_gm_dice', 'registration: GM Dice with TPM', 'reg_epi_t1_dice', 'EPI-T1w: brain mask Dice');
 if isfield(L, k)
     t = L.(k);
 else
@@ -317,5 +333,20 @@ end
 h = ['<h2>Image quality metrics (MRIQC)</h2><p class="note">Computed on the raw data as MRIQC defines them ' ...
     '(bold_*: the run after dummy scans, head-motion corrected; t1_*: the T1w). Compare a run with the ' ...
     'others of its site in the group report: the values depend on the scanner and protocol.</p><table>' rows '</table>'];
+end
+
+function t = regText(M)
+% The registration metrics in words (see seecat.qc.registration)
+t = '';
+if isfield(M, 'reg_brain_dice') && isfinite(M.reg_brain_dice)
+    t = sprintf(' Brain mask vs template brain: Dice %.3f.', M.reg_brain_dice);
+end
+if isfield(M, 'reg_gm_corr') && isfinite(M.reg_gm_corr)
+    t = [t sprintf(' Normalised tissue vs SPM TPM: GM r = %.3f (Dice %.3f), WM r = %.3f, CSF r = %.3f.', ...
+        M.reg_gm_corr, M.reg_gm_dice, M.reg_wm_corr, M.reg_csf_corr)];
+end
+if isfield(M, 'reg_epi_t1_dice') && isfinite(M.reg_epi_t1_dice)
+    t = [t sprintf(' EPI brain (from its intensity) vs T1w brain: Dice %.3f.', M.reg_epi_t1_dice)];
+end
 end
 

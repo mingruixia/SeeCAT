@@ -17,6 +17,7 @@ cfg.qc.max_translation = 3;      % mm, largest absolute translation of the run
 cfg.qc.max_rotation = 3;         % degrees, largest absolute rotation
 cfg.qc.max_mean_fd = 0.5;        % mm, mean framewise displacement (Power)
 cfg.qc.min_coverage = 0.9;       % share of the template brain inside the scan's field of view
+cfg.qc.min_brain_dice = 0.85;    % brain mask vs template brain mask after normalisation
 cfg.qc.iqm_z = 3;                % robust z of an IQM that earns a warning
 
 v = seecat.util.validators;
@@ -25,6 +26,7 @@ spec = {
     'qc.max_rotation',    v.positive, 'a positive number (degrees)'
     'qc.max_mean_fd',     v.positive, 'a positive number (mm)'
     'qc.min_coverage',    @(x) isnumeric(x) && isscalar(x) && x >= 0 && x <= 1, 'a share in [0, 1]'
+    'qc.min_brain_dice',  @(x) isnumeric(x) && isscalar(x) && x >= 0 && x <= 1, 'a Dice in [0, 1]'
     'qc.iqm_z',           v.positive, 'a positive number'
     };
 if withIqm

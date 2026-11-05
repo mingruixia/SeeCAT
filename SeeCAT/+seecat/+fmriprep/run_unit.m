@@ -36,6 +36,10 @@ R = struct('id', unit.id, 'sub', unit.sub, 'output_dir', cfg.output_dir, 'work_d
 if isfield(ctx.files, 'denoised')
     R.denoised = ctx.files.denoised;
 end
+tissue = fmriprepTissue(cfg.fmriprep_dir, unit.sub, cfg.space);
+if ~isempty(tissue)
+    R.tissue = tissue;                             % registration QC (seecat.qc.registration)
+end
 try
     M = seecat.qc.run_report(R);
     result.tsnr_median = M.tsnr_median;
@@ -110,3 +114,18 @@ if endsWith(f, '.gz')
     e = '.nii.gz';
 end
 end
+
+function t = fmriprepTissue(root, sub, space)
+% fMRIPrep's GM, WM and CSF probability maps in the output space ({} if absent)
+t = {};
+labels = {'GM', 'WM', 'CSF'};
+for k = 1:3
+    f = dir(fullfile(root, ['sub-' sub], '**', 'anat', sprintf('sub-%s*_space-%s*_label-%s_probseg.nii*', sub, space, labels{k})));
+    if isempty(f)
+        t = {};
+        return
+    end
+    t{k} = fullfile(f(1).folder, f(1).name); %#ok<AGROW>
+end
+end
+
