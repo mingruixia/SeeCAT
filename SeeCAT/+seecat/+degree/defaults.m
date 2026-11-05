@@ -13,6 +13,7 @@ function [cfg, spec] = defaults()
 cfg = catstruct(struct('pipeline', 'degree', 'input_dir', ''), cfg);
 cfg.input = 'denoised';               % desc of the input series
 cfg.space = '';
+cfg.res = '';                % res label, needed only when there are several
 cfg.mask = 'gm';                      % 'gm' (TPM GM > 0.2), 'brain' (subject), or a file
 cfg.threshold = 0.2;                  % r
 cfg.sign = {'positive'};              % any of 'positive', 'absolute', 'negative'
@@ -30,6 +31,7 @@ spec = [
     'input_dir',        @(x) v.text(x) && exist(x, 'dir') == 7,      'an existing SeeCAT derivatives folder'
     'input',            @(x) v.text(x) && ~isempty(regexp(x, '^[a-zA-Z0-9]+$', 'once')), 'a desc label, e.g. denoised'
     'space',            v.text,                                       'empty or a space label'
+    'res',              v.text,                                       'empty or a res label'
     'mask',             @(x) v.text(x) && (any(strcmp(x, {'gm', 'brain'})) || exist(x, 'file') == 2), '''gm'', ''brain'' or a mask file'
     'threshold',        @(x) isnumeric(x) && isscalar(x) && x >= 0 && x < 1, 'a correlation threshold in [0, 1)'
     'sign',             @(x) iscellstr(x) && ~isempty(x) && all(ismember(x, {'positive', 'absolute', 'negative'})), 'a non-empty subset of positive, absolute, negative' %#ok<ISCLSTR>

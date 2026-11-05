@@ -21,7 +21,13 @@ function [Yh, est] = combat(Y, batch, mod, opt)
 % data are standardised by the pooled variance, site location (gamma) and
 % scale (delta) are estimated per feature and shrunk across features
 % (EB), then removed. EST holds gamma_star, delta_star (sites x V),
-% var_pooled, stand_mean, mod_mean and the site levels.
+% var_pooled, stand_mean, mod_mean, the site levels and eb_skipped.
+%
+% EB needs the spread of the estimates across features: with one feature,
+% or where they do not vary (a prior variance of 0), a site keeps its own
+% location and scale estimates without shrinkage (as neuroHarmonize does
+% for one feature), and est.eb_skipped names it. Non-finite results are
+% an error, never written out.
 
 if nargin < 3, mod = []; end
 if nargin < 4, opt = struct(); end
@@ -88,15 +94,20 @@ t2 = var(gh, 0, 2);
 
 gs = gh;
 ds = dh;
+skipped = {};
 if opt.eb
     for i = 1:nb
         si = s(b == i, :);
+        v2 = var(dh(i, :));
+        if V < 2 || ~(t2(i) > 0) || (~opt.mean_only && opt.parametric && ~(v2 > 0))
+            skipped{end+1} = lv{i}; %#ok<AGROW>    % no spread across features: no prior
+            continue
+        end
         if opt.parametric
             if opt.mean_only
                 gs(i, :) = (t2(i) * gh(i, :) + gbar(i)) / (t2(i) + 1);     % postmean with n = 1, d = 1
             else
                 m = mean(dh(i, :));
-                v2 = var(dh(i, :));
                 a = (2 * v2 + m ^ 2) / v2;
                 bb = (m * v2 + m ^ 3) / v2;
                 [gs(i, :), ds(i, :)] = itSol(si, gh(i, :), dh(i, :), gbar(i), t2(i), a, bb);
@@ -124,8 +135,12 @@ Yh = Yh .* sqrt(vp) + stand + modMean;
 if ~isempty(refLevel)
     Yh(b == refLevel, :) = Y(b == refLevel, :);
 end
+if ~all(isfinite(Yh(:)))
+    error('SeeCAT:harmonize', 'ComBat gave non-finite values (%d of %d); nothing is written.', ...
+        nnz(~isfinite(Yh)), numel(Yh));
+end
 est = struct('sites', {lv}, 'gamma_star', gs, 'delta_star', ds, 'gamma_hat', gh, 'delta_hat', dh, ...
-    'var_pooled', vp, 'stand_mean', grand, 'mod_mean', modMean, 'beta', B);
+    'var_pooled', vp, 'stand_mean', grand, 'mod_mean', modMean, 'beta', B, 'eb_skipped', {skipped});
 end
 
 function [g, d] = itSol(sd, gh, dh, gbar, t2, a, b)
@@ -134,13 +149,16 @@ n = size(sd, 1);
 gOld = gh;
 dOld = dh;
 change = 1;
-while change > 1e-4
+for it = 1:1000                                   % converges in a few dozen steps
     g = (t2 * n * gh + dOld * gbar) ./ (t2 * n + dOld);
     sum2 = sum((sd - g) .^ 2, 1);
     d = (0.5 * sum2 + b) / (n / 2 + a - 1);
-    change = max(max(abs(g - gOld) ./ abs(gOld)), max(abs(d - dOld) ./ abs(dOld)));
+    change = max(max(abs(g - gOld) ./ max(abs(gOld), eps)), max(abs(d - dOld) ./ max(abs(dOld), eps)));
     gOld = g;
     dOld = d;
+    if ~(change > 1e-4)
+        break
+    end
 end
 end
 

@@ -28,7 +28,7 @@ wframes = cellfun(@prefixed, frames, 'UniformOutput', false);
 [Y, V] = seecat.io.read_nii(wframes, 'Class', 'single');
 Y(isnan(Y)) = 0;                               % outside the field of view
 ctx.files.wbold = prefixed(ctx.files.bold);
-seecat.io.write_nii(Y, V(1), ctx.files.wbold);
+seecat.io.write_nii(Y, V(1), ctx.files.wbold, 'TR', ctx.tr);
 rmdir(fullfile(ctx.work_dir, 'frames'), 's');
 for k = 1:3
     ctx.files.(sprintf('wc%d', k)) = prefixed(c{k});

@@ -30,16 +30,17 @@ if iscell(old)
 elseif isnumeric(old) && strcmpi(s, 'auto')
     v = 'auto';                                   % e.g. n_workers; check_config says where it is not allowed
 elseif isnumeric(old) || islogical(old)
-    v = numbers(s);
-    if isempty(v) && ~isempty(s)
-        error('SeeCAT:gui', 'Expected numbers, got "%s".', s);
+    [v, ok] = numbers(s);
+    if ~ok
+        error('SeeCAT:gui', ['Expected numbers, got "%s" (numbers separated by spaces or commas, ' ...
+            'rows by ";", optionally in [ ]; e.g. 0.01 0.1, 1e-3, Inf).'], s);
     end
     if islogical(old) && ~isempty(v)
         v = logical(v);
     end
 else
-    n = numbers(s);
-    if ~isempty(s) && ~isempty(n) && isempty(regexp(s, '[a-zA-Z_/\\:]', 'once'))
+    [n, ok] = numbers(s);
+    if ok && ~isempty(n)
         v = n;                                    % e.g. dummy_scans '3'
     else
         v = s;
@@ -55,14 +56,32 @@ if isempty(c)
 end
 end
 
-function v = numbers(s)
-s = regexprep(s, '[\[\]]', '');
-rows = strsplit(s, ';');
+function [v, ok] = numbers(s)
+% Whole-text parse: every token must be a number (1, -2.5, .5, 1e-3, 2E4,
+% Inf), separated by spaces or commas, rows by ';', optionally inside one
+% pair of [ ]. Anything else (units, '1/2', '1e-3xyz', nested brackets)
+% makes OK false; nothing is guessed. Empty text: v = [], ok true.
 v = [];
-for r = rows
-    tok = regexp(r{1}, '[-+]?(Inf|inf|\d+\.?\d*(e[-+]?\d+)?|\.\d+(e[-+]?\d+)?)', 'match');
+ok = true;
+s = strtrim(s);
+if startsWith(s, '[') && endsWith(s, ']')
+    s = s(2:end-1);
+end
+if any(s == '[' | s == ']')
+    ok = false;
+    return
+end
+num = '^[-+]?(inf|\d+\.?\d*(e[-+]?\d+)?|\.\d+(e[-+]?\d+)?)$';
+for r = strsplit(s, ';')
+    tok = regexp(strtrim(r{1}), '[\s,]+', 'split');
+    tok = tok(~cellfun(@isempty, tok));
+    if isempty(tok), continue, end
+    if ~all(cellfun(@(t) ~isempty(regexpi(t, num, 'once')), tok))
+        ok = false;
+        v = [];
+        return
+    end
     x = str2double(tok);
-    if isempty(x), continue, end
     if isempty(v)
         v = x;
     elseif numel(x) == size(v, 2)

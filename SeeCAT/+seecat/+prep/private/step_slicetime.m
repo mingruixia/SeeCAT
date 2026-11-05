@@ -4,6 +4,13 @@ function ctx = step_slicetime(ctx, opt, log)
 % sidecar ('auto') or given in opt.slice_times; the reference is the middle
 % of the TR or opt.ref_time seconds. Skipped, with a log line, when 'auto'
 % finds no SliceTiming.
+%
+% BIDS SliceTiming lists the slices along SliceEncodingDirection (k when
+% absent). SPM corrects along the third voxel axis: k is used as it is, k-
+% reversed (its first entry is the last slice of the third axis). i and j
+% (slices along the first or second voxel axis) are not supported: an
+% error, rather than times applied to the wrong slices. Times given in
+% opt.slice_times are in voxel order along the third axis.
 
 st = opt.slice_times;
 if ischar(st)
@@ -11,6 +18,14 @@ if ischar(st)
     if isempty(st)
         log('slicetime: no SliceTiming in the sidecar; skipped');
         return
+    end
+    sd = 'k';
+    if isfield(ctx, 'slice_direction') && ~isempty(ctx.slice_direction)
+        sd = ctx.slice_direction;
+    end
+    st = seecat.bids.slice_times(st, sd);
+    if strcmp(sd, 'k-')
+        log('slicetime: SliceEncodingDirection k-, slice times reversed to voxel order');
     end
 end
 V = spm_vol(ctx.files.bold);

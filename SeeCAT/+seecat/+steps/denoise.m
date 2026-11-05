@@ -48,7 +48,7 @@ e = e + mean(y, 1);
 out = zeros(prod(dim(1:3)), nT, 'single');
 out(mask(:), :) = e';
 f = fullfile(ctx.work_dir, 'denoised.nii');
-seecat.io.write_nii(reshape(out, dim), V(1), f);
+seecat.io.write_nii(reshape(out, dim), V(1), f, 'TR', ctx.tr);
 ctx.files.denoised = f;
 ctx.denoise_columns = cols;
 log('denoise: %d confounds + trend order %d, %d good frames, %d dof left', ...

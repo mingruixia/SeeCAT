@@ -11,8 +11,10 @@ Version 2.0 is a rewrite. It needs only SPM; it no longer uses DPABI or the
 
 ## Requirements
 
-- MATLAB R2025a or later. The Parallel Computing Toolbox is optional, for
-  running subjects in parallel.
+- MATLAB. SeeCAT is developed and tested on R2025a; older releases are not
+  tested (SeeCAT runs on them and notes it once). No other MathWorks toolbox
+  is needed; the Parallel Computing Toolbox is optional, for running
+  subjects in parallel.
 - SPM25, or SPM12 r7771 or later.
 - Optional: BrainNet Viewer 2.0, for surface and network figures.
 

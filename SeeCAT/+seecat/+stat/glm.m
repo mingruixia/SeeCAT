@@ -55,40 +55,55 @@ if ~hasImg
     return
 end
 
-% Image covariates: one design per voxel, solved voxel by voxel
+% Image covariates: one design per voxel, solved voxel by voxel. The
+% residual traces, and so the df, are computed for every voxel (they differ
+% when V is not the identity); every voxel must have a full-rank design
+% (seecat.stat.run_unit leaves out voxels where an image covariate is
+% constant or collinear). p values use each voxel's df; con.df(2) and
+% G.erdf are the smallest (for random field theory, which takes one df).
 q = size(opt.Ximg, 3);
 p = size(X, 2) + q;
+rk = rank(W * [X, reshape(opt.Ximg(:, 1, :), n, q)]);
 beta = zeros(p, nVox);
 res = zeros(n, nVox);
 stat = zeros(numel(con), nVox);
 effect = zeros(numel(con), nVox);
-df1 = zeros(numel(con), 1);
+df1 = zeros(numel(con), nVox);
+erdfV = zeros(1, nVox);
+trRVv = zeros(1, nVox);
+trRVRVv = zeros(1, nVox);
 for v = 1:nVox
     Xv = [X, reshape(opt.Ximg(:, v, :), n, q)];
     KX = W * Xv;
     pKX = pinv(KX);
+    if rank(KX) ~= rk
+        error('SeeCAT:stat', ['The design has rank %d at voxel %d but %d at voxel 1 (an image ' ...
+            'covariate constant or collinear there); leave such voxels out first.'], rank(KX), v, rk);
+    end
     KWY = W * Y(:, v);
     b = pKX * KWY;
     r = KWY - KX * b;
-    if v == 1
-        [trRV, trRVRV] = traces(KX, Vw);
-        erdf = trRV ^ 2 / trRVRV;
-    end
+    [trRV, trRVRV] = traces(KX, Vw, pKX);
+    erdf = trRV ^ 2 / trRVRV;
     beta(:, v) = b;
     res(:, v) = r;
+    trRVv(v) = trRV;
+    trRVRVv(v) = trRVRV;
+    erdfV(v) = erdf;
     ResMS = sum(r .^ 2) / trRV;
     for k = 1:numel(con)
         c = contrast(con(k), KX, pKX, b, KWY, ResMS, Vw, erdf);
         stat(k, v) = c.stat;
         effect(k, v) = c.effect;
-        df1(k) = c.df(1);
+        df1(k, v) = c.df(1);
     end
 end
 G = struct('beta', beta, 'res', res, 'ResSS', sum(res .^ 2, 1), ...
-    'trRV', trRV, 'trRVRV', trRVRV, 'erdf', erdf);
+    'trRV', min(trRVv), 'trRVRV', min(trRVRVv), 'erdf', min(erdfV), 'erdf_voxel', erdfV);
 for k = 1:numel(con)
     c = con(k);
-    G.con(k) = finish(c.name, c.type, c.weights, [df1(k) erdf], stat(k, :), effect(k, :)); %#ok<AGROW>
+    G.con(k) = finish(c.name, c.type, c.weights, [max(df1(k, :)) G.erdf], stat(k, :), effect(k, :), ...
+        [df1(k, :); erdfV]); %#ok<AGROW>
 end
 end
 
@@ -120,16 +135,24 @@ end
 c = finish(def.name, def.type, w, df, stat, eff);
 end
 
-function c = finish(name, type, w, df, stat, eff)
+function c = finish(name, type, w, df, stat, eff, dfVox)
+% DFVOX (optional): 2 x nVox df of each voxel for its p value; DF is reported
 stat(~isfinite(stat)) = 0;
+if nargin < 7
+    dfVox = repmat(df(:), 1, numel(stat));
+end
 if strcmpi(type, 't')
-    p = 1 - spm_Tcdf(stat, df(2));
+    p = 1 - spm_Tcdf(stat, dfVox(2, :));
     pos = stat > 0;
     if any(pos)
-        p(pos) = spm_Tcdf(-stat(pos), df(2));        % precise upper tail
+        p(pos) = spm_Tcdf(-stat(pos), dfVox(2, pos));   % precise upper tail
     end
 else
-    p = 1 - spm_Fcdf(stat, df);
+    if all(all(dfVox == dfVox(:, 1)))
+        p = 1 - spm_Fcdf(stat, dfVox(:, 1)');
+    else
+        p = 1 - arrayfun(@(i) spm_Fcdf(stat(i), dfVox(:, i)'), 1:numel(stat));
+    end
 end
 p = max(p, realmin);
 z = -spm_invNcdf(p);
@@ -137,9 +160,13 @@ c = struct('name', name, 'type', lower(type), 'weights', w, 'df', df, ...
     'stat', stat, 'effect', eff, 'p', p, 'z', z);
 end
 
-function [trRV, trRVRV] = traces(KX, Vw)
-R = eye(size(KX, 1)) - KX * pinv(KX);
-RV = R * Vw;
-trRV = trace(RV);
-trRVRV = sum(sum(RV .* RV'));
+function [trRV, trRVRV] = traces(KX, Vw, pKX)
+% tr(RV) and tr(RVRV), R = I - KX*pinv(KX), from p x p products (fast per voxel)
+if nargin < 3
+    pKX = pinv(KX);
+end
+B = pKX * Vw * KX;                                % p x p
+trRV = trace(Vw) - trace(B);
+VV = Vw * Vw;
+trRVRV = trace(VV) - 2 * trace(pKX * VV * KX) + trace(B * B);
 end

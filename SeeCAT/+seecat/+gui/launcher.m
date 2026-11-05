@@ -163,7 +163,7 @@ summary.Layout.Row = 1;
 summary.Layout.Column = 1;
 
 seecat.gui.segment([logTab, sumTab], [true false]);
-state = struct('page', 'Preprocessing', 'pipe', '', 'cfg', [], 'defaults', [], 'form', [], ...
+state = struct('page', 'Preprocessing', 'pipe', '', 'cfg', [], 'defaults', [], 'form', [], 'drafts', struct(), ...
     'run', [], 'timer', [], 'help', '', 'started', [], 'units', 0, 'stale', 0, 'output', '');
 seecat.gui.style(fig);
 app.fig = fig;
@@ -218,6 +218,13 @@ show();
         p = pages(strcmp({pages.name}, state.page));
         title_.Text = p.name;
         desc.Text = p.summary;
+        if ~isempty(state.pipe) && ~isempty(state.form)   % keep what the page held, for coming back
+            try
+                state.drafts.(state.pipe) = state.form.get(state.cfg);
+            catch                                   % an invalid entry: keep the last good settings
+                state.drafts.(state.pipe) = state.cfg;
+            end
+        end
         state.form = [];                          % its controls are deleted below
         delete(host.Children);
         host.SizeChangedFcn = '';                 % set again by seecat.gui.form
@@ -234,8 +241,11 @@ show();
             end
         end
         if isPipe
-            state.cfg = seecat.config(p.pipe);
-            state.defaults = state.cfg;
+            state.defaults = seecat.config(p.pipe);
+            state.cfg = state.defaults;
+            if isfield(state.drafts, p.pipe)      % settings left on this page earlier in the session
+                state.cfg = state.drafts.(p.pipe);
+            end
             rebuild();
             return
         end

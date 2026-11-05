@@ -22,7 +22,7 @@ end
 if n > 0
     [Y, V] = seecat.io.read_nii(bold, 'Volumes', n + 1:nAll, 'Class', 'single');
     trimmed = fullfile(ctx.work_dir, 'bold_trimmed.nii');
-    seecat.io.write_nii(Y, V(1), trimmed);
+    seecat.io.write_nii(Y, V(1), trimmed, 'TR', ctx.tr);
     delete(bold);
     bold = trimmed;
 end
@@ -43,7 +43,7 @@ Y = reshape(Y, [], size(Y, 4));
 m = mean(Y, 2);
 inBrain = m > mean(m);
 g = double(mean(Y(inBrain, :), 1))';
-z = (g - median(g)) / (1.4826 * mad(g, 1) + eps);
+z = (g - median(g)) / (1.4826 * median(abs(g - median(g))) + eps);   % median absolute deviation, base MATLAB
 n = 0;
 while n < min(20, numel(g)) && z(n + 1) > 3.5
     n = n + 1;

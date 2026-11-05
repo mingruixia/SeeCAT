@@ -13,6 +13,7 @@ function [cfg, spec] = defaults()
 cfg = catstruct(struct('pipeline', 'gradient', 'input_dir', ''), cfg);
 cfg.input = 'denoised';          % desc of the input series
 cfg.space = '';
+cfg.res = '';                % res label, needed only when there are several
 cfg.nodes = 'voxels';            % 'voxels' (a grid of node_size mm) or 'atlas'
 cfg.node_size = 4;               % mm, voxels only
 cfg.mask = 'gm';                 % voxels only: 'gm', 'brain' or a mask file
@@ -32,6 +33,7 @@ spec = [
     'input_dir',    @(x) v.text(x) && exist(x, 'dir') == 7,       'an existing SeeCAT derivatives folder'
     'input',        @(x) v.text(x) && ~isempty(regexp(x, '^[a-zA-Z0-9]+$', 'once')), 'a desc label, e.g. denoised'
     'space',        v.text,                                        'empty or a space label'
+    'res',          v.text,                                        'empty or a res label'
     'nodes',        v.oneof({'voxels', 'atlas'}),                  '''voxels'' or ''atlas'''
     'node_size',    @(x) isnumeric(x) && isscalar(x) && x >= 2 && x <= 12, 'a voxel size in mm, 2 to 12'
     'mask',         @(x) v.text(x) && (any(strcmp(x, {'gm', 'brain'})) || exist(x, 'file') == 2), '''gm'', ''brain'' or a mask file'

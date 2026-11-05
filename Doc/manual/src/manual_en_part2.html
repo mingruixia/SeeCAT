@@ -44,7 +44,7 @@ S = seecat.bids.from_dicom('D:/study/dicom/S_001', 'D:/study/bids', 'sub', '01',
 <h4>Steps</h4>
 <ol>
 <li><b>Input.</b> The run and its T1w are copied into the work folder. Leading non-steady-state volumes are removed: with <code>dummy_scans = auto</code>, leading volumes whose mean brain intensity is a robust outlier (z &gt; 3.5 against the median and MAD of the run, within the first 20) are dropped; volumes the scanner already discarded are not counted again.</li>
-<li><b>Slice timing</b> (SPM). The slice acquisition times come from <code>SliceTiming</code> in the sidecar (seconds), so any order (sequential, interleaved, multiband) is handled; the reference is the middle of the TR unless set.</li>
+<li><b>Slice timing</b> (SPM). The slice acquisition times come from <code>SliceTiming</code> in the sidecar (seconds), so sequential, interleaved and multiband orders are all handled; the reference is the middle of the TR unless set. The times are read along <code>SliceEncodingDirection</code> (<code>k</code> when absent; <code>k-</code> is reversed to voxel order). Slices along the first or second voxel axis (<code>i</code>, <code>j</code>) are not supported and stop the run with an error; reorient such images, or turn slice timing off.</li>
 <li><b>Realignment</b> (SPM). Two passes, to the first volume and then to the mean. The six motion parameters go to the confounds table; the data are not resampled here.</li>
 <li><b>Coregistration.</b> The T1w is registered to the mean EPI by normalised mutual information (only its header changes).</li>
 <li><b>Segmentation.</b> SPM unified segmentation of the T1w with SPM's tissue probability maps gives native GM, WM and CSF maps, a bias-corrected T1w and the deformation to IXI549Space. Without a T1w (<code>normalise.method = epi</code>) the mean EPI is segmented instead.</li>
@@ -181,8 +181,8 @@ sub-CSUHC0002_T1w         T1w   0                           cnr outlier         
 <p>Names are letters and digits; they become the <code>desc</code> of the output maps.</p>
 {{PARAMS fc Input|Seeds}}
 <h4>Outputs</h4>
-<pre><code>sub-01/func/sub-01_task-rest_space-IXI549Space_res-3_desc-PCC_stat-r_connectivity.nii (+ .json)
-sub-01/func/sub-01_task-rest_space-IXI549Space_res-3_desc-PCC_stat-z_connectivity.nii (+ .json)</code></pre>
+<pre><code>sub-01/func/sub-01_task-rest_space-IXI549Space_res-3_desc-PCC_stat-r_connectivity.nii.gz (+ .json)
+sub-01/func/sub-01_task-rest_space-IXI549Space_res-3_desc-PCC_stat-z_connectivity.nii.gz (+ .json)</code></pre>
 <p>The sidecar records the seed (centre and radius, or file), the input series and the frames used.</p>
 <pre><code>cfg = seecat.config('fc');
 cfg.input_dir = 'D:/study/bids/derivatives/seecat';
@@ -195,10 +195,10 @@ seecat.run(cfg);</code></pre>
 {{IMG degree_page.png | The Degree page.}}
 {{PARAMS degree Input|Network|Output maps}}
 <h4>Outputs</h4>
-<pre><code>…_desc-degPosBinR0p2_stat-raw_connectivity.nii      binary degree, positive r ≥ 0.2
-…_desc-degPosBinR0p2_stat-z_connectivity.nii        the same, z-scored within the mask
-…_desc-degPosWeiR0p2Sm6_stat-z_connectivity.nii     strength, z-scored, smoothed 6 mm
-…_desc-degPosBinR0p2D0to75_stat-raw_connectivity.nii  with distance bins [0 75 Inf]</code></pre>
+<pre><code>…_desc-degPosBinR0p2_stat-raw_connectivity.nii.gz      binary degree, positive r ≥ 0.2
+…_desc-degPosBinR0p2_stat-z_connectivity.nii.gz        the same, z-scored within the mask
+…_desc-degPosWeiR0p2Sm6_stat-z_connectivity.nii.gz     strength, z-scored, smoothed 6 mm
+…_desc-degPosBinR0p2D0to75_stat-raw_connectivity.nii.gz  with distance bins [0 75 Inf]</code></pre>
 <p>Time and memory grow with the square of the number of voxels: about 50 000 grey-matter voxels at 3 mm take seconds to a minute per run; at 2 mm there are 3.4 times as many voxels and over ten times the work.</p>
 
 <h3>Gradients</h3>
@@ -224,7 +224,7 @@ seecat.run(cfg);</code></pre>
 </table>
 <p>Times are for a 32-core desktop and 200-volume runs. SeeCAT checks the free memory first and stops with advice when it is not enough. An atlas (e.g. Schaefer 400) is fast and gives a value per parcel, also written as a table.</p>
 <h4>Outputs</h4>
-<pre><code>sub-01/func/…_desc-grad1Vox4_connectivity.nii   gradient 1 of the run, aligned (2, 3 … up to Maps written)
+<pre><code>sub-01/func/…_desc-grad1Vox4_connectivity.nii.gz   gradient 1 of the run, aligned (2, 3 … up to Maps written)
 group/gradientsVox4/gradientsVox4_desc-grad1_reference.nii    final reference (mean of the aligned runs)
 group/gradientsVox4/gradientsVox4_desc-grad1_groupmatrix.nii  gradients of the group-mean matrix
 group/gradientsVox4/gradientsVox4_lambdas.tsv     eigenvalues of every run, variance explained, r with the reference</code></pre>
@@ -239,7 +239,7 @@ group/gradientsVox4/gradientsVox4_lambdas.tsv     eigenvalues of every run, vari
 <tr><td><code>combat_nonparam</code></td><td>empirical Bayes without a distribution for the site effects (prior from up to 5000 other voxels)</td><td>when the site effects are far from normal</td></tr>
 <tr><td><code>combat_noeb</code></td><td>location and scale per voxel without shrinkage</td><td>large sites</td></tr>
 <tr><td><code>combat_mean</code></td><td>site means only</td><td>when variances should stay as they are</td></tr>
-<tr><td><code>combat_gam</code></td><td>ComBat with natural-spline terms for the Nonlinear covariates (Pomponio et al. 2020)</td><td>wide age ranges, non-linear effects</td></tr>
+<tr><td><code>combat_gam</code></td><td>ComBat with the Nonlinear covariates as natural cubic splines of fixed df (Spline df), fitted by least squares. In the spirit of ComBat-GAM (Pomponio et al. 2020); neuroHarmonize fits penalised GAMs instead, so results differ from it</td><td>wide age ranges, non-linear effects</td></tr>
 <tr><td><code>covbat</code></td><td>ComBat, then the site differences in the covariance between voxels are removed (Chen et al. 2022)</td><td>when network structure differs between sites</td></tr>
 <tr><td><code>lm</code></td><td>linear regression: site means removed with the covariates in the model</td><td>a simple reference</td></tr>
 </table>

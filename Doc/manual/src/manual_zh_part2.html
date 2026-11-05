@@ -44,7 +44,7 @@ S = seecat.bids.from_dicom('D:/study/dicom/S_001', 'D:/study/bids', 'sub', '01',
 <h4>处理步骤</h4>
 <ol>
 <li><b>输入。</b>把 run 和它的 T1 复制到工作文件夹，并去掉开头信号未稳定的帧：<code>dummy_scans = auto</code> 时，在前 20 帧中，全脑平均信号相对整个 run 的中位数和 MAD 为稳健离群值（z &gt; 3.5）的开头连续帧被去掉；扫描仪已丢弃的帧不会重复计算。</li>
-<li><b>层间时间校正</b>（SPM）。各层采集时间取自 sidecar 中的 <code>SliceTiming</code>（秒），因此任何采集顺序（顺序、隔层、多带）都能正确处理；除非另行设置，参考时刻为 TR 的中点。</li>
+<li><b>层间时间校正</b>（SPM）。各层采集时间取自 sidecar 中的 <code>SliceTiming</code>（秒），因此顺序、隔层和多带采集都能正确处理；除非另行设置，参考时刻为 TR 的中点。层时间按 <code>SliceEncodingDirection</code> 解读（缺省为 <code>k</code>；<code>k-</code> 会反转为体素顺序）。层沿第一或第二体素轴（<code>i</code>、<code>j</code>）的数据不受支持，运行会报错停止；请先调整图像方向，或关闭层间时间校正。</li>
 <li><b>头动校正</b>（SPM）。两轮：先对齐到第一帧，再对齐到平均像。六个头动参数写入混杂变量表；数据在这一步不重采样。</li>
 <li><b>配准。</b>用归一化互信息把 T1 配准到平均 EPI（只修改其头信息）。</li>
 <li><b>分割。</b>用 SPM 组织概率图对 T1 做统一分割，得到个体空间的灰质、白质、脑脊液图，偏场校正后的 T1，以及到 IXI549Space 的形变场。没有 T1 时（<code>normalise.method = epi</code>）改为分割平均 EPI。</li>

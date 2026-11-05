@@ -57,7 +57,12 @@ figcaption{color:var(--mute);font-size:14px;margin-top:6px}
   body{font-size:11pt;background:#fff;color:#000}
   h2{page-break-before:always;border-top:none}
   h2:first-of-type{page-break-before:avoid}
-  figure,table.params tr,pre{page-break-inside:avoid}
+  figure,table tr,pre{page-break-inside:avoid;break-inside:avoid}
+  figure img{max-height:215mm;width:auto;object-fit:contain}
+  figcaption{break-before:avoid}
+  thead{display:table-header-group}
+  table{orphans:3;widows:3}
+  h3,h4{break-after:avoid}
   pre{white-space:pre-wrap;overflow-wrap:anywhere;overflow:visible}
   a{color:#000;text-decoration:none}
   code,pre,th,.note,.tip,.warn,.flow span{background:#f3f3f3!important}

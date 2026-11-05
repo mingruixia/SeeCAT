@@ -34,8 +34,9 @@ end
 
 function [maps, dropped] = bidsMaps(cfg, L, within)
 args = {'ext', {'.nii', '.nii.gz'}, 'sub', cfg.subjects};
-for f = fieldnames(cfg.maps)'
-    args = [args, f, {cfg.maps.(f{1})}]; %#ok<AGROW>
+sel = seecat.bids.map_selector(cfg);              % cfg.maps + sessions, task, runs
+for f = fieldnames(sel)'
+    args = [args, f, {sel.(f{1})}]; %#ok<AGROW>
 end
 if within
     if isempty(cfg.factor)

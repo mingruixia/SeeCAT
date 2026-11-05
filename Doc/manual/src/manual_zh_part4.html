@@ -153,7 +153,7 @@ seecat_work/                               工作文件（在输出文件夹旁�
 </table>
 
 <h3>JSON sidecar</h3>
-<p>每个图像的 sidecar 记录它是如何生成的。通用字段：<code>Sources</code>（来源文件，BIDS URI 格式）、<code>Software</code>；以及各步骤特有的字段，例如 <code>FramesUsed</code>、<code>FramesTotal</code>、<code>Seed</code>（Seed FC）；<code>Threshold</code>、<code>Sign</code>、<code>Measure</code>（Degree）；<code>Lambdas</code>、<code>VarianceExplained</code>、<code>Alignment</code>（Gradients）；<code>Harmonization</code>、<code>Site</code>、<code>KeptEffects</code>（Harmonize）；<code>DegreesOfFreedom</code>、<code>FWHMmm</code>、<code>Resels</code>、<code>Contrast</code>、<code>Inference</code>（Statistics）。</p>
+<p>每个图像的 sidecar 记录它是如何生成的。通用字段：<code>Sources</code>（来源文件：各 run 的输出用 BIDS URI，如 <code>bids:raw:sub-01/func/…</code>；Harmonize 和 Statistics 列出输入图的路径）、<code>Software</code>；以及各步骤特有的字段，例如 <code>FramesUsed</code>、<code>FramesTotal</code>、<code>Seed</code>（Seed FC）；<code>Threshold</code>、<code>Sign</code>、<code>Measure</code>（Degree）；<code>Lambdas</code>、<code>VarianceExplained</code>、<code>Alignment</code>（Gradients）；<code>Harmonization</code>、<code>Site</code>、<code>KeptEffects</code>（Harmonize）；<code>DegreesOfFreedom</code>、<code>FWHMmm</code>、<code>Resels</code>、<code>Contrast</code>、<code>Inference</code>（Statistics）。</p>
 
 <h2>性能、内存与常见问题</h2>
 
@@ -173,7 +173,7 @@ seecat_work/                               工作文件（在输出文件夹旁�
 <h4>有一个被试失败了，需要全部重跑吗？</h4>
 <p>不需要。用同样的配置再运行一次：已完成的被试会跳过，失败的被试从中断的步骤继续。原因见该单元的日志（<code>logs/&lt;pipeline&gt;_&lt;时间&gt;/&lt;unit&gt;.log</code>）。</p>
 <h4>改了一个选项，哪些会重新计算？</h4>
-<p>结果依赖该选项的所有单元。只改 Parallel workers、Overwrite 或 Keep work files 不会触发重新计算。</p>
+<p>结果依赖该选项的所有单元。只改 Parallel workers 或 Keep work files 不会触发重新计算；勾选 Overwrite 会重新计算所有单元并清空其工作目录。此外，已完成的单元在输入改变时（输入文件被替换或修改、选中的图不同、被试信息变化、QC 剔除或恢复了某些 run），或其某个输出被删除时，也会重新运行，日志会写明原因。</p>
 <h4>Seed FC 提示找不到 desc-denoised，或找不到任何 run。</h4>
 <p>确认 derivatives 文件夹是 Preprocessing 或 fMRIPrep denoising 的输出，且开启了 Denoise。如果 run 有多个空间，请设置 Space；有多个任务时请设置 Task。如果所有 run 都被 QC 剔除了，请查看 QC reports 页。</p>
 <h4>Statistics 提示每个被试有多张图。</h4>

@@ -6,7 +6,7 @@ function [units, cfg] = derivative_units(cfg, desc)
 % derivatives folder written by the prep or fmriprep pipeline; output_dir
 % defaults to it, work_dir to 'seecat_work' next to it. DESC selects the
 % series (*_desc-<desc>_bold, e.g. 'denoised' or 'denoisedSm6'); one space
-% must be present, or cfg.space chooses. Each unit has id, bold, mask
+% must be present, or cfg.space chooses (and cfg.res among resolutions). Each unit has id, bold, mask
 % (desc-brain_mask), confounds (desc-confounds_timeseries) and space. All
 % problems are collected into one SeeCAT:bids error. With
 % cfg.qc_exclusions, runs excluded in reports/qc_exclusions.tsv are left out
@@ -21,8 +21,12 @@ if isempty(cfg.work_dir)
     cfg.work_dir = fullfile(fileparts(cfg.output_dir), 'seecat_work');
 end
 img = {'.nii', '.nii.gz'};
+res = '';
+if isfield(cfg, 'res')
+    res = cfg.res;
+end
 B = seecat.bids.query(L, 'suffix', 'bold', 'desc', desc, 'ext', img, ...
-    'sub', cfg.subjects, 'ses', cfg.sessions, 'run', cfg.runs, 'task', cfg.task, 'space', cfg.space);
+    'sub', cfg.subjects, 'ses', cfg.sessions, 'run', cfg.runs, 'task', cfg.task, 'space', cfg.space, 'res', res);
 if isempty(B)
     raise({sprintf('No *_desc-%s_bold images in %s for this selection.', desc, L.root)});
 end
@@ -45,6 +49,10 @@ end
 tasks = unique(arrayfun(@(f) ent(f, 'task'), B, 'UniformOutput', false));
 if numel(tasks) > 1
     raise({sprintf('Several tasks (%s); set "task".', strjoin(tasks, ', '))});
+end
+ress = unique(arrayfun(@(f) ent(f, 'res'), B, 'UniformOutput', false));
+if numel(ress) > 1
+    raise({sprintf('Several resolutions (res %s); set "res".', strjoin(ress, ', '))});
 end
 
 msgs = {};

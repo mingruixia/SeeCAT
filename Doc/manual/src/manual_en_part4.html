@@ -153,7 +153,7 @@ seecat_work/                               work files (next to the output folder
 </table>
 
 <h3>JSON sidecars</h3>
-<p>Each image's sidecar describes how it was made. Common fields: <code>Sources</code> (the files it came from, as BIDS URIs), <code>Software</code>, and step-specific fields, for example <code>FramesUsed</code>, <code>FramesTotal</code> and <code>Seed</code> (Seed FC); <code>Threshold</code>, <code>Sign</code>, <code>Measure</code> (Degree); <code>Lambdas</code>, <code>VarianceExplained</code>, <code>Alignment</code> (Gradients); <code>Harmonization</code>, <code>Site</code>, <code>KeptEffects</code> (Harmonize); <code>DegreesOfFreedom</code>, <code>FWHMmm</code>, <code>Resels</code>, <code>Contrast</code>, <code>Inference</code> (Statistics).</p>
+<p>Each image's sidecar describes how it was made. Common fields: <code>Sources</code> (the files it came from: BIDS URIs such as <code>bids:raw:sub-01/func/…</code> for the per-run outputs; Harmonize and Statistics list the paths of their input maps), <code>Software</code>, and step-specific fields, for example <code>FramesUsed</code>, <code>FramesTotal</code> and <code>Seed</code> (Seed FC); <code>Threshold</code>, <code>Sign</code>, <code>Measure</code> (Degree); <code>Lambdas</code>, <code>VarianceExplained</code>, <code>Alignment</code> (Gradients); <code>Harmonization</code>, <code>Site</code>, <code>KeptEffects</code> (Harmonize); <code>DegreesOfFreedom</code>, <code>FWHMmm</code>, <code>Resels</code>, <code>Contrast</code>, <code>Inference</code> (Statistics).</p>
 
 <h2>Performance and common questions</h2>
 
@@ -173,7 +173,7 @@ seecat_work/                               work files (next to the output folder
 <h4>A subject failed. Do I have to run everything again?</h4>
 <p>No. Run the same configuration again: finished subjects are skipped and the failed one resumes at the step where it stopped. The unit's log (<code>logs/&lt;pipeline&gt;_&lt;time&gt;/&lt;unit&gt;.log</code>) gives the reason.</p>
 <h4>I changed an option. What is recomputed?</h4>
-<p>Every unit whose result depends on it. Changing only Parallel workers, Overwrite or Keep work files recomputes nothing.</p>
+<p>Every unit whose result depends on it. Changing only Parallel workers or Keep work files recomputes nothing; ticking Overwrite recomputes every unit and clears its work folder. A finished unit is also run again when its inputs changed (an input file replaced or edited, a different set of maps selected, other participant values, runs excluded or restored by QC) or when one of its outputs was deleted; the log says why.</p>
 <h4>Seed FC says "no desc-denoised bold" or finds no runs.</h4>
 <p>Check that the derivatives folder is the output of Preprocessing or fMRIPrep denoising and that Denoise was on. If the folder holds runs in more than one space, set Space; with several tasks, set Task. If every run is excluded by QC, check the QC reports page.</p>
 <h4>Statistics finds several maps per subject.</h4>

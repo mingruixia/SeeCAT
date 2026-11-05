@@ -11,13 +11,14 @@ Maintainer: Mingrui Xia. Licence: GPL-3.0-or-later.
 - **SPM is the only required toolbox** (SPM25; SPM12 r7771+ should work).
   BrainNet Viewer is optional, for surface and network figures.
 - **Batch API first, GUI second.** Every step runs from a config struct
-  without a GUI. The GUI is built in code (`uicontrol`, no `.fig`) on top of
-  that API. Minimum MATLAB: R2025a (raised from R2020b on 2026-11-03).
+  without a GUI. The GUI is built in code (`uifigure`, no `.fig`) on top of
+  that API. Developed and tested on MATLAB R2025a; older releases are not
+  tested (no hard minimum since 2026-11-05).
 - **BIDS in, BIDS-derivatives out.** No compatibility with the old
   `FunImgARW…` folder layout.
 - **New SPM routines only.** Unified segmentation + `normalise.write` with the
-  `y_` field. Without a T1, `normalise.estwrite` of the mean EPI to `TPM.nii`.
-  OldNorm and OldSeg are not used.
+  `y_` field. Without a T1, unified segmentation of the mean EPI gives the
+  deformation. OldNorm and OldSeg are not used.
 - English UI and manual.
 - Test data: OpenNeuro ds000030 (single band) and ds002785 (multiband),
   neurolabusc dcm_qa for DICOM, plus synthetic data for unit tests
@@ -99,7 +100,7 @@ See `CHANGELOG.md`.
 
 ## Week 9 (12/21 – 12/31): release
 
-- [ ] English manual.
+- [x] Manual, English and Chinese (HTML and PDF, `Doc/manual`).
 - [ ] Full validation on both public datasets.
 - [x] `LICENSE` (GPL-3.0-or-later), `THIRD_PARTY_NOTICES` (dcm2niix, Colin27,
       ICBM152 2009c, TPM-derived masks; atlases are read from SPM and

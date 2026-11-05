@@ -133,6 +133,9 @@ def build(lang):
         toc.append((level, num, ident, plain))
         return '<h%s id="%s"%s><span class="num">%s</span> %s</h%s>' % (level, ident, attrs, num, text, level)
     src = re.sub(r'<h([23])([^>]*)>(.*?)</h\1>', head, src)
+    # a table's heading row as <thead>, so that printed tables repeat it on every page
+    src = re.sub(r'<table([^>]*)>\s*(<tr>(?:\s*<th[^>]*>.*?</th>)+\s*</tr>)', r'<table\1><thead>\2</thead>',
+                 src, flags=re.S)
     items = []
     for level, num, ident, plain in toc:
         cls = 'l2' if level == '2' else 'l3'
@@ -164,7 +167,7 @@ def pdf(lang):
     profile = tempfile.mkdtemp()                  # a fresh profile: works while the browser is open
     try:
         subprocess.run([exe, '--headless=new', '--disable-gpu', '--no-pdf-header-footer', '--user-data-dir=' + profile,
-                        '--print-to-pdf=' + out, '--virtual-time-budget=20000',
+                        '--print-to-pdf=' + out, '--virtual-time-budget=20000', '--generate-pdf-document-outline',
                         'file:///' + src.replace('\\', '/')], check=True, timeout=600)
     finally:
         shutil.rmtree(profile, ignore_errors=True)

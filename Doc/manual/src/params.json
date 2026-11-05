@@ -845,6 +845,16 @@
       "choices": []
     },
     {
+      "path": "res",
+      "label": "Resolution label",
+      "section": "Input",
+      "advanced": true,
+      "widget": "text",
+      "default": "",
+      "help": "The res-<label> of the files, e.g. 2. Needed only when the derivatives hold the same runs at more than one resolution (e.g. fMRIPrep res-1 and res-2). Empty: the only one present.",
+      "choices": []
+    },
+    {
       "path": "seeds",
       "label": "Seeds",
       "section": "Seeds",
@@ -984,6 +994,16 @@
       "widget": "text",
       "default": "",
       "help": "Needed only when the derivatives hold the runs in more than one space, e.g. MNI152NLin2009cAsym and T1w from fMRIPrep. Empty: the only space present.",
+      "choices": []
+    },
+    {
+      "path": "res",
+      "label": "Resolution label",
+      "section": "Input",
+      "advanced": true,
+      "widget": "text",
+      "default": "",
+      "help": "The res-<label> of the files, e.g. 2. Needed only when the derivatives hold the same runs at more than one resolution (e.g. fMRIPrep res-1 and res-2). Empty: the only one present.",
       "choices": []
     },
     {
@@ -1203,6 +1223,16 @@
       "widget": "text",
       "default": "",
       "help": "Needed only when the derivatives hold the runs in more than one space. Empty: the only space present.",
+      "choices": []
+    },
+    {
+      "path": "res",
+      "label": "Resolution label",
+      "section": "Input",
+      "advanced": true,
+      "widget": "text",
+      "default": "",
+      "help": "The res-<label> of the files, e.g. 2. Needed only when the derivatives hold the same runs at more than one resolution (e.g. fMRIPrep res-1 and res-2). Empty: the only one present.",
       "choices": []
     },
     {
@@ -1465,7 +1495,7 @@
       "advanced": false,
       "widget": "choice",
       "default": "combat",
-      "help": "combat (default): ComBat with parametric empirical Bayes (Johnson et al. 2007; Fortin et al. 2017, 2018). Site differences in the mean and variance of every voxel are removed; the estimates borrow strength across voxels, which helps small sites. Same results as neuroCombat.\ncombat_nonparam: empirical Bayes without assuming a distribution for the site effects; slower (prior from up to 5000 other voxels).\ncombat_noeb: location and scale per voxel without shrinkage; for large sites.\ncombat_mean: site means only, variances left as they are.\ncombat_gam: ComBat-GAM (Pomponio et al. 2020): Nonlinear covariates such as age are kept as smooth curves, for wide age ranges.\ncovbat: CovBat (Chen et al. 2022): ComBat, then also the site differences in how voxels co-vary are removed.\nlm: linear regression; site means removed with the covariates in the model, no empirical Bayes or scaling.\n\nSmall sites (fewer than about 20 subjects each): the variance adjustment of combat, combat_nonparam, combat_noeb, combat_gam and covbat can make later tests of the kept covariates too liberal (Nygaard et al. 2016). In the manual's example (3 sites of 10, simulated age) a GM-age regression found 3 false clusters after combat and none after combat_mean or lm. Prefer combat_mean or lm for small samples; the log warns.",
+      "help": "combat (default): ComBat with parametric empirical Bayes (Johnson et al. 2007; Fortin et al. 2017, 2018). Site differences in the mean and variance of every voxel are removed; the estimates borrow strength across voxels, which helps small sites. Same results as neuroCombat.\ncombat_nonparam: empirical Bayes without assuming a distribution for the site effects; slower (prior from up to 5000 other voxels).\ncombat_noeb: location and scale per voxel without shrinkage; for large sites.\ncombat_mean: site means only, variances left as they are.\ncombat_gam: ComBat with the Nonlinear covariates (e.g. age) kept as natural cubic splines with Spline df degrees of freedom, fitted by least squares; for wide age ranges. In the spirit of ComBat-GAM (Pomponio et al. 2020), but not the same as neuroHarmonize, which fits penalised GAMs and chooses the smoothness itself.\ncovbat: CovBat (Chen et al. 2022): ComBat, then also the site differences in how voxels co-vary are removed.\nlm: linear regression; site means removed with the covariates in the model, no empirical Bayes or scaling.\n\nSmall sites (fewer than about 20 subjects each): the variance adjustment of combat, combat_nonparam, combat_noeb, combat_gam and covbat can make later tests of the kept covariates too liberal (Nygaard et al. 2016). In the manual's example (3 sites of 10, simulated age) a GM-age regression found 3 false clusters after combat and none after combat_mean or lm. Prefer combat_mean or lm for small samples; the log warns.",
       "choices": [
         "combat",
         "combat_nonparam",

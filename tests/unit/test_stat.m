@@ -96,9 +96,8 @@ S = seecat.stat.smoothness(G, mask, hdr);
 % SPM on the same standardised residual images
 d = tempname;
 mkdir(d);
-c = onCleanup(@() rmdir(d, 's'));
 old = cd(d);
-back = onCleanup(@() cd(old));
+c = onCleanup(@() leaveAndRemove(old, d));     % one cleanup: back out of d, then delete it
 VR = struct('fname', {}, 'dim', {}, 'dt', {}, 'mat', {}, 'pinfo', {});
 for i = 1:n
     vol = nan(dim);
@@ -259,4 +258,9 @@ end
 
 function out = quiet(fn)
 [~, out] = evalc('fn()');
+end
+
+function leaveAndRemove(old, d)
+cd(old);
+rmdir(d, 's');
 end

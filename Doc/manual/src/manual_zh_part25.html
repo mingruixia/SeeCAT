@@ -85,8 +85,8 @@ sub-CSUHC0002_T1w         T1w   0                           cnr outlier         
 <p>名称只能是字母和数字，会成为输出图的 <code>desc</code>。</p>
 {{PARAMS fc Input|Seeds}}
 <h4>输出文件</h4>
-<pre><code>sub-01/func/sub-01_task-rest_space-IXI549Space_res-3_desc-PCC_stat-r_connectivity.nii（及 .json）
-sub-01/func/sub-01_task-rest_space-IXI549Space_res-3_desc-PCC_stat-z_connectivity.nii（及 .json）</code></pre>
+<pre><code>sub-01/func/sub-01_task-rest_space-IXI549Space_res-3_desc-PCC_stat-r_connectivity.nii.gz（及 .json）
+sub-01/func/sub-01_task-rest_space-IXI549Space_res-3_desc-PCC_stat-z_connectivity.nii.gz（及 .json）</code></pre>
 <p>sidecar 记录种子点（中心和半径，或文件）、输入序列和使用的帧。</p>
 <pre><code>cfg = seecat.config('fc');
 cfg.input_dir = 'D:/study/bids/derivatives/seecat';
@@ -99,10 +99,10 @@ seecat.run(cfg);</code></pre>
 {{IMG degree_page.png | Degree 页。}}
 {{PARAMS degree Input|Network|Output maps}}
 <h4>输出文件</h4>
-<pre><code>…_desc-degPosBinR0p2_stat-raw_connectivity.nii      二值度，正相关 r ≥ 0.2
-…_desc-degPosBinR0p2_stat-z_connectivity.nii        同上，mask 内 z 分数
-…_desc-degPosWeiR0p2Sm6_stat-z_connectivity.nii     强度，z 分数，6 mm 平滑
-…_desc-degPosBinR0p2D0to75_stat-raw_connectivity.nii  距离分段 [0 75 Inf]</code></pre>
+<pre><code>…_desc-degPosBinR0p2_stat-raw_connectivity.nii.gz      二值度，正相关 r ≥ 0.2
+…_desc-degPosBinR0p2_stat-z_connectivity.nii.gz        同上，mask 内 z 分数
+…_desc-degPosWeiR0p2Sm6_stat-z_connectivity.nii.gz     强度，z 分数，6 mm 平滑
+…_desc-degPosBinR0p2D0to75_stat-raw_connectivity.nii.gz  距离分段 [0 75 Inf]</code></pre>
 <p>时间和内存随体素数的平方增长：3 mm 时灰质约 5 万个体素，每个 run 几秒到一分钟；2 mm 时体素数是其 3.4 倍，计算量超过 10 倍。</p>
 
 <h3>Gradients</h3>
@@ -128,7 +128,7 @@ seecat.run(cfg);</code></pre>
 </table>
 <p>时间在 32 核台式机、200 帧的 run 上测得。SeeCAT 开始前会检查空闲内存，不够时停下并给出建议。图谱（如 Schaefer 400）速度快，每个分区一个值，另以表格写出。</p>
 <h4>输出文件</h4>
-<pre><code>sub-01/func/…_desc-grad1Vox4_connectivity.nii   该 run 对齐后的梯度 1（2、3 …… 直到 Maps written）
+<pre><code>sub-01/func/…_desc-grad1Vox4_connectivity.nii.gz   该 run 对齐后的梯度 1（2、3 …… 直到 Maps written）
 group/gradientsVox4/gradientsVox4_desc-grad1_reference.nii    最终参考（对齐后各 run 的平均）
 group/gradientsVox4/gradientsVox4_desc-grad1_groupmatrix.nii  组平均矩阵的梯度
 group/gradientsVox4/gradientsVox4_lambdas.tsv     每个 run 的特征值、解释的方差、与参考的相关</code></pre>
@@ -143,7 +143,7 @@ group/gradientsVox4/gradientsVox4_lambdas.tsv     每个 run 的特征值、解�
 <tr><td><code>combat_nonparam</code></td><td>不假设中心效应分布的经验贝叶斯（先验取自最多 5000 个其他体素）</td><td>中心效应明显偏离正态时</td></tr>
 <tr><td><code>combat_noeb</code></td><td>逐体素估计位置和尺度，不做收缩</td><td>大中心</td></tr>
 <tr><td><code>combat_mean</code></td><td>只校正中心均值</td><td>方差需要保持不变时</td></tr>
-<tr><td><code>combat_gam</code></td><td>非线性协变量用自然样条项的 ComBat（Pomponio et al. 2020）</td><td>年龄跨度大、存在非线性效应</td></tr>
+<tr><td><code>combat_gam</code></td><td>非线性协变量以固定自由度（Spline df）的自然三次样条进入模型、用最小二乘拟合的 ComBat。思路与 ComBat-GAM（Pomponio et al. 2020）相同，但 neuroHarmonize 拟合的是带惩罚的 GAM，因此结果与它不完全相同</td><td>年龄跨度大、存在非线性效应</td></tr>
 <tr><td><code>covbat</code></td><td>ComBat 之后再去除体素间协方差的中心差异（Chen et al. 2022）</td><td>各中心的网络结构不同时</td></tr>
 <tr><td><code>lm</code></td><td>线性回归：在含协变量的模型中去除中心均值</td><td>简单的参照方法</td></tr>
 </table>

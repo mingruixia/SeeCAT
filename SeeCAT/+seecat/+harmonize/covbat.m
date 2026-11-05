@@ -11,7 +11,9 @@ function [Yh, info] = covbat(Y, batch, mod, opt)
 % covariates), and the residuals are rebuilt. Site differences in how
 % features co-vary (e.g. network structure) are removed as well as
 % differences in their means and variances. OPT also passes eb, parametric
-% and ref to the ComBat steps. INFO: components used, variance they explain.
+% and ref to the ComBat steps: with a reference site, the component scores
+% of the other sites are mapped onto the reference site's too, so its data
+% stay unchanged. INFO: components used, variance they explain.
 
 if nargin < 3, mod = []; end
 if nargin < 4, opt = struct(); end
@@ -28,10 +30,15 @@ m = mean(Ez, 1);
 ev = diag(S) .^ 2;
 k = find(cumsum(ev) / sum(ev) >= opt.pct_var, 1);
 scores = U * S;
-cb2 = cb;
-if isfield(cb2, 'ref'), cb2 = rmfield(cb2, 'ref'); end
-sh = seecat.harmonize.combat(scores(:, 1:k), batch, [], cb2);
+sh = seecat.harmonize.combat(scores(:, 1:k), batch, [], cb);
 Ez2 = m + sh * W(:, 1:k)' + scores(:, k+1:end) * W(:, k+1:end)';
 Yh = Ez2 .* sd + mu;
+if isfield(cb, 'ref') && ~isempty(cb.ref)          % exactly unchanged (not just up to rounding)
+    r = strcmp(cellstr(string(batch)), char(string(cb.ref)));
+    Yh(r, :) = Y(r, :);
+end
+if ~all(isfinite(Yh(:)))
+    error('SeeCAT:harmonize', 'CovBat gave non-finite values; nothing is written.');
+end
 info = struct('components', k, 'variance_explained', sum(ev(1:k)) / sum(ev));
 end

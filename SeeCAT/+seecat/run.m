@@ -16,9 +16,12 @@ function summary = run(cfg)
 %   5. Calls seecat.<pipeline>.finish(cfg, summary, log) when the pipeline
 %      has one (dataset-level outputs, e.g. the group QC page).
 %
-% A unit that finished before with the same options (all fields except
-% n_workers, overwrite and keep_work) is skipped unless cfg.overwrite is
-% true. Its working folder is deleted on success unless cfg.keep_work is
+% A unit that finished before is skipped (unless cfg.overwrite is true)
+% when all three hold: the same options (all fields except n_workers,
+% overwrite and keep_work), the same inputs (seecat.util.input_fingerprint:
+% the planned unit, e.g. its selected maps and participant values, and the
+% size and date of every input file) and every output of its manifest still
+% present. Otherwise it runs again and the log says why. Its working folder is deleted on success unless cfg.keep_work is
 % true; after a failure it is kept, so finished steps are not redone.
 %
 % Each unit gets unit.manifest (logs/outputs/<pipeline>_<unit>.txt); the
@@ -35,12 +38,20 @@ cfg = seecat.config(cfg);
 seecat.check_config(cfg);
 p = cfg.pipeline;
 [units, cfg] = feval(['seecat.' p '.plan'], cfg);
+ids = {units.id};
+[u, ~, k] = unique(ids);
+dup = u(accumarray(k(:), 1) > 1);
+if ~isempty(dup)                                  % they would share logs, work folder and outputs
+    error('SeeCAT:run', ['Several inputs give the same unit %s (e.g. the same run at two ' ...
+        'resolutions, or as .nii and .nii.gz); narrow the selection (space, res, task, run).'], ...
+        strjoin(dup, ', '));
+end
 
-runId = [p '_' char(datetime('now', 'Format', 'yyyyMMdd''T''HHmmss'))];
 logDir = fullfile(cfg.output_dir, 'logs');
 if ~exist(logDir, 'dir')
     mkdir(logDir);
 end
+runId = newRunId(logDir, p);
 seecat.save_config(cfg, fullfile(logDir, [runId '_config.json']));
 mainLog = fullfile(logDir, [runId '.log']);
 log = @(varargin) seecat.util.log_msg(mainLog, varargin{:});
@@ -99,6 +110,7 @@ end
 function [status, message, seconds, result] = runUnit(unit, cfg, cfgHash, logDir, runId)
 p = cfg.pipeline;
 marker = fullfile(logDir, 'done', [p '_' unit.id '.json']);
+inHash = seecat.util.input_fingerprint(unit);
 unitLog = fullfile(logDir, runId, [unit.id '.log']);
 log = @(varargin) seecat.util.log_msg(unitLog, ['[' unit.id '] ' varargin{1}], varargin{2:end});
 unit.work_dir = fullfile(cfg.work_dir, p, unit.id);
@@ -109,12 +121,24 @@ result = struct();
 
 if ~cfg.overwrite && exist(marker, 'file')
     m = jsondecode(fileread(marker));
-    if strcmp(m.config_hash, cfgHash)
+    why = '';
+    if ~strcmp(m.config_hash, cfgHash)
+        why = 'the options changed';
+    elseif ~isfield(m, 'input_hash') || ~strcmp(m.input_hash, inHash)
+        why = 'the inputs changed (files, selected maps or participant values)';
+    else
+        missing = missingOutputs(unit.manifest, cfg.output_dir);
+        if ~isempty(missing)
+            why = sprintf('%d output(s) are missing, e.g. %s', numel(missing), missing{1});
+        end
+    end
+    if isempty(why)
         status = 'skipped';
         result = m.result;
-        log('finished on %s with the same options; skipped', m.finished);
+        log('finished on %s with the same options and inputs; skipped', m.finished);
         return
     end
+    log('finished before, but %s: running again', why);
 end
 if exist(marker, 'file')
     delete(marker);
@@ -135,7 +159,7 @@ try
     end
     status = 'ok';
     seconds = toc(t);
-    m = struct('unit', unit.id, 'pipeline', p, 'config_hash', cfgHash, ...
+    m = struct('unit', unit.id, 'pipeline', p, 'config_hash', cfgHash, 'input_hash', inHash, ...
         'seecat_version', seecat.version(), ...
         'finished', char(datetime('now', 'Format', 'yyyy-MM-dd HH:mm:ss')), ...
         'seconds', seconds, 'result', result);
@@ -153,6 +177,39 @@ catch err
     if n > 0
         log('removed %d derivative(s) written before the failure', n);
     end
+end
+end
+
+function missing = missingOutputs(manifest, outDir)
+% Files of a unit's output manifest that no longer exist ({'<manifest>'} without one)
+if ~exist(manifest, 'file')
+    missing = {manifest};
+    return
+end
+files = strtrim(strsplit(strtrim(fileread(manifest)), newline));
+files = files(~cellfun(@isempty, files));
+missing = files(~cellfun(@(f) exist(fullfile(outDir, f), 'file') == 2, files));
+end
+
+function id = newRunId(logDir, p)
+% <pipeline>_<yyyyMMddTHHmmss>, with _2, _3 ... when another run took that
+% name: the run's log folder is created here, atomically, to claim it
+base = [p '_' char(datetime('now', 'Format', 'yyyyMMdd''T''HHmmss'))];
+id = base;
+for k = 2:1000
+    if claim(fullfile(logDir, id))
+        return
+    end
+    id = sprintf('%s_%d', base, k);
+end
+error('SeeCAT:run', 'Could not create a log folder in %s.', logDir);
+end
+
+function ok = claim(d)
+try
+    ok = java.io.File(d).mkdir();                 % false when it exists: atomic
+catch                                             % no Java
+    ok = ~exist(d, 'dir') && mkdir(d);
 end
 end
 

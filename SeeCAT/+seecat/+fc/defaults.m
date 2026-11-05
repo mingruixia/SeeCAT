@@ -17,6 +17,7 @@ function [cfg, spec] = defaults()
 cfg = catstruct(struct('pipeline', 'fc', 'input_dir', ''), cfg);
 cfg.input = 'denoised';      % desc of the input series, e.g. 'denoised' or 'denoisedSm6'
 cfg.space = '';              % needed only when several spaces are present
+cfg.res = '';                % res label, needed only when there are several
 cfg.seeds = struct('name', {}, 'center', {}, 'radius', {}, 'file', {});
 
 cfg.qc_exclusions = true;         % leave out runs excluded in reports/qc_exclusions.tsv
@@ -27,6 +28,7 @@ spec = [
     'input_dir', @(x) v.text(x) && exist(x, 'dir') == 7,         'an existing SeeCAT derivatives folder'
     'input',     @(x) v.text(x) && ~isempty(regexp(x, '^[a-zA-Z0-9]+$', 'once')), 'a desc label, e.g. denoised'
     'space',     v.text,                                          'empty or a space label'
+    'res',       v.text,                                          'empty or a res label'
     'seeds',     @validSeeds,                                     'a non-empty struct array of seeds: name + center + radius, or name + file'
     'qc_exclusions', v.flag, 'true or false'
     }
@@ -44,7 +46,7 @@ for i = 1:numel(s)
     file = isfield(s, 'file') && ischar(s(i).file) && exist(s(i).file, 'file') == 2;
     ok = ok && ischar(s(i).name) && ~isempty(regexp(s(i).name, '^[a-zA-Z0-9]+$', 'once')) && (sphere || file);
 end
-ok = ok && numel(unique({s.name})) == numel(s);
+ok = ok && numel(unique(lower({s.name}))) == numel(s);   % file names: case is ignored on Windows
 end
 
 function s = catstruct(a, b)

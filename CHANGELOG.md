@@ -3,6 +3,56 @@
 ## Unreleased: 2.0 development
 
 ### Added
+- **Fixes from the 2026-11-05 review** (regression tests in
+  tests/unit/test_audit.m, tests/gui/page_drafts.m):
+  - *Resume checked only the options.* A finished unit is now skipped only
+    if its inputs are unchanged too (seecat.util.input_fingerprint: the
+    planned unit, e.g. the selected maps and participant values, and the
+    size and date of every input file) and every output in its manifest
+    still exists; otherwise it runs again and the log says why.
+  - *fMRIPrep with smoothing but no denoising* wrote the smoothed series
+    next to the fMRIPrep input and kept the non-steady-state frames. The
+    smooth step now always writes into the work folder and drops the same
+    leading frames as the denoise step.
+  - *Image covariates* reused the first voxel's df everywhere. The residual
+    traces and df are computed per voxel (p values use each voxel's df,
+    RFT the smallest), and voxels where an image covariate is constant or
+    collinear are left out with a warning.
+  - *ComBat with one feature, CovBat with one component* gave NaN maps
+    reported as "ok". Without spread across features the empirical Bayes
+    prior is skipped (as neuroHarmonize does); the EB iteration is capped;
+    non-finite results are an error, never written.
+  - *CovBat with a reference site* changed the reference site's data; the
+    component scores are now mapped onto the reference site too.
+  - *Same unit for two inputs* (one run at two resolutions, .nii and
+    .nii.gz): an error before anything is written. Seed FC, Degree and
+    Gradients get `res` (Resolution label) to choose.
+  - *Contrast names* that differ only in punctuation or case (A-B, AB) gave
+    one set of files; now an error naming them. Seed names must differ
+    ignoring case.
+  - *SliceTiming* now follows SliceEncodingDirection (k as is, k- reversed;
+    i/j an error) via seecat.bids.slice_times.
+  - *Statistics and Harmonize* accepted sessions, task and runs but ignored
+    them; they now narrow the maps (an error if they contradict Maps).
+  - *Page settings* were lost when switching pages in the window; each
+    pipeline page keeps them for the session.
+  - *Number fields* read "10mm" as 10 and "1/2" as [1 2]; the whole text
+    must now be numbers.
+  - *4D NIfTI* outputs carry the TR in the header (pixdim(5), seconds).
+  - *Run logs* of two runs started in the same second no longer share a
+    name.
+  - *Statistics and Machine Learning Toolbox* was needed for automatic
+    dummy-scan detection (`mad`); replaced with base MATLAB, and a test
+    checks that SeeCAT's code calls no other toolbox.
+  - combat_gam is described as what it is: ComBat with fixed-df natural
+    splines fitted by least squares, not the same as neuroHarmonize's
+    penalised GAMs.
+  - Manual: Overwrite does recompute; per-run maps are .nii.gz; Sources;
+    slice timing support; PDF pages (tall figures fit a page, table headers
+    repeat, PDF bookmarks).
+- **No hard MATLAB minimum.** SeeCAT is developed and tested on R2025a;
+  on older releases it now runs and notes once that they are untested,
+  instead of stopping.
 - **Parallel workers default to auto** on every page and in batch
   configurations (`n_workers = 'auto'`): as many workers as memory and
   cores allow. One-unit runs (Harmonize, Statistics without TFCE), too

@@ -46,12 +46,38 @@ if strcmp(cfg.variance, 'auto')
 end
 cfg.n_image_covariates = q;
 D = seecat.stat.design(cfg, maps);
+stems = arrayfun(@(c) contrastStem(c.name), D.con, 'UniformOutput', false);
+[u, ~, k] = unique(lower(stems));             % lower: Windows file names ignore case
+dup = u(accumarray(k(:), 1) > 1);
+if ~isempty(dup)
+    error('SeeCAT:stat', ['Contrast names %s give the same file names (only letters and digits ' ...
+        'are kept, case is ignored); rename them.'], strjoin(arrayfun(@(c) ['"' c.name '"'], ...
+        D.con(ismember(lower(stems), dup)), 'UniformOutput', false), ', '));
+end
 for f = fieldnames(D.vif)'
     if D.vif.(f{1}) > 5
         log('WARNING: column %s has VIF %.1f (collinear with other columns)', f{1}, D.vif.(f{1}));
     end
 end
 
+if q                                         % image covariates: same design rank at every voxel
+    rk = rank(D.X) + q;
+    keep = true(1, size(Y, 2));
+    for j = 1:size(Y, 2)
+        keep(j) = rank([D.X, reshape(Ximg(:, j, :), n, q)]) == rk;
+    end
+    if ~all(keep)
+        log(['WARNING: %d voxel(s) left out: an image covariate is constant or collinear with ' ...
+            'the design there'], nnz(~keep));
+        idx = find(mask);
+        mask(idx(~keep)) = false;
+        Y = Y(:, keep);
+        Ximg = Ximg(:, keep, :);
+    end
+    if ~any(keep)
+        error('SeeCAT:stat', 'The image covariate is constant or collinear with the design in every voxel.');
+    end
+end
 opt = struct();
 nonsph = struct('estimated', false);
 if D.reml
@@ -103,8 +129,7 @@ report.contrasts = {};
 nClusters = 0;
 for k = 1:numel(G.con)
     c = G.con(k);
-    cn = matlab.lang.makeValidName(c.name);
-    cn = regexprep(cn, '[^a-zA-Z0-9]', '');
+    cn = contrastStem(c.name);
     stem = sprintf('%s_contrast-%s', cfg.name, cn);
     STAT = upper(c.type);
     if STAT == 'T'
@@ -267,4 +292,9 @@ end
 f = fullfile(pub.work_dir, [name '.nii']);
 seecat.io.write_nii(vol, hdr, f, 'DataType', dtype, 'Descrip', descr);
 seecat.util.publish_output(f, fullfile(out, [name '.nii.gz']), meta, pub);
+end
+
+function cn = contrastStem(name)
+% The contrast label in file names: letters and digits only
+cn = regexprep(matlab.lang.makeValidName(name), '[^a-zA-Z0-9]', '');
 end

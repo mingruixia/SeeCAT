@@ -36,6 +36,10 @@ ctx.slice_timing = [];
 if isfield(unit.meta, 'SliceTiming')
     ctx.slice_timing = unit.meta.SliceTiming(:)';
 end
+ctx.slice_direction = 'k';                      % BIDS: k when SliceEncodingDirection is absent
+if isfield(unit.meta, 'SliceEncodingDirection') && ~isempty(unit.meta.SliceEncodingDirection)
+    ctx.slice_direction = char(unit.meta.SliceEncodingDirection);
+end
 ctx.files = struct('bold_src', unit.bold, 't1w_src', unit.t1w);
 
 method = cfg.normalise.method;

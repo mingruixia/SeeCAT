@@ -13,6 +13,9 @@ function V = write_nii(Y, ref, fname, varargin)
 %   'DataType'  'float32' (default), 'float64', 'int32', 'int16' or 'uint8'.
 %               Integer types are rounded and clipped, with a warning when
 %               values are clipped; NaN becomes 0. No scaling is used.
+%   'TR'        for 4D data: the volume spacing in seconds, written to the
+%               header (pixdim(5), units seconds) so that tools reading only
+%               the NIfTI find it. Default []: none.
 %
 % Missing folders are created. A name ending in .nii.gz is written and then
 % compressed. V is the spm_vol header of the written .nii file, or empty
@@ -21,6 +24,7 @@ function V = write_nii(Y, ref, fname, varargin)
 p = inputParser;
 p.addParameter('Descrip', '', @(x) ischar(x) || isstring(x));
 p.addParameter('DataType', 'float32', @(x) any(strcmpi(x, {'float32', 'float64', 'int32', 'int16', 'uint8'})));
+p.addParameter('TR', [], @(x) isempty(x) || (isnumeric(x) && isscalar(x)));
 p.parse(varargin{:});
 opt = p.Results;
 
@@ -80,6 +84,9 @@ N.dat = file_array(fname, dim, [upper(dtype) '-' endian], 352, 1, 0);
 N.mat = ref.mat;
 N.mat0 = ref.mat;
 N.descrip = char(opt.Descrip);
+if numel(dim) == 4 && ~isempty(opt.TR) && isfinite(opt.TR) && opt.TR > 0
+    N.timing = struct('toffset', 0, 'tspace', double(opt.TR));
+end
 create(N);
 if numel(dim) == 3
     N.dat(:, :, :) = Y;

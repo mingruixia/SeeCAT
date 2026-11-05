@@ -5,13 +5,15 @@ function result = run_unit(unit, cfg, log)
 % Voxels: cfg.mask and non-zero in every map; voxels outside are set to 0
 % in the outputs. Kept effects (MOD): cfg.covariates (numbers as they are,
 % text as dummy columns) and cfg.nonlinear (natural cubic splines with
-% cfg.spline_df degrees of freedom; ComBat-GAM, Pomponio et al. 2020).
+% cfg.spline_df degrees of freedom, fitted by least squares without a
+% penalty: a ComBat variant in the spirit of ComBat-GAM, Pomponio et al.
+% 2020, whose neuroHarmonize implementation fits penalised GAMs instead).
 % Methods:
 %   combat           parametric empirical Bayes (Johnson 2007; Fortin 2017)
 %   combat_nonparam  non-parametric empirical Bayes
 %   combat_noeb      location and scale per voxel, no empirical Bayes
 %   combat_mean      location only (site means), parametric EB
-%   combat_gam       combat with the nonlinear covariates
+%   combat_gam       combat with the nonlinear covariates as fixed-df splines
 %   covbat           combat, then covariance harmonisation (Chen 2022)
 %   lm               linear regression: site means removed, no EB, no scaling
 % A site effect check (share of voxels with a site effect at p < 0.05,
