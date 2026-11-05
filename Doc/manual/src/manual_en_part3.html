@@ -1,0 +1,159 @@
+<h2>Worked examples</h2>
+<p>This chapter runs a complete study and reports what SeeCAT produced, with the real numbers. Every figure in this manual comes from these runs. The script that ran them is in section 8.2; the configurations can also be loaded into the window with <b>Load</b>.</p>
+
+<h3>The example dataset</h3>
+<p>A public test subset of a multi-site depression study: 30 subjects from three sites (CSU, PKU, SCU), five healthy controls (HC) and five patients with major depression (MDD) at each site. Every subject has one T1-weighted image and one resting-state run (TR 2 s). The three per-site folders were merged into one BIDS dataset with a <code>participants.tsv</code>:</p>
+<pre><code>participant_id   site   group   age   sex
+sub-CSUHC0001    CSU    HC      28    M
+sub-CSUHC0002    CSU    HC      34    M
+…</code></pre>
+<div class="warn"><b>Simulated covariates.</b> Age and sex in this table were generated at random for the demonstration. They are fine as covariates, but no real effect of age or sex is in the data: a significant age effect would be a false positive.</div>
+<p>All runs used <code>n_workers = 'auto'</code> on a 32-core workstation with about 200 GB of free memory. The outputs go to <code>manual_run/derivatives/seecat</code>.</p>
+
+<h3>Example A: seed connectivity of the default-mode network</h3>
+<p>From BIDS to a group map of posterior cingulate (PCC) connectivity, and a comparison of the two groups.</p>
+
+<h4>A1. Check the data</h4>
+<p>On <b>Data check</b>, choose the BIDS folder and press <b>Scan</b>. The table lists 30 runs, one per subject, with their volumes and TR (section 6.2). Nothing is missing, so preprocessing can start.</p>
+
+<h4>A2. Preprocess</h4>
+<p>On <b>Preprocessing</b>: BIDS folder <code>bids2</code>, Output folder <code>manual_run/derivatives/seecat</code>, tick <b>VBM maps</b> (for Example B), Parallel workers <code>auto</code>; all other options at their defaults. Press <b>Run</b>.</p>
+<pre><code>Parallel workers (auto): about 5.5 GB per worker (4.5 GB task + 1 GB worker), 0.5 GB kept by the main MATLAB,
+    206.4 GB free: 30 worker(s) (32 cores, 30 task(s))
+Parallel pool: A pool of 30 workers did not start (…). Started 15 workers instead.
+QC: …/derivatives/seecat/reports/prep_qc.html
+Tissue volumes: …/derivatives/seecat/reports/anat_volumes.tsv
+Done: 30 ok, 0 skipped, 0 failed.</code></pre>
+<p>The memory estimate allowed 30 workers. Windows could not start that many at once, so SeeCAT retried with half and noted it in the log. The 30 runs took about 19 minutes.</p>
+
+<h4>A3. Review quality</h4>
+<p>The group report <code>reports/prep_qc.html</code> (figure in section 6.5) suggests excluding four runs:</p>
+<table>
+<tr><th>Run</th><th>Reason</th><th>Mean FD (mm)</th><th>Largest translation (mm)</th><th>Minutes kept</th></tr>
+<tr><td>sub-CSUHC0004</td><td>translation &gt; 3 mm; too little data after censoring</td><td>0.300</td><td>3.02</td><td>3.9</td></tr>
+<tr><td>sub-CSUHC0005</td><td>translation &gt; 3 mm; too little data after censoring</td><td>0.273</td><td>3.97</td><td>4.4</td></tr>
+<tr><td>sub-CSUMDD0004</td><td>too little data after censoring</td><td>0.237</td><td>1.13</td><td>4.1</td></tr>
+<tr><td>sub-PKUMDD0002</td><td>too little data after censoring</td><td>0.273</td><td>0.68</td><td>4.9</td></tr>
+</table>
+<p>Other runs have warnings but are kept. Examples:</p>
+<ul>
+<li>sub-PKUHC0001: DVARS and AQI outliers, and a low grey-matter correlation with the TPM (0.637, the lowest of the study). Open its run report and look at the carpet plot and registration before deciding.</li>
+<li>sub-PKUMDD0005: mean FD 0.281 mm, above the 0.25 mm warning level, but enough clean data remain.</li>
+<li>sub-SCUHC0001: an FBER outlier. Its run report (figure in section 6.5) shows one movement about 2.5 minutes into the run; the six censored frames around it are shaded.</li>
+</ul>
+<p>The brain mask Dice with the template is 0.956 to 0.984 for all runs, so no registration failed. We keep the suggestions as they are. The QC reports page shows the same list and can change any decision before the next step.</p>
+<p>Every later step reads the exclusion list and logs what it leaves out:</p>
+<pre><code>Left out by QC (reports/qc_exclusions.tsv): sub-CSUHC0004_task-rest, sub-CSUHC0005_task-rest,
+    sub-CSUMDD0004_task-rest, sub-PKUMDD0002_task-rest</code></pre>
+<p>This leaves 26 runs: 13 HC (CSU 3, PKU 5, SCU 5) and 13 MDD (CSU 4, PKU 4, SCU 5).</p>
+
+<h4>A4. Seed FC</h4>
+<p>On <b>Seed FC</b>, add two spheres of 6 mm radius: PCC at (0, −53, 26) and mPFC at (0, 52, −6). The 26 runs took 7 seconds. Each run gets r and Fisher z maps:</p>
+<pre><code>sub-SCUHC0001_task-rest_space-IXI549Space_res-3_desc-PCC_stat-z_connectivity.nii.gz
+sub-SCUHC0001_task-rest_space-IXI549Space_res-3_desc-mPFC_stat-z_connectivity.nii.gz</code></pre>
+
+<h4>A5. Harmonize</h4>
+<p>On <b>Harmonize</b>: Map <code>PCC</code>, Statistic <code>z</code>, Site column <code>site</code>, Method <code>combat</code>, Covariates kept <code>group, sex, age</code>.</p>
+<pre><code>[harmonizeComBat_PCCz] 26 maps, 45150 voxels, 3 sites (CSU: 7, PKU: 9, SCU: 10)
+[harmonizeComBat_PCCz] kept effects: group_MDD, sex_M, age
+[harmonizeComBat_PCCz] voxels with a site effect (p &lt; 0.05): 9.9% before, 0.1% after</code></pre>
+<p>Before harmonisation, 9.9% of grey-matter voxels had a site effect, about twice the 5% expected by chance. After ComBat, 0.1% did. The new maps are named <code>desc-PCCComBat</code>. With sites this small, SeeCAT also logs the small-site warning of section 6.9. Here we keep ComBat for the FC maps; Example B shows when this matters.</p>
+
+<h4>A6. One-sample test in the healthy controls</h4>
+<p>Is PCC connectivity positive in the 13 controls? On <b>Statistics</b>: Name <code>PCConeSampleHC</code>, Map <code>PCCComBat</code>, Statistic <code>z</code>, Design <code>one_sample</code>, Subjects: the 13 HC labels, Correction <code>cluster_fwe</code> and <code>tfce_fwe</code>.</p>
+<pre><code>[PCConeSampleHC] 13 maps, 45150 voxels in the analysis mask
+[PCConeSampleHC] df 12.00; FWHM [6.31 6.48 7.38] mm; resels 2812.9
+[PCConeSampleHC] TFCE: 5000 permutations (flip), 2 contrast(s), 16 worker(s), 93 s
+[PCConeSampleHC] pos, cluster_fwe: height 3.930, 12 cluster(s) / 1705 voxel(s) survive
+[PCConeSampleHC] pos, tfce_fwe: height 2.780, 33 cluster(s) / 3867 voxel(s) survive
+[PCConeSampleHC] neg, cluster_fwe: height 3.930, 6 cluster(s) / 140 voxel(s) survive
+[PCConeSampleHC] neg, tfce_fwe: height 6.340, 4 cluster(s) / 7 voxel(s) survive</code></pre>
+<p>The cluster-forming threshold p &lt; 0.001 is t ≥ 3.93 at 12 degrees of freedom. The largest positive clusters are those of the default-mode network:</p>
+<table>
+<tr><th>Voxels</th><th>Peak t</th><th>Peak Z</th><th>x, y, z (mm)</th><th>Region</th></tr>
+<tr><td>874</td><td>21.38</td><td>6.53</td><td>3, −57, 27</td><td>precuneus / posterior cingulate (the seed)</td></tr>
+<tr><td>206</td><td>10.53</td><td>5.20</td><td>−51, −66, 30</td><td>left angular gyrus</td></tr>
+<tr><td>152</td><td>7.71</td><td>4.55</td><td>6, 51, 24</td><td>medial superior frontal gyrus</td></tr>
+<tr><td>138</td><td>10.71</td><td>5.23</td><td>60, −54, 18</td><td>right angular gyrus</td></tr>
+<tr><td>94</td><td>8.91</td><td>4.85</td><td>24, 30, 54</td><td>right superior frontal gyrus</td></tr>
+</table>
+<p>TFCE finds the same network and extends it (3867 voxels). Its height is the smallest t that survives (2.78), so lower than the cluster-forming threshold. In the cluster file, a row with <code>n/a</code> voxels is a further peak of the cluster above it (e.g. −9, −69, 27 and 3, −63, 39 in the PCC cluster). Open the result in the viewer (figures in section 6.11): at p 0.001 with cluster FWE and both signs, the viewer shows the same 18 clusters (12 positive, 6 negative; 1845 voxels).</p>
+
+<h4>A7. Two-sample test, HC versus MDD</h4>
+<p>Name <code>PCCtwoSample</code>, Design <code>two_sample</code>, Factor <code>group</code>, Levels <code>HC, MDD</code>, Covariates <code>age, sex</code>.</p>
+<pre><code>[PCCtwoSample] 26 maps, 45150 voxels in the analysis mask
+[PCCtwoSample] df 22.00; FWHM [6.09 6.23 7.18] mm; resels 3115.0
+[PCCtwoSample] HCgtMDD, cluster_fwe: height 3.505, 0 cluster(s) / 0 voxel(s) survive
+[PCCtwoSample] MDDgtHC, cluster_fwe: height 3.505, 0 cluster(s) / 0 voxel(s) survive</code></pre>
+<p>No cluster survives in either direction. With 13 subjects per group this is expected and is not evidence that the groups have the same connectivity. The unthresholded t map (<code>…_contrast-HCgtMDD_stat-t_statmap</code>) can still be shown in the viewer, or used to plan a larger study.</p>
+
+<h3>Example B: grey-matter volume and age (VBM)</h3>
+<p>Because <b>VBM maps</b> was ticked in A2, every T1w already has modulated grey-matter maps in MNI space (1.5 mm), smoothed with 8 mm:</p>
+<pre><code>sub-SCUHC0001_space-IXI549Space_res-1p5_label-GM_desc-modulatedSm8_probseg.nii</code></pre>
+<p>Total intracranial volume per subject is in <code>reports/anat_volumes.tsv</code>. Statistics and Harmonize read it automatically as the column <code>tiv_ml</code>. The QC exclusions are for fMRI runs, so all 30 T1w images are used here.</p>
+
+<h4>B1. Regression on age</h4>
+<p>On <b>Statistics</b>: Name <code>VBMage</code>, Map <code>modulatedSm8</code>, Label <code>GM</code>, Suffix <code>probseg</code>, Design <code>regression</code>, Regressors <code>age</code>, Covariates <code>sex, tiv_ml, site</code>, Mask <code>gm</code>.</p>
+<pre><code>[VBMage] 30 maps, 414177 voxels in the analysis mask
+[VBMage] df 24.00; FWHM [11.43 11.81 11.25] mm; resels 797.0
+[VBMage] agepos, cluster_fwe: height 3.467, 0 cluster(s) / 0 voxel(s) survive
+[VBMage] ageneg, cluster_fwe: height 3.467, 0 cluster(s) / 0 voxel(s) survive</code></pre>
+<p>The site column is text, so it enters the model as two indicator columns. With intercept, age, sex, TIV and site, that leaves 30 − 6 = 24 degrees of freedom. Since the ages are random, no effect is the correct result.</p>
+
+<h4>B2. Why not ComBat here</h4>
+<p>Site differences in VBM are large: in 49.8% of grey-matter voxels before harmonisation (0.2% after ComBat with group, sex, age and TIV kept). It seems natural to harmonise first. We ran the same regression after each choice:</p>
+<table>
+<tr><th>Maps</th><th>Site in the model</th><th>Clusters for age (cluster FWE)</th></tr>
+<tr><td>unharmonised</td><td>as a covariate</td><td>0</td></tr>
+<tr><td>ComBat (<code>combat</code>)</td><td>no</td><td><b>3</b></td></tr>
+<tr><td>ComBat (<code>combat</code>)</td><td>as a covariate</td><td><b>2</b></td></tr>
+<tr><td>location only (<code>combat_mean</code>)</td><td>no</td><td>0</td></tr>
+<tr><td>linear regression (<code>lm</code>)</td><td>no</td><td>0</td></tr>
+</table>
+<p>The age effect is not real, so the ComBat clusters are false positives. ComBat rescales each site's residual variance using only ten subjects per site. That makes the harmonised data look less variable than they are, and tests of the kept covariates become too liberal (Nygaard et al. 2016). Methods that only remove site means do not have this problem. With fewer than about 20 subjects per site:</p>
+<ul>
+<li>use <code>combat_mean</code> or <code>lm</code>, or keep the maps unharmonised with site as a covariate;</li>
+<li>compare any ComBat result with the unharmonised one before reporting it.</li>
+</ul>
+<p>SeeCAT writes this warning in the Harmonize log and report.</p>
+
+<h3>Example C: degree centrality and gradients</h3>
+
+<h4>C1. Degree</h4>
+<p><b>Degree</b> with its defaults: grey-matter mask, positive correlations above r = 0.2, binary and weighted degree, also as z-scored maps, smoothed with 6 mm.</p>
+<pre><code>Parallel workers (auto): about 3.9 GB per worker (2.9 GB task + 1 GB worker), …: 26 worker(s)
+Done: 26 ok, 0 skipped, 0 failed.</code></pre>
+<p>The 26 runs took about 2 minutes. Each run gets four maps, each as raw values and as z:</p>
+<pre><code>…_desc-degPosBinR0p2_stat-z_connectivity.nii.gz        binary, unsmoothed
+…_desc-degPosWeiR0p2Sm6_stat-z_connectivity.nii.gz     weighted, smoothed: the usual choice for statistics</code></pre>
+<p>Harmonising <code>degPosWeiR0p2Sm6</code> z (with group, sex and age kept) reduced voxels with a site effect from 17.2% to 0.0%. Degree is more site-dependent than seed FC here, probably because it summarises the whole connectivity distribution, which depends on noise and smoothness.</p>
+
+<h4>C2. Gradients</h4>
+<p><b>Gradients</b> with the defaults: Nodes <code>voxels</code> with Node size 4 mm (the unit is named <code>gradientsVox4</code>), 10 components with 3 maps written, Alignment <code>group</code>.</p>
+<pre><code>Parallel workers (auto): about 8.2 GB per worker (7.2 GB task + 1 GB worker), 7.7 GB kept by the main MATLAB,
+    187.4 GB free: 18 worker(s) (32 cores, 26 task(s))
+[gradientsVox4] 26 run(s), 21972 nodes (Vox4); about 7.2 GB of memory per run being computed
+[gradientsVox4] node series done; 19564 of 21972 nodes have data in every run
+[gradientsVox4] gradients of 26 run(s) in 413 s (15 worker(s))
+[gradientsVox4] finished (472.0 s)</code></pre>
+<p>Each run needs a 21972 × 21972 connectivity matrix, so memory, not cores, set the number of workers (18). The reference is the gradient of the group-mean matrix. Each run is aligned to it, a new reference is formed from the mean of the aligned runs, and this repeats until the reference no longer changes.</p>
+{{IMG viewer_gradient.png | The group reference of gradient 1 (group/gradientsVox4/gradientsVox4_desc-grad1_reference). It runs from visual and sensorimotor cortex (blue) to the default-mode network (red), the principal gradient of Margulies et al. (2016).}}
+<p><code>group/gradientsVox4/gradientsVox4_lambdas.tsv</code> gives, per run:</p>
+<ul>
+<li>the eigenvalues;</li>
+<li>the variance explained by gradient 1: 0.18 to 0.31, median 0.24;</li>
+<li>the correlation of the run's aligned gradient 1 with the reference: 0.43 to 0.69, median 0.58.</li>
+</ul>
+<p>A run with a much lower correlation than the others deserves a look at its QC report. The per-run maps (<code>desc-grad1Vox4</code> … <code>grad3Vox4</code>) can be harmonised and tested like any other map.</p>
+
+<h3>Time for the whole study</h3>
+<table>
+<tr><th>Step</th><th>Units</th><th>Workers</th><th>Time</th></tr>
+<tr><td>Preprocessing (with IQMs and VBM)</td><td>30 runs</td><td>15</td><td>19 min</td></tr>
+<tr><td>Seed FC (2 seeds)</td><td>26 runs</td><td>26</td><td>7 s</td></tr>
+<tr><td>Degree</td><td>26 runs</td><td>26</td><td>2 min</td></tr>
+<tr><td>Gradients (Vox4)</td><td>26 runs</td><td>15</td><td>8 min</td></tr>
+<tr><td>Harmonize (3 measures)</td><td>26–30 maps each</td><td>1</td><td>3–10 s each</td></tr>
+<tr><td>Statistics, one-sample with TFCE (5000 permutations)</td><td>13 maps</td><td>16</td><td>96 s</td></tr>
+<tr><td>Statistics, two-sample / VBM regression</td><td>26 / 30 maps</td><td>1</td><td>2 s / 5 s</td></tr>
+</table>

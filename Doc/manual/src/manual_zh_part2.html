@@ -1,0 +1,95 @@
+<h2>各模块详解</h2>
+<p>本章每节介绍一个页面：用途、原理、全部选项（表格由软件本身生成，与窗口中的选项完全一致）、读写的文件，以及脚本用法。标有 <span class="tag">高级</span> 的选项需勾选 <b>Show advanced options</b> 后才显示。多个页面共用的选项（去噪、剔除、质量控制、输出、选择、运行）集中在 6.12 至 6.15 节介绍。</p>
+
+<h3>DICOM to BIDS</h3>
+<p>用 dcm2niix 把 DICOM 文件转换为 BIDS 数据集。它读取 DICOM 头信息识别被试、扫描次数和序列，按规则给每个序列命名，并把图像及其 JSON 说明文件写成 BIDS 结构。</p>
+{{IMG dicom_page.png | 点击 Find subjects 后的 DICOM to BIDS 页：识别出的目录结构和每个被试一行。}}
+
+<h4>如何识别被试、session 和序列</h4>
+<ol>
+<li><b>读取头信息。</b>SeeCAT 读取每个含 DICOM 文件的文件夹中第一个和最后一个文件（只快速读取到序列字段为止；.txt、.nii 等其他文件被忽略）。第一个和最后一个文件属于不同的人时，报告为错误。</li>
+<li><b>被试。</b>PatientID 相同的文件夹属于同一个被试。被试名取自"包含此人全部文件夹、且不含他人文件夹"的那一级文件夹，只保留字母和数字（<code>S_001</code> → <code>sub-S001</code>）。PatientID 缺失或已匿名化（如 <code>anonymous</code>、<code>xxxx</code>、<code>0000</code>）时按目录树判断。支持的结构包括：每个被试一个文件夹（<code>S001/…</code>）、先按模态再按被试（<code>T1/S001</code>、<code>REST/S001</code>）以及更深的层级（<code>S001/visit1/T1</code>）。<b>Find subjects</b> 在转换前显示识别出的结构和被试。</li>
+<li><b>Session。</b>只扫描一次（一个 DICOM study）的被试不设 session 文件夹；多次扫描按日期依次为 <code>ses-1</code>、<code>ses-2</code> ……，对应关系保存在 <code>code/seecat/from_dicom_sessions.tsv</code> 中，之后新的扫描会得到下一个编号。</li>
+<li><b>序列。</b>dcm2niix 转换每个被试；每个序列按第一条与其 sidecar 匹配的规则命名。默认规则把三维 T1 加权像（MPRAGE、SPGR、BRAVO 等）命名为 <code>anat/…_T1w</code>，把静息态 BOLD（序列名含 rest、rsfMRI 或独立的 RS）命名为 <code>func/…_task-rest_bold</code>。静息态 run 还必须是二维 EPI、至少 20 帧。不匹配任何规则的序列只列出，不复制。</li>
+<li><b>写出。</b>图像以 .nii.gz 及其 sidecar 写到 <code>sub-&lt;label&gt;/[ses-&lt;label&gt;/]anat|func</code>；缺少 <code>dataset_description.json</code> 时会写出，participants.tsv 会加入新被试。已存在的图像保留，因此重新转换只补充缺少的部分。每个序列的去向记录在 <code>code/seecat/</code> 的表格中。</li>
+</ol>
+
+<h4>选项</h4>
+<table>
+<tr><th>选项</th><th>批处理</th><th>默认</th><th>含义</th></tr>
+<tr><td>DICOM folder</td><td><code>from_dicom(dicom_dir, bids_dir)</code></td><td>（必填）</td><td>DICOM 文件所在文件夹，可以是上述任何结构：一个被试，或包含多个被试的文件夹。</td></tr>
+<tr><td>BIDS folder</td><td><code>bids_dir</code></td><td>（必填）</td><td>要写入的 BIDS 数据集；不存在时自动创建。</td></tr>
+<tr><td>Subject</td><td><code>'sub', '01'</code></td><td>空</td><td>填写：DICOM 文件夹中的全部数据都属于该被试。留空：按上述方法自动识别。</td></tr>
+<tr><td>Session</td><td><code>'ses', 'pre'</code></td><td>空</td><td>填写：所有图像放入该 session。留空：一次扫描不设 session，多次扫描为 <code>ses-1</code>、<code>ses-2</code> ……</td></tr>
+<tr><td>Rules (JSON)</td><td><code>'rules', 'my_rules.json'</code></td><td>空</td><td>命名规则的 JSON 列表；每条用正则表达式（不区分大小写）匹配 sidecar 字段，给出 datatype、suffix 和实体。留空：T1 和静息态 BOLD。</td></tr>
+</table>
+<p>同时保留一个任务态 run 的规则文件示例：</p>
+<pre><code>[{"match": {"SeriesDescription": "rest"}, "datatype": "func", "suffix": "bold", "entities": {"task": "rest"}},
+ {"match": {"SeriesDescription": "nback"}, "datatype": "func", "suffix": "bold", "entities": {"task": "nback"}},
+ {"match": {"SeriesDescription": "mprage|t1"}, "datatype": "anat", "suffix": "T1w"}]</code></pre>
+<h4>脚本</h4>
+<pre><code>seecat.bids.scan_dicom('D:/study/dicom')                   % 查看将转换哪些数据
+S = seecat.bids.from_dicom('D:/study/dicom', 'D:/study/bids');   % 转换全部被试
+S = seecat.bids.from_dicom('D:/study/dicom/S_001', 'D:/study/bids', 'sub', '01', 'ses', 'pre');</code></pre>
+
+<h3>Data check</h3>
+<p>预处理之前，先看看数据集里有什么。Data check 列出 BIDS 数据集（或 derivatives 文件夹）中每个 BOLD run 的帧数和 TR；如果有混杂变量表（预处理或 fMRIPrep 之后），还给出平均和最大帧间位移，以及被标记为高头动的帧。平均 FD 超过 0.25 mm 或超过 20% 的帧被标记的 run 会高亮显示。<b>Open in viewer</b> 逐帧查看所选 run 及其头动曲线；<b>QC report</b> 打开它的质量报告。</p>
+{{IMG data_check.png | 实例数据集的 Data check：三个中心的 30 个 run 及其帧数和 TR。}}
+<p><b>Series</b> 下拉框选择列出哪类图像：预处理后（<code>desc-preproc</code>）、去噪后、原始（BIDS 数据集）或全部 BOLD 图像。脚本：<code>R = seecat.qc.runs('D:/study/bids', 'raw')</code>。</p>
+
+<h3>Preprocessing</h3>
+<p>用 SPM 预处理 BIDS 数据集中的每个 BOLD run，把可直接分析的数据写到 <code>derivatives/seecat</code>。每个 run 是一个单元；它的 T1 像（有 session 时优先同一 session）用于配准和分割。</p>
+{{IMG prep_page.png | 实例的 Preprocessing 页：输入、预处理、VBM、去噪和质量控制卡片。}}
+
+<h4>处理步骤</h4>
+<ol>
+<li><b>输入。</b>把 run 和它的 T1 复制到工作文件夹，并去掉开头信号未稳定的帧：<code>dummy_scans = auto</code> 时，在前 20 帧中，全脑平均信号相对整个 run 的中位数和 MAD 为稳健离群值（z &gt; 3.5）的开头连续帧被去掉；扫描仪已丢弃的帧不会重复计算。</li>
+<li><b>层间时间校正</b>（SPM）。各层采集时间取自 sidecar 中的 <code>SliceTiming</code>（秒），因此任何采集顺序（顺序、隔层、多带）都能正确处理；除非另行设置，参考时刻为 TR 的中点。</li>
+<li><b>头动校正</b>（SPM）。两轮：先对齐到第一帧，再对齐到平均像。六个头动参数写入混杂变量表；数据在这一步不重采样。</li>
+<li><b>配准。</b>用归一化互信息把 T1 配准到平均 EPI（只修改其头信息）。</li>
+<li><b>分割。</b>用 SPM 组织概率图对 T1 做统一分割，得到个体空间的灰质、白质、脑脊液图，偏场校正后的 T1，以及到 IXI549Space 的形变场。没有 T1 时（<code>normalise.method = epi</code>）改为分割平均 EPI。</li>
+<li><b>干扰信号 mask。</b>在被试自身空间中取白质（p &gt; 0.99）和脑脊液（p &gt; 0.95）mask，用 2 mm 的球腐蚀，使其远离灰质；再重采样到输出网格。</li>
+<li><b>标准化。</b>把形变场一次性应用到 BOLD 数据（4 阶 B 样条，这是数据唯一的一次重采样）和组织图上，按所选体素大小写在 SPM 边界框内。</li>
+<li><b>输出空间的 mask</b>：脑 = 灰质 + 白质 + 脑脊液 &gt; 0.5，且每一帧都在视野内。</li>
+<li><b>混杂变量。</b>与 fMRIPrep 同名的列：24 个头动回归量（6 个参数及其导数和平方；Friston 1996），帧间位移（Power 2012），全脑（<code>global_signal</code>）、白质和脑脊液的平均信号，白质和脑脊液的 aCompCor 成分（在好的帧上计算），每个被标记的帧一个 <code>motion_outlier_XX</code> 列，以及 <code>censor</code> 列。</li>
+<li><b>IQM</b>（可选，默认开启）：原始 BOLD 和 T1 的 MRIQC 图像质量指标，见 6.5 节。</li>
+<li><b>去噪。</b>每个体素一个线性模型：多项式趋势（1 阶）加上所选回归量，数据和回归量用同一个滤波器带通，在好的帧上拟合。高头动帧先用好的帧插值填补（频谱插值），避免滤波把尖峰扩散出去；拟合时不使用它们，并为后续步骤做标记。最后把体素均值加回。输出：<code>desc-denoised</code>。</li>
+<li><b>平滑</b>（可选）：所选 FWHM 的高斯核；输出 <code>desc-denoisedSm6</code>。未平滑的序列保留。</li>
+<li><b>写出结果</b>，并为每个 run 生成 <b>QC 报告</b>；全部 run 完成后生成组报告和剔除列表。</li>
+</ol>
+<div class="note"><b>为什么先去噪再平滑，为什么回归量也要滤波。</b>在平滑后的数据上回归干扰信号，会混入邻近组织的信号；只对数据带通而不对回归量带通，会把已去除的信号重新引入（Hallquist et al. 2013；Lindquist et al. 2019）。SeeCAT 对两者都滤波并一起拟合。高头动帧在滤波前插值，否则尖峰会扩散到相邻帧；插值得到的帧不会被后续统计使用（Power et al. 2014）。</div>
+
+<h4>输入选项</h4>
+{{PARAMS prep Input}}
+<h4>预处理选项</h4>
+{{PARAMS prep Preprocessing}}
+<h4>VBM 选项</h4>
+{{PARAMS prep Anatomy (VBM)}}
+<h4>干扰信号 mask 选项</h4>
+{{PARAMS prep Nuisance masks}}
+<p>去噪、剔除、平滑和质量控制选项见 6.12、6.13 节；输出、选择和运行选项见 6.15 节。</p>
+
+<h4>输出文件</h4>
+<pre><code>derivatives/seecat/
+  dataset_description.json
+  sub-01/
+    anat/  sub-01_desc-preproc_T1w.nii             偏场校正后的 T1（已配准到 EPI）
+           sub-01_label-GM|WM|CSF_probseg.nii       个体空间组织图（sidecar 中有各组织体积 mL 和 TIV）
+           sub-01_from-T1w_to-IXI549Space_mode-image_xfm.nii   形变场
+           sub-01_space-IXI549Space_res-1p5_label-GM_desc-modulated_probseg.nii      VBM（vbm.enable）
+           sub-01_space-IXI549Space_res-1p5_label-GM_desc-modulatedSm8_probseg.nii   VBM，平滑后
+    func/  sub-01_task-rest_space-IXI549Space_res-3_desc-preproc_bold.nii      标准化后、未去噪
+           sub-01_task-rest_space-IXI549Space_res-3_desc-denoised_bold.nii     Seed FC、Degree、Gradients 的输入
+           sub-01_task-rest_space-IXI549Space_res-3_desc-denoisedSm6_bold.nii  平滑副本
+           sub-01_task-rest_space-IXI549Space_res-3_desc-brain_mask.nii
+           sub-01_task-rest_desc-confounds_timeseries.tsv（及 .json）
+    sub-01_task-rest_desc-qc_report.html、sub-01_task-rest_desc-qc_metrics.json、figures/
+  reports/  prep_qc.html、prep_qc.tsv、qc_exclusions.tsv、anat_volumes.tsv、prep_&lt;时间&gt;_summary.tsv
+  logs/</code></pre>
+<p>输入是压缩格式时输出为 .nii.gz，否则为 .nii。工作文件位于输出文件夹旁的 <code>seecat_work</code>，单元成功后删除（除非勾选 Keep work files）。</p>
+
+<h3>fMRIPrep denoising</h3>
+<p>用于已经过 fMRIPrep 预处理的数据。对所选空间中的每个 BOLD run，读取 <code>*_desc-preproc_bold</code>、它的脑 mask 和混杂变量表，去掉 fMRIPrep 标记的非稳态帧，用 SeeCAT 自己的规则替换 fMRIPrep 的头动离群列（所有输入使用同一个 FD 规则），然后按与 Preprocessing 完全相同的方式去噪、剔除和平滑。输出文件名也相同，因此 Seed FC、Degree、Gradients 和 Statistics 的用法不变。这里不计算 IQM（fMRIPrep 的输出中没有原始数据）；头动、覆盖率和配准检查照常进行（如果存在 fMRIPrep 在输出空间的组织图，配准检查会使用它们）。</p>
+{{IMG fmriprep_page.png | fMRIPrep denoising 页。}}
+{{PARAMS fmriprep Input}}
+<p><code>aCompCor</code> 取 fMRIPrep 混杂表中前 <i>n</i> 个 <code>c_comp_cor</code>/<code>w_comp_cor</code> 列；较早版本的 fMRIPrep 只写出 <code>a_comp_cor_*</code>，此时需要在配置文件中按列名列出（<code>denoise.regressors</code>）。</p>

@@ -1,0 +1,240 @@
+<h2>批处理脚本</h2>
+<p>窗口中的所有功能都可以用 MATLAB 代码调用。每个流程由一个结构体配置，交给 <code>seecat.run</code> 运行；窗口的 Save 按钮保存的就是这个结构体（JSON 格式）。</p>
+
+<h3>函数</h3>
+<table>
+<tr><th>函数</th><th>用途</th></tr>
+<tr><td><code>SeeCAT</code></td><td>打开主窗口</td></tr>
+<tr><td><code>cfg = seecat.config('prep')</code></td><td>某流程全部选项的默认值（<code>prep</code>、<code>fmriprep</code>、<code>fc</code>、<code>degree</code>、<code>gradient</code>、<code>harmonize</code>、<code>stat</code>）</td></tr>
+<tr><td><code>cfg = seecat.config('file.json')</code></td><td>读取保存的配置；缺少的选项取默认值</td></tr>
+<tr><td><code>seecat.check_config(cfg)</code></td><td>一次报告所有无效选项</td></tr>
+<tr><td><code>seecat.save_config(cfg, 'file.json')</code></td><td>保存配置</td></tr>
+<tr><td><code>S = seecat.run(cfg)</code></td><td>运行流程；<code>S</code> 是汇总表（每个单元一行）</td></tr>
+<tr><td><code>seecat.run('file.json')</code></td><td>运行保存的配置</td></tr>
+<tr><td><code>seecat.bids.scan_dicom(dir)</code>、<code>seecat.bids.from_dicom(dir, bids)</code></td><td>DICOM 转 BIDS</td></tr>
+<tr><td><code>R = seecat.qc.runs(folder, 'raw')</code></td><td>Data check 的表格</td></tr>
+<tr><td><code>seecat.qc.exclusion_list(folder)</code></td><td>读取带指标的 QC 剔除列表；<code>(folder, 'set', ids, exclude, notes)</code> 修改它</td></tr>
+<tr><td><code>seecat.viewer(file, ...)</code></td><td>用查看器打开图像</td></tr>
+</table>
+
+<h3>一个完整的研究</h3>
+<p>第 7 章各实例的脚本汇总在一个文件里。每个 <code>seecat.run</code> 都可以单独运行；再次运行时已完成的单元会跳过。</p>
+<pre><code>bids = 'D:/data/test_seecat/DIDA/bids2';
+out  = 'D:/data/test_seecat/DIDA/manual_run/derivatives/seecat';
+
+% 1. 预处理，计算图像质量指标并输出 VBM 图
+cfg = seecat.config('prep');
+cfg.bids_dir   = bids;
+cfg.output_dir = out;
+cfg.vbm.enable = true;
+cfg.n_workers  = 'auto';
+seecat.run(cfg);
+% ……查看 reports/prep_qc.html 和 QC reports 页……
+
+% 2. 种子点功能连接
+cfg = seecat.config('fc');
+cfg.input_dir = out;
+cfg.seeds = struct('name', {'PCC', 'mPFC'}, 'center', {[0 -53 26], [0 52 -6]}, ...
+                   'radius', {6, 6}, 'file', {'', ''});
+cfg.n_workers = 'auto';
+seecat.run(cfg);
+
+% 3. 度中心性和梯度
+cfg = seecat.config('degree');   cfg.input_dir = out;   cfg.n_workers = 'auto';   seecat.run(cfg);
+cfg = seecat.config('gradient'); cfg.input_dir = out;   cfg.n_workers = 'auto';   seecat.run(cfg);
+
+% 4. 对三个中心的 PCC 图做多中心校正
+cfg = seecat.config('harmonize');
+cfg.input_dir  = out;
+cfg.maps       = struct('desc', 'PCC', 'stat', 'z');
+cfg.site       = 'site';
+cfg.covariates = {'group', 'sex', 'age'};
+seecat.run(cfg);                                  % 写出 desc-PCCComBat 图
+
+% 5. HC 组内单样本 t 检验，加 TFCE
+P  = seecat.io.read_tsv(fullfile(bids, 'participants.tsv'));
+hc = erase(P.participant_id(strcmp(P.group, 'HC')), 'sub-')';
+cfg = seecat.config('stat');
+cfg.name      = 'PCConeSampleHC';
+cfg.input_dir = out;
+cfg.maps      = struct('desc', 'PCCComBat', 'stat', 'z');
+cfg.design    = 'one_sample';
+cfg.subjects  = hc;
+cfg.inference = {'cluster_fwe', 'tfce_fwe'};
+cfg.n_workers = 'auto';
+seecat.run(cfg);
+
+% 6. VBM：灰质与年龄；使用未校正的图，中心作为协变量
+cfg = seecat.config('stat');
+cfg.name       = 'VBMage';
+cfg.input_dir  = out;
+cfg.maps       = struct('desc', 'modulatedSm8', 'label', 'GM', 'suffix', 'probseg');
+cfg.design     = 'regression';
+cfg.regressors = {'age'};
+cfg.covariates = {'sex', 'tiv_ml', 'site'};
+cfg.mask       = 'gm';
+seecat.run(cfg);
+
+seecat.viewer(fullfile(out, 'group', 'PCConeSampleHC', 'PCConeSampleHC_contrast-pos_stat-t_statmap.nii.gz'));</code></pre>
+
+<h3>配置文件</h3>
+<p>配置文件就是 JSON 格式的结构体。只需写出修改过的选项，其他取默认值。含 Inf 的数值以文本保存（<code>"[0 75 Inf]"</code>），读回时还原为数值。</p>
+<pre><code>{
+  "pipeline": "stat",
+  "name": "PCCtwoSample",
+  "input_dir": "D:/data/test_seecat/DIDA/manual_run/derivatives/seecat",
+  "maps": {"desc": "PCCComBat", "stat": "z"},
+  "design": "two_sample",
+  "factor": "group",
+  "levels": ["HC", "MDD"],
+  "covariates": ["age", "sex"]
+}</code></pre>
+<p>依次运行多个配置：</p>
+<pre><code>for f = {'prep.json', 'fc.json', 'harmonize.json', 'stat.json'}
+    seecat.run(fullfile('D:/study/configs', f{1}));
+end</code></pre>
+
+<h3>在服务器上运行</h3>
+<p>没有图形界面时，用 <code>-batch</code> 启动 MATLAB：</p>
+<pre><code>matlab -batch "addpath('/opt/spm'); addpath('/opt/SeeCAT/SeeCAT'); seecat.run('/data/configs/prep.json')"</code></pre>
+<p>日志在运行过程中实时写出（<code>&lt;输出文件夹&gt;/logs</code>），可以用 <code>tail -f</code> 查看进度。</p>
+
+<h2>输出文件总览</h2>
+
+<h3>derivatives 文件夹</h3>
+<pre><code>derivatives/seecat/
+  dataset_description.json                 记录来源数据集（SourceDatasets）
+  sub-&lt;label&gt;/[ses-&lt;label&gt;/]
+    anat/                                  T1 的输出（Preprocessing）
+    func/                                  run 的输出和被试图（所有流程）
+    sub-&lt;label&gt;_…_desc-qc_report.html      run 报告、qc_metrics.json、figures/
+  group/
+    &lt;name&gt;/                                Statistics
+    harmonize&lt;label&gt;_&lt;maps&gt;/                      Harmonize：maps.tsv、report.json
+    gradients&lt;nodes&gt;/                      Gradients：参考梯度图、lambdas.tsv
+  reports/
+    prep_qc.html、prep_qc.tsv              组 QC（或 fmriprep_qc.*）
+    qc_exclusions.tsv                      剔除列表
+    anat_volumes.tsv                       每个 T1 的 GM、WM、CSF、TIV
+    &lt;pipeline&gt;_&lt;时间&gt;_summary.tsv          每次运行一个
+  logs/
+    &lt;pipeline&gt;_&lt;时间&gt;.log、_config.json    主日志和所用配置
+    &lt;pipeline&gt;_&lt;时间&gt;/&lt;unit&gt;.log           每个单元一个日志
+    done/                                  已完成的单元及其设置（用于跳过）
+    outputs/                               每个单元写出的文件清单
+seecat_work/                               工作文件（在输出文件夹旁边）</code></pre>
+
+<h3>文件名</h3>
+<table>
+<tr><th>文件</th><th>由谁写出</th><th>内容</th></tr>
+<tr><td><code>*_desc-preproc_bold</code></td><td>Preprocessing</td><td>标准化后、未去噪的 BOLD</td></tr>
+<tr><td><code>*_desc-denoised_bold</code></td><td>Preprocessing、fMRIPrep denoising</td><td>去噪、带通、未平滑</td></tr>
+<tr><td><code>*_desc-denoisedSm&lt;fwhm&gt;_bold</code></td><td>同上</td><td>去噪并平滑</td></tr>
+<tr><td><code>*_desc-brain_mask</code></td><td>同上</td><td>输出空间的脑 mask</td></tr>
+<tr><td><code>*_desc-confounds_timeseries.tsv</code></td><td>同上</td><td>混杂变量；<code>censor</code> 列标记后续分析不使用的帧</td></tr>
+<tr><td><code>*_label-GM_probseg</code></td><td>Preprocessing</td><td>个体空间组织图；sidecar 中有各组织体积和 TIV</td></tr>
+<tr><td><code>*_space-IXI549Space_res-1p5_label-GM_desc-modulated[Sm8]_probseg</code></td><td>Preprocessing（VBM）</td><td>标准化、调制后的灰质（以及白质、脑脊液）</td></tr>
+<tr><td><code>*_desc-&lt;seed&gt;_stat-r|z_connectivity</code></td><td>Seed FC</td><td>种子点相关、Fisher z</td></tr>
+<tr><td><code>*_desc-deg…_stat-raw|z_connectivity</code></td><td>Degree</td><td>度或强度</td></tr>
+<tr><td><code>*_desc-grad&lt;k&gt;&lt;nodes&gt;_connectivity</code></td><td>Gradients</td><td>该 run 对齐后的梯度 k</td></tr>
+<tr><td><code>*_desc-&lt;desc&gt;ComBat_*</code></td><td>Harmonize</td><td>校正后的图</td></tr>
+<tr><td><code>group/&lt;name&gt;/…_statmap</code></td><td>Statistics</td><td>统计图（t、F、z、p、效应、TFCE）</td></tr>
+</table>
+
+<h3>混杂变量表</h3>
+<table>
+<tr><th>列</th><th>内容</th></tr>
+<tr><td><code>trans_x … rot_z</code>、<code>*_derivative1</code>、<code>*_power2</code>、<code>*_derivative1_power2</code></td><td>Friston 24 头动回归量（转动单位为弧度）</td></tr>
+<tr><td><code>framewise_displacement</code></td><td>Power FD（mm；头部半径按 50 mm 计）</td></tr>
+<tr><td><code>global_signal</code>、<code>white_matter</code>、<code>csf</code></td><td>脑、白质、脑脊液 mask 内的平均信号</td></tr>
+<tr><td><code>c_comp_cor_XX</code>、<code>w_comp_cor_XX</code></td><td>脑脊液和白质的 aCompCor 成分</td></tr>
+<tr><td><code>motion_outlier_XX</code></td><td>每个被标记的帧一列（该帧处为 1）</td></tr>
+<tr><td><code>censor</code></td><td>1 = Seed FC、Degree 和 Gradients 不使用该帧</td></tr>
+</table>
+
+<h3>JSON sidecar</h3>
+<p>每个图像的 sidecar 记录它是如何生成的。通用字段：<code>Sources</code>（来源文件，BIDS URI 格式）、<code>Software</code>；以及各步骤特有的字段，例如 <code>FramesUsed</code>、<code>FramesTotal</code>、<code>Seed</code>（Seed FC）；<code>Threshold</code>、<code>Sign</code>、<code>Measure</code>（Degree）；<code>Lambdas</code>、<code>VarianceExplained</code>、<code>Alignment</code>（Gradients）；<code>Harmonization</code>、<code>Site</code>、<code>KeptEffects</code>（Harmonize）；<code>DegreesOfFreedom</code>、<code>FWHMmm</code>、<code>Resels</code>、<code>Contrast</code>、<code>Inference</code>（Statistics）。</p>
+
+<h2>性能、内存与常见问题</h2>
+
+<h3>时间与内存</h3>
+<table>
+<tr><th>步骤</th><th>每个 run（典型）</th><th>内存</th></tr>
+<tr><td>Preprocessing，3 mm，200 帧</td><td>4–6 分钟（其中分割约 2 分钟）</td><td>2–5 GB；大尺寸 T1（如 512×512×156）计算 IQM 时更多</td></tr>
+<tr><td>Seed FC</td><td>几秒</td><td>&lt; 1 GB</td></tr>
+<tr><td>Degree，3 mm 灰质</td><td>几秒到一分钟</td><td>约 3 GB</td></tr>
+<tr><td>Gradients</td><td>见 6.8 节的表格</td><td>随节点数的平方增长</td></tr>
+<tr><td>Harmonize</td><td>整个研究几秒</td><td>被试图数 × 体素数</td></tr>
+<tr><td>Statistics，TFCE</td><td>每次置换、每个对比约 0.2 秒（52 000 个体素）</td><td>每个 worker：被试图数 × 体素数</td></tr>
+</table>
+<p>设置 <code>n_workers = auto</code> 时，SeeCAT 根据这些估算和空闲内存决定 worker 数，并写在日志中。</p>
+
+<h3>常见问题</h3>
+<h4>有一个被试失败了，需要全部重跑吗？</h4>
+<p>不需要。用同样的配置再运行一次：已完成的被试会跳过，失败的被试从中断的步骤继续。原因见该单元的日志（<code>logs/&lt;pipeline&gt;_&lt;时间&gt;/&lt;unit&gt;.log</code>）。</p>
+<h4>改了一个选项，哪些会重新计算？</h4>
+<p>结果依赖该选项的所有单元。只改 Parallel workers、Overwrite 或 Keep work files 不会触发重新计算。</p>
+<h4>Seed FC 提示找不到 desc-denoised，或找不到任何 run。</h4>
+<p>确认 derivatives 文件夹是 Preprocessing 或 fMRIPrep denoising 的输出，且开启了 Denoise。如果 run 有多个空间，请设置 Space；有多个任务时请设置 Task。如果所有 run 都被 QC 剔除了，请查看 QC reports 页。</p>
+<h4>Statistics 提示每个被试有多张图。</h4>
+<p>被试图字段必须为每个被试恰好选中一张图（配对设计为两张）。补充 Space、Task 或 Other（如 <code>run=1</code>），直到字段下方显示每个被试一张图。</p>
+<h4>年龄、性别和组别从哪里来？</h4>
+<p>来自 BIDS 数据集的 participants.tsv（见 3.7 节）。所用列中值为空或 <code>n/a</code> 的被试会被排除在该分析之外，并在日志中列出。</p>
+<h4>做 Seed FC 前要平滑吗？</h4>
+<p>默认输入是未平滑的 <code>desc-denoised</code>；如果要与使用平滑数据计算相关的研究保持一致，可选 <code>denoisedSm6</code>。Degree 和 Gradients 应使用未平滑的数据；Degree 会在之后平滑结果图。</p>
+<h4>为什么要做多中心校正，什么时候不需要？</h4>
+<p>多个中心或扫描仪的图放在同一分析中、且每个中心有足够的被试时（ComBat 在每个中心 10 人以上时效果最好），应做校正。要检验的效应都必须列在协变量中。只有一个中心时不需要。</p>
+<h4>论文中如何报告质量控制？</h4>
+<p>组报告给出剔除规则、被剔除的 run 及原因；<code>reports/qc_exclusions.tsv</code> 和 <code>prep_qc.tsv</code> 包含具体数值。请报告剔除规则、各组和各中心被剔除的 run 数，以及各组的平均 FD。</p>
+<h4>运行时窗口没有反应。</h4>
+<p>正常情况下窗口应保持可用：计算在另一个 MATLAB 进程中进行。如果 MATLAB 本身正忙（例如命令窗口中正在执行长时间的命令），窗口会等待它结束。</p>
+
+<h2>参考文献</h2>
+<ul>
+<li>Ashburner J, Friston KJ (2005). Unified segmentation. NeuroImage 26:839–851.</li>
+<li>Behzadi Y, Restom K, Liau J, Liu TT (2007). A component based noise correction method (CompCor) for BOLD and perfusion based fMRI. NeuroImage 37:90–101.</li>
+<li>Buckner RL et al. (2009). Cortical hubs revealed by intrinsic functional connectivity. J Neurosci 29:1860–1873.</li>
+<li>Chen AA et al. (2022). Mitigating site effects in covariance for machine learning in neuroimaging data (CovBat). Hum Brain Mapp 43:1179–1195.</li>
+<li>Coifman RR, Lafon S (2006). Diffusion maps. Appl Comput Harmon Anal 21:5–30.</li>
+<li>Eklund A, Nichols TE, Knutsson H (2016). Cluster failure. PNAS 113:7900–7905.</li>
+<li>Esteban O et al. (2017). MRIQC: advancing the automatic prediction of image quality in MRI from unseen sites. PLoS ONE 12:e0184661.</li>
+<li>Esteban O et al. (2019). fMRIPrep: a robust preprocessing pipeline for functional MRI. Nat Methods 16:111–116.</li>
+<li>Fortin JP et al. (2017). Harmonization of multi-site diffusion tensor imaging data. NeuroImage 161:149–170.</li>
+<li>Fortin JP et al. (2018). Harmonization of cortical thickness measurements across scanners and sites. NeuroImage 167:104–120.</li>
+<li>Freedman D, Lane D (1983). A nonstochastic interpretation of reported significance levels. J Bus Econ Stat 1:292–298.</li>
+<li>Friston KJ et al. (1996). Movement-related effects in fMRI time-series. Magn Reson Med 35:346–355.</li>
+<li>Gorgolewski KJ et al. (2016). The brain imaging data structure. Sci Data 3:160044.</li>
+<li>Hallquist MN, Hwang K, Luna B (2013). The nuisance of nuisance regression. NeuroImage 82:208–225.</li>
+<li>Johnson WE, Li C, Rabinovic A (2007). Adjusting batch effects in microarray expression data using empirical Bayes methods. Biostatistics 8:118–127.</li>
+<li>Li X, Morgan PS, Ashburner J, Smith J, Rorden C (2016). The first step for neuroimaging data analysis: DICOM to NIfTI conversion (dcm2niix). J Neurosci Methods 264:47–56.</li>
+<li>Lindquist MA, Geuter S, Wager TD, Caffo BS (2019). Modular preprocessing pipelines can reintroduce artifacts into fMRI data. Hum Brain Mapp 40:2358–2376.</li>
+<li>Margulies DS et al. (2016). Situating the default-mode network along a principal gradient of macroscale cortical organization. PNAS 113:12574–12579.</li>
+<li>Nichols TE (2013). Notes on creating a standardized version of DVARS. arXiv:1704.01469.</li>
+<li>Nygaard V, Rødland EA, Hovig E (2016). Methods that remove batch effects while retaining group differences may lead to exaggerated confidence in downstream analyses. Biostatistics 17:29–39.</li>
+<li>Parkes L, Fulcher B, Yücel M, Fornito A (2018). An evaluation of the efficacy, reliability, and sensitivity of motion correction strategies for resting-state functional MRI. NeuroImage 171:415–436.</li>
+<li>Pomponio R et al. (2020). Harmonization of large MRI datasets for the analysis of brain imaging patterns throughout the lifespan (ComBat-GAM). NeuroImage 208:116450.</li>
+<li>Power JD et al. (2012). Spurious but systematic correlations in functional connectivity MRI networks arise from subject motion. NeuroImage 59:2142–2154.</li>
+<li>Power JD et al. (2014). Methods to detect, characterize, and remove motion artifact in resting state fMRI. NeuroImage 84:320–341.</li>
+<li>Power JD (2017). A simple but useful way to assess fMRI scan qualities. NeuroImage 154:150–158.</li>
+<li>Smith SM, Nichols TE (2009). Threshold-free cluster enhancement. NeuroImage 44:83–98.</li>
+<li>Vos de Wael R et al. (2020). BrainSpace: a toolbox for the analysis of macroscale gradients in neuroimaging and connectomics datasets. Commun Biol 3:103.</li>
+<li>Worsley KJ et al. (1996). A unified statistical approach for determining significant signals in images of cerebral activation. Hum Brain Mapp 4:58–73.</li>
+<li>Xia M, Wang J, He Y (2013). BrainNet Viewer: a network visualization tool for human brain connectomics. PLoS ONE 8:e68910.</li>
+<li>Zuo XN et al. (2012). Network centrality in the human functional connectome. Cereb Cortex 22:1862–1875.</li>
+</ul>
+
+<h2>附录</h2>
+<h3>选项索引</h3>
+<p>按批处理字段排列的全部流程选项。每个选项的详细说明见第 6 章的表格。</p>
+{{INDEX}}
+<h3>从 SeeCAT 1.x 迁移</h3>
+<table>
+<tr><th>1.x</th><th>2.0</th></tr>
+<tr><td>DPABI 风格的目录（<code>FunRaw</code>、<code>FunImgARW…</code>）</td><td>BIDS 数据集；DICOM to BIDS 可转换 DICOM 文件夹</td></tr>
+<tr><td>通过 DPABI 函数预处理</td><td>只用 SPM 的 Preprocessing；输出在 <code>derivatives/seecat</code></td></tr>
+<tr><td>VoxDeg</td><td>Degree（定义相同：阈值化的相关，二值和加权）</td></tr>
+<tr><td>FuncConnect</td><td>Seed FC（球形和 mask 种子点，r 和 Fisher z）</td></tr>
+<tr><td>使用 DPABI 的 GRF/AlphaSim 的 Stat</td><td>使用 SPM 随机场理论、FDR 或 TFCE 的 Statistics</td></tr>
+<tr><td>DPABI 查看器</td><td>SeeCAT 自己的查看器；皮层表面用 BrainNet Viewer</td></tr>
+<tr><td>设置只在界面中</td><td>每个设置都是可用脚本运行的 JSON 配置</td></tr>
+</table>

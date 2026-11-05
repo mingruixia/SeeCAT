@@ -3,6 +3,31 @@
 ## Unreleased: 2.0 development
 
 ### Added
+- **User manual, English and Chinese** (Doc/manual: HTML with a language
+  chooser, and SeeCAT_Manual_EN.pdf / SeeCAT_Manual_ZH.pdf in the release).
+  Overview, concepts, every module with its algorithm, every option (tables
+  generated from the software's own form descriptions), inputs and outputs,
+  batch scripting, an output reference, and worked examples on a public
+  three-site dataset (30 subjects) with screenshots of the real runs. The
+  Manual button opens it. Sources and build script in Doc/manual/src
+  (python build.py --pdf); the PDFs are not kept in git and the release
+  script adds them.
+- **Harmonize: small-site warning.** With fewer than 20 subjects in a site,
+  the variance step of combat, combat_nonparam, combat_noeb, combat_gam and
+  covbat makes later tests of the kept covariates too liberal (Nygaard et
+  al. 2016): in the manual's example, a GM-age regression on ComBat VBM maps
+  found 3 false clusters, none with combat_mean, lm, or unharmonised maps
+  with site as a covariate. The log and report now say so, and the Method
+  help recommends combat_mean or lm for small samples.
+- **Fixed: Harmonize runs overwrote each other.** All runs used the unit
+  `harmonizeComBat`, so harmonising a second measure deleted the first
+  one's maps. The unit is now named by the maps too
+  (`harmonizeComBat_PCCz`), with its report and map list in
+  group/<unit>/.
+- **Parallel pool retry.** When a pool of the chosen size does not start
+  (e.g. 30 workers on Windows), SeeCAT retries with half and logs it.
+- **Fixed:** blank lines between paragraphs of the option descriptions
+  were lost; the titles of the QC report's strip plots overlapped.
 - **Fixed: leaving the QC reports page broke the window.** The page's Save
   decisions button was stored in the same variable as the toolbar's Save
   button (nested functions share the launcher's variables); every page

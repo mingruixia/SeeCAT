@@ -1,0 +1,221 @@
+<h3>质量控制</h3>
+<p>质量控制在 Preprocessing 和 fMRIPrep denoising 中自动完成；<b>QC reports</b> 页用于查看结果并决定使用哪些 run。</p>
+<h4>单个 run 的报告</h4>
+<p>每个 run 有一个 <code>sub-*/…_desc-qc_report.html</code>，内容包括：</p>
+<ul>
+<li>概要：帧数、去掉的帧、平均和最大 FD、被标记的帧、保留的分钟数、tSNR、去噪前后 FD 与 DVARS 的相关（去噪效果好时接近 0）、最大平动和转动、覆盖率；</li>
+<li>头动：FD 随时间的变化（标出阈值和被标记的帧）、平动和转动曲线；</li>
+<li>去噪前后的 DVARS；</li>
+<li>去噪前后的 carpet 图（Power 2017），体素按灰质、白质、脑脊液排列；</li>
+<li>配准与覆盖：叠加模板灰质轮廓和脑 mask 的标准化平均 EPI，以及配准指标；</li>
+<li>用于提取干扰信号的白质和脑脊液 mask；</li>
+<li>图像质量指标（MRIQC）。</li>
+</ul>
+{{IMG qc_run_report.png | 单个 run 报告的一部分：概要、头动和 DVARS。}}
+<h4>图像质量指标（IQM）</h4>
+<p>开启 <code>qc.iqm</code>（默认）时，Preprocessing 复用自己的分割、头动校正和配准结果，在原始数据上计算 MRIQC（Esteban et al. 2017）的指标：BOLD 用去掉前几帧、经头动校正、未做层间时间校正的 run；T1 用其偏场校正图和个体空间组织图。基于公式的指标与 MRIQC 自身函数在相同输入上的结果一致；头部、空气和脑区 mask 由 SeeCAT 自己生成，因此绝对值可能与实际运行 MRIQC 的结果有出入。请在同一数据集、同一中心内比较各 run。</p>
+<table>
+<tr><th>BOLD 指标</th><th>含义</th><th>越…越好</th></tr>
+<tr><td><code>bold_tsnr</code></td><td>脑内时间信噪比的中位数（时间均值 / 时间标准差）</td><td>高</td></tr>
+<tr><td><code>bold_snr</code></td><td>平均 EPI 在脑内的信噪比</td><td>高</td></tr>
+<tr><td><code>bold_fber</code></td><td>前景（脑）与背景的能量比</td><td>高</td></tr>
+<tr><td><code>bold_efc</code></td><td>熵聚焦准则：反映鬼影和模糊</td><td>低</td></tr>
+<tr><td><code>bold_gsr_x</code>、<code>bold_gsr_y</code></td><td>沿 x、y 方向的鬼影信号比（y 通常为相位编码方向）</td><td>低</td></tr>
+<tr><td><code>bold_dvars_std</code>、<code>_nstd</code>、<code>_vstd</code></td><td>标准化、原始和逐体素标准化的 DVARS（Nichols 2013）；标准化的接近 1 为好</td><td>低</td></tr>
+<tr><td><code>bold_fd_mean</code>、<code>fd_num</code>、<code>fd_perc</code></td><td>平均 FD，FD &gt; 0.2 mm 的帧数和百分比</td><td>低</td></tr>
+<tr><td><code>bold_aor</code></td><td>AFNI 离群比例：每帧离群体素比例的均值</td><td>低</td></tr>
+<tr><td><code>bold_aqi</code></td><td>AFNI 质量指数：每帧与中位帧的 1 − Spearman 相关的均值</td><td>低</td></tr>
+<tr><td><code>bold_gcor</code></td><td>全局相关：所有体素对的平均相关</td><td>低</td></tr>
+<tr><td><code>bold_fwhm_*</code></td><td>以体素为单位的平滑度</td><td>–</td></tr>
+</table>
+<table>
+<tr><th>T1 指标</th><th>含义</th><th>越…越好</th></tr>
+<tr><td><code>t1_cnr</code></td><td>灰质–白质对比噪声比</td><td>高</td></tr>
+<tr><td><code>t1_cjv</code></td><td>灰质和白质的联合变异系数（Ganzetti et al. 2016）</td><td>低</td></tr>
+<tr><td><code>t1_snr_*</code></td><td>脑脊液、灰质、白质及其平均的信噪比</td><td>高</td></tr>
+<tr><td><code>t1_snrd_*</code></td><td>Dietrich 信噪比，噪声取自头部周围的空气</td><td>高</td></tr>
+<tr><td><code>t1_efc</code>、<code>t1_fber</code></td><td>熵聚焦准则；前景与背景能量比</td><td>低；高</td></tr>
+<tr><td><code>t1_inu_med</code>、<code>t1_inu_range</code></td><td>脑内偏场的中位数和范围（第 95 与第 5 百分位之差）</td><td>范围越小越好</td></tr>
+<tr><td><code>t1_wm2max</code></td><td>白质中位数与图像第 99.95 百分位之比；通常约 0.6–0.8</td><td>–</td></tr>
+<tr><td><code>t1_icvs_*</code>、<code>t1_rpve_*</code></td><td>各组织体积分数；残余部分容积</td><td>–</td></tr>
+<tr><td><code>t1_tiv_ml</code>、<code>t1_gm_ml</code> 等</td><td>颅内总体积和各组织体积（mL）</td><td>–</td></tr>
+</table>
+<div class="warn"><b>背景几乎为空的 T1。</b>如果背景只剩少数几个整数值（例如导出时被截断），依赖空气的 T1 指标（FBER、Dietrich SNR）就没有可比性。组报告会检测这种情况（空气的 MAD ≤ 1），这类图像不会因这两项指标给出警告。</div>
+<h4>配准指标</h4>
+<table>
+<tr><th>指标</th><th>检查什么</th><th>典型值（实例数据集）</th></tr>
+<tr><td><code>reg_brain_dice</code></td><td>run 的脑 mask 与模板脑 mask 的 Dice：标准化的整体对齐</td><td>0.95–0.98</td></tr>
+<tr><td><code>reg_gm_corr</code>、<code>reg_wm_corr</code>、<code>reg_csf_corr</code></td><td>标准化后组织图与 SPM TPM 的空间相关</td><td>灰质 0.64–0.74，白质 0.79–0.83</td></tr>
+<tr><td><code>reg_gm_dice</code></td><td>灰质 &gt; 0.5 与 TPM 灰质 &gt; 0.5 的 Dice</td><td>0.70–0.75</td></tr>
+<tr><td><code>reg_epi_t1_dice</code></td><td>由平均 EPI 自身信号强度（高于其第 98 百分位的 20%）得到的脑区与 T1 脑区的 Dice：EPI 与 T1 是否对齐</td><td>0.85–0.92</td></tr>
+</table>
+<h4>覆盖率</h4>
+<p>每一帧都在视野内的模板脑比例，包括总体，以及分别计算的脑顶部（z &gt; 50 mm）和底部（z &lt; −30 mm：小脑和颞极）。覆盖率低说明部分脑区没有扫到。</p>
+<h4>剔除规则与警告</h4>
+<p>所有 run 完成后，组报告（<code>reports/prep_qc.html</code>）写出 <code>reports/qc_exclusions.tsv</code>。满足以下任一条件的 run 建议剔除：</p>
+<table>
+<tr><th>规则</th><th>选项</th><th>默认</th></tr>
+<tr><td>最大绝对平动</td><td><code>qc.max_translation</code></td><td>3 mm</td></tr>
+<tr><td>最大绝对转动</td><td><code>qc.max_rotation</code></td><td>3°</td></tr>
+<tr><td>平均帧间位移</td><td><code>qc.max_mean_fd</code></td><td>0.5 mm</td></tr>
+<tr><td>剔除高头动帧后有效数据太少</td><td><code>censor.min_minutes</code></td><td>5 分钟</td></tr>
+<tr><td>模板脑覆盖率</td><td><code>qc.min_coverage</code></td><td>0.9</td></tr>
+<tr><td>与模板的脑区 Dice（标准化失败）</td><td><code>qc.min_brain_dice</code></td><td>0.85</td></tr>
+</table>
+<p>以下只给警告、不剔除：平均 FD 超过 0.25 mm；脑底部覆盖率低于 80%；某个 IQM 或配准指标在本中心内的稳健 z 值（距中位数多少个 MAD）朝坏的方向超过 3。中心取自 participants.tsv 的 <code>site</code> 列；没有该列，或某中心少于 5 个 run 时，以整个数据集为参照。T1 像单独一行，只有警告。</p>
+{{IMG qc_group_report.png | 组报告：每个 run 一行，含决定、原因和警告，下方是各指标按中心的分布。}}
+<h4>QC reports 页</h4>
+<p>选择 derivatives 文件夹后，表格列出每个 run 和 T1 像，及其中心、平均 FD、最大平动和转动、覆盖率、脑区 Dice、灰质与 TPM 的相关、保留的分钟数、tSNR、T1 CNR、剔除原因和警告。勾选或取消 <b>Exclude</b>，填写 <b>Note</b>，再点 <b>Save decisions</b>。你修改过的行标记为你的决定，重新运行预处理后仍会保留。<b>Group report</b> 和 <b>Run report</b> 打开对应的 HTML 报告。</p>
+{{IMG qc_page.png | QC reports 页：红色行为已剔除，黄色行有警告。}}
+<p>剔除列表是一个普通表格：</p>
+<pre><code>id                        kind  exclude  reasons            warnings              decision  note
+sub-PKUHC0001_task-rest   bold  1        mean FD &gt; 0.5 mm                         auto
+sub-SCUMDD0003_task-rest  bold  0                           mean FD &gt; 0.25 mm     user      checked carpet plot
+sub-CSUHC0002_T1w         T1w   0                           cnr outlier           auto</code></pre>
+<p>后续步骤按标识一次采集的实体（sub、ses、task、acq、ce、rec、dir、run、echo）把文件与该列表对应起来，因此由被剔除 run 得到的所有图，以及被剔除 T1 的 VBM 图，都不会参与分析。修改列表不会让已完成的单元重新计算。</p>
+
+<h3>Seed FC</h3>
+<p>基于种子点的功能连接。对每个 run 和每个种子点，计算种子点体素（脑 mask 内，使用剔除后保留的帧）的平均信号与每个体素的相关，写出 Pearson r 图和 Fisher z 图（z = atanh r）。Harmonize 和 Statistics 请使用 z 图。</p>
+{{IMG fc_page.png | 两个球形种子点（PCC 和 mPFC）的 Seed FC。表格中球形和 mask 可以混合；Check 列显示某行还缺什么。}}
+<h4>种子点</h4>
+<ul>
+<li><b>球形</b>：MNI 毫米坐标的中心（<code>x y z</code>）和半径；中心周围半径内的体素。例：PCC <code>0 -53 26</code>，mPFC <code>0 52 -6</code>，左侧运动皮层 <code>-38 -22 56</code>。</li>
+<li><b>Mask</b>：MNI 空间的 NIfTI 图像（任意体素大小，大于 0 的体素即种子点），以最近邻方式重采样到数据。<b>Add mask files</b> 为每个选中的文件添加一行，并以文件名命名。</li>
+</ul>
+<p>名称只能是字母和数字，会成为输出图的 <code>desc</code>。</p>
+{{PARAMS fc Input|Seeds}}
+<h4>输出文件</h4>
+<pre><code>sub-01/func/sub-01_task-rest_space-IXI549Space_res-3_desc-PCC_stat-r_connectivity.nii（及 .json）
+sub-01/func/sub-01_task-rest_space-IXI549Space_res-3_desc-PCC_stat-z_connectivity.nii（及 .json）</code></pre>
+<p>sidecar 记录种子点（中心和半径，或文件）、输入序列和使用的帧。</p>
+<pre><code>cfg = seecat.config('fc');
+cfg.input_dir = 'D:/study/bids/derivatives/seecat';
+cfg.seeds = struct('name', {'PCC', 'Amygdala'}, 'center', {[0 -53 26], []}, ...
+                   'radius', {6, []}, 'file', {'', 'D:/masks/amygdala_L.nii'});
+seecat.run(cfg);</code></pre>
+
+<h3>Degree</h3>
+<p>体素水平的度中心性。mask 中的每个体素都是该 run 相关网络（使用剔除后保留的帧）的一个节点。体素的二值度是相关达到阈值的连接数；加权度（强度）是这些连接 r 值之和。与 SeeCAT 1.0 的定义相同：由 z 分数化后的序列计算相关，按正负规则处理（absolute 取 |r|，negative 取 −r），低于阈值的置 0。可选择忽略短于某距离的连接，或按距离分段（短程和长程度中心性）。结果图以原始值和 mask 内 z 分数两种形式写出，可选再平滑（网络由未平滑的数据构建）。</p>
+{{IMG degree_page.png | Degree 页。}}
+{{PARAMS degree Input|Network|Output maps}}
+<h4>输出文件</h4>
+<pre><code>…_desc-degPosBinR0p2_stat-raw_connectivity.nii      二值度，正相关 r ≥ 0.2
+…_desc-degPosBinR0p2_stat-z_connectivity.nii        同上，mask 内 z 分数
+…_desc-degPosWeiR0p2Sm6_stat-z_connectivity.nii     强度，z 分数，6 mm 平滑
+…_desc-degPosBinR0p2D0to75_stat-raw_connectivity.nii  距离分段 [0 75 Inf]</code></pre>
+<p>时间和内存随体素数的平方增长：3 mm 时灰质约 5 万个体素，每个 run 几秒到一分钟；2 mm 时体素数是其 3.4 倍，计算量超过 10 倍。</p>
+
+<h3>Gradients</h3>
+<p>连接梯度（Margulies et al. 2016）：连接模式在皮层上变化的主要轴线，第一梯度通常从感觉运动皮层延伸到默认网络。对每个 run：</p>
+<ol>
+<li>节点信号：每个节点（更粗的 MNI 网格中的体素，或图谱分区）内该 run 脑 mask 体素的平均，使用剔除后保留的帧；</li>
+<li>连接矩阵：节点间的 Pearson r；</li>
+<li>每行只保留最强的 10%（稀疏度 0.9），其余置 0；</li>
+<li>行与行之间的亲和度：归一化角度（余弦相似度对应夹角的 1 − 角度/π）或余弦；</li>
+<li>扩散映射嵌入，α = 0.5（Coifman &amp; Lafon 2006），多尺度特征值 λ/(1−λ)，与 BrainSpace（Vos de Wael et al. 2020）相同；</li>
+</ol>
+<p>然后对齐各 run（广义 Procrustes：通过旋转和翻转对齐到参考，再把参考更新为平均，最多 10 轮），首次参考为组平均连接矩阵的梯度（默认）或第一个 run 的梯度。SeeCAT 求解的是该问题的对称形式，得到的嵌入是精确的扩散映射。</p>
+{{IMG gradient_page.png | Gradients 页。Node size 的说明列出了每个 run 需要的内存和时间。}}
+{{PARAMS gradient Input|Nodes|Embedding}}
+<h4>节点的选择</h4>
+<table>
+<tr><th>节点大小</th><th>节点数（灰质）</th><th>每个 run 内存</th><th>每个 run 时间</th></tr>
+<tr><td>8 mm</td><td>2 700</td><td>&lt; 0.3 GB</td><td>约 1 秒</td></tr>
+<tr><td>6 mm</td><td>6 500</td><td>约 1.3 GB</td><td>约 3 秒</td></tr>
+<tr><td>5 mm</td><td>11 200</td><td>约 2 GB</td><td>约 10 秒</td></tr>
+<tr><td>4 mm（默认）</td><td>22 000</td><td>约 7 GB</td><td>约 30 秒</td></tr>
+<tr><td>3 mm</td><td>52 000</td><td>约 40 GB</td><td>几分钟</td></tr>
+</table>
+<p>时间在 32 核台式机、200 帧的 run 上测得。SeeCAT 开始前会检查空闲内存，不够时停下并给出建议。图谱（如 Schaefer 400）速度快，每个分区一个值，另以表格写出。</p>
+<h4>输出文件</h4>
+<pre><code>sub-01/func/…_desc-grad1Vox4_connectivity.nii   该 run 对齐后的梯度 1（2、3 …… 直到 Maps written）
+group/gradientsVox4/gradientsVox4_desc-grad1_reference.nii    最终参考（对齐后各 run 的平均）
+group/gradientsVox4/gradientsVox4_desc-grad1_groupmatrix.nii  组平均矩阵的梯度
+group/gradientsVox4/gradientsVox4_lambdas.tsv     每个 run 的特征值、解释的方差、与参考的相关</code></pre>
+
+<h3>Harmonize</h3>
+<p>多中心研究的每张图都带有中心和扫描仪差异。Harmonize 在计算指标（Seed FC、Degree、Gradients、VBM）之后、统计之前，从被试图中去除这些差异，同时保留你要检验的效应。校正后的图写在原图旁边，desc 标签加上后缀（<code>desc-PCC</code> → <code>desc-PCCComBat</code>）。</p>
+{{IMG harmonize_page.png | 实例中 PCC 图的 Harmonize：中心列、ComBat，以及要保留其效应的协变量。}}
+<h4>方法</h4>
+<table>
+<tr><th>方法</th><th>做什么</th><th>适用情况</th></tr>
+<tr><td><code>combat</code></td><td>参数化经验贝叶斯 ComBat（Johnson et al. 2007；Fortin et al. 2017, 2018）：每个体素的数据 = 中心位置 + 协变量效应 + 按中心缩放的误差；逐体素估计中心的位置和尺度，并在体素间收缩，然后去除。</td><td>默认；小中心可以从收缩中获益</td></tr>
+<tr><td><code>combat_nonparam</code></td><td>不假设中心效应分布的经验贝叶斯（先验取自最多 5000 个其他体素）</td><td>中心效应明显偏离正态时</td></tr>
+<tr><td><code>combat_noeb</code></td><td>逐体素估计位置和尺度，不做收缩</td><td>大中心</td></tr>
+<tr><td><code>combat_mean</code></td><td>只校正中心均值</td><td>方差需要保持不变时</td></tr>
+<tr><td><code>combat_gam</code></td><td>非线性协变量用自然样条项的 ComBat（Pomponio et al. 2020）</td><td>年龄跨度大、存在非线性效应</td></tr>
+<tr><td><code>covbat</code></td><td>ComBat 之后再去除体素间协方差的中心差异（Chen et al. 2022）</td><td>各中心的网络结构不同时</td></tr>
+<tr><td><code>lm</code></td><td>线性回归：在含协变量的模型中去除中心均值</td><td>简单的参照方法</td></tr>
+</table>
+<p>各种 ComBat 的结果与 neuroCombat 一致。可以指定一个<b>参考中心</b>保持不变，其他中心向它校正。之后要检验的效应都必须列在要保留的协变量中；否则，在其中心间分布不同的部分，会和中心效应一起被去掉。日志和 <code>group/harmonize&lt;label&gt;_&lt;maps&gt;/…_report.json</code> 给出校正前后存在中心效应（F 检验 p &lt; 0.05，控制保留的效应）的体素比例。</p>
+<div class="warn"><b>中心样本较小时。</b><code>combat</code>、<code>combat_nonparam</code>、<code>combat_noeb</code>、<code>combat_gam</code> 和 <code>covbat</code> 的尺度（方差）校正会用每个中心自己的标准差去除该中心的残差。每个中心人数少时，这些估计噪声很大，校正后的数据看起来比实际变异更小，后续对保留协变量的检验因而偏于宽松（Nygaard et al. 2016）。在实例 B 中（3 个中心各 10 人，年龄为模拟值），对 ComBat 校正后的 VBM 图做灰质–年龄回归，得到 3 个实际并不存在的簇；用 <code>combat_mean</code>、<code>lm</code>，或不做校正而把中心作为协变量，都没有簇。每个中心少于约 20 人时，SeeCAT 会在日志和报告中给出警告。此时建议使用 <code>combat_mean</code> 或 <code>lm</code>，或不做校正、在 Statistics 中把中心列作为协变量；报告结果前请与未校正的结果对照。</div>
+{{PARAMS harmonize Input|Model|Output}}
+
+<h3>Statistics</h3>
+<p>对被试图做组统计：逐体素一般线性模型、对比和多重比较校正。模型、平滑度估计和随机场理论都与 SPM 一致，因此同一模型的结果与 SPM 结果表相同。</p>
+{{IMG stat_page.png | 单样本实例的 Statistics 页：按文件名字段选择被试图，设计和校正方法。}}
+<h4>设计</h4>
+<table>
+<tr><th>设计</th><th>问题</th><th>需设置</th><th>默认对比</th></tr>
+<tr><td><code>one_sample</code></td><td>平均图是否不为 0？</td><td>–</td><td><code>pos</code>、<code>neg</code></td></tr>
+<tr><td><code>two_sample</code></td><td>两组是否不同？</td><td>Factor：participants 列；Levels</td><td><code>AgtB</code>、<code>BgtA</code></td></tr>
+<tr><td><code>paired</code></td><td>每个被试两张图（如 ses-1、ses-2）</td><td>Factor：取值不同的实体</td><td>两个方向</td></tr>
+<tr><td><code>anova1</code></td><td>三组及以上</td><td>Factor、Levels</td><td>各均值相等的 F</td></tr>
+<tr><td><code>anova1_rm</code></td><td>每个被试三张及以上图</td><td>Factor：实体</td><td>各水平相等的 F</td></tr>
+<tr><td><code>regression</code></td><td>图是否随某个评分变化？</td><td>Regressors</td><td><code>&lt;name&gt;pos</code>、<code>&lt;name&gt;neg</code></td></tr>
+<tr><td><code>custom</code></td><td>自定义设计矩阵</td><td>Design TSV、Contrasts</td><td>–</td></tr>
+</table>
+<p>协变量会去均值；文本协变量转为去均值的哑变量列。<b>Variance</b> 为 unequal（anova1_rm 的默认）时，与 SPM 一样用 ReML 估计非球形性。</p>
+<h4>多重比较校正</h4>
+<ul>
+<li><b>cluster_fwe</b>（默认）：超过团块形成阈值 p（0.001）的体素组成团块，按随机场理论，团块大小的 FWE p &lt; alpha 时保留。</li>
+<li><b>voxel_fwe</b>：FWE p &lt; alpha 的体素（随机场理论）。</li>
+<li><b>voxel_fdr</b>：错误发现率 &lt; alpha 的体素（Benjamini–Hochberg）。</li>
+<li><b>tfce_fwe</b>：无阈值团块增强（Smith &amp; Nichols 2009；E = 0.5，H = 2，26 邻接），体素 FWE p 由置换检验得到（Freedman–Lane：单样本为符号翻转，配对设计为被试内交换，其他为行置换），与 FSL randomise 相同。并行 worker 分担置换计算。</li>
+</ul>
+<p>勾选 <b>Two-tailed</b>（默认）时，每对 t 对比中的每一个以 alpha/2 检验。被 QC 剔除的图不参与分析；因缺少 participants.tsv 行或缺失值而去掉的图都会在日志中列出。</p>
+{{PARAMS stat Input|Model|Inference}}
+<h4>输出文件</h4>
+<pre><code>group/&lt;name&gt;/
+  &lt;name&gt;_design.tsv                                    被试图和设计列
+  &lt;name&gt;_desc-mask_mask.nii.gz                         检验的体素
+  &lt;name&gt;_contrast-&lt;c&gt;_stat-t_statmap.nii.gz          T（或 F）图，sidecar 中有自由度和平滑度
+  &lt;name&gt;_contrast-&lt;c&gt;_stat-z_statmap.nii.gz          相同 p 值对应的 Z
+  &lt;name&gt;_contrast-&lt;c&gt;_stat-p_statmap.nii.gz          −log10 p
+  &lt;name&gt;_contrast-&lt;c&gt;_stat-effect_statmap.nii.gz     对比估计值
+  &lt;name&gt;_contrast-&lt;c&gt;_desc-clusterFWE_stat-t_statmap.nii.gz   阈值化后的图
+  &lt;name&gt;_contrast-&lt;c&gt;_desc-clusterFWE_dseg.nii.gz             保留的团块，带编号
+  &lt;name&gt;_contrast-&lt;c&gt;_desc-clusterFWE_clusters.tsv            团块表（SPM 风格）
+  &lt;name&gt;_contrast-&lt;c&gt;_desc-tfce_stat-tfce_statmap.nii.gz     TFCE 值（tfce_fwe）
+  &lt;name&gt;_contrast-&lt;c&gt;_desc-tfceFWE_stat-p_statmap.nii.gz     −log10 FWE p（tfce_fwe）
+  &lt;name&gt;_report.json</code></pre>
+<p>团块表中每个团块给出大小、FWE 和未校正的团块 p，以及最多 3 个相距 8 mm 以上的峰值点的统计量、Z、峰值 p 和 MNI 坐标。</p>
+
+<h3>Viewer</h3>
+<p>查看器可在 MNI 脑上显示任意 NIfTI 图像：SeeCAT 的统计图、种子点图、度中心性图、梯度图、VBM 图，或四维 BOLD 序列。</p>
+{{IMG viewer_ortho.png | 查看器中的单样本 PCC 结果：三个视图、带图谱标签的光标信息和团块表。}}
+<ul>
+<li><b>布局</b>：Orthogonal（三个视图和光标信息）、Single（一个大视图和三个缩略图）、Mosaic（同一方向的多张切片）。</li>
+<li><b>底图</b>：按图的空间自动选择（IXI549Space 用 ch2，MNI152NLin2009cAsym 用 ICBM152 2009c），也可从下拉框选择。</li>
+<li><b>阈值</b>：按数值或按 p 值。对 SeeCAT 的统计图（以及头信息中有自由度的 SPM 风格统计图），p 阈值可以做校正（cluster FWE、voxel FWE、voxel FDR），使用与 Statistics 相同的代码，因此查看器与统计结果一致。还可设置方向（+、−、±）、最小团块大小、颜色和不透明度。</li>
+<li><b>团块</b>：团块表列出峰值和图谱标签（SPM 自带的 Neuromorphometrics；安装 BrainNet Viewer 后还有 AAL 和 Brodmann）；点击某行，光标移到该处。Export TSV 保存团块表。</li>
+<li><b>时间序列</b>：对四维序列，显示光标处体素的信号以及 FD 和被标记的帧；滑块和 Play 逐帧浏览。</li>
+<li><b>Save image</b> 把当前视图存为 PNG；<b>Save map</b> 把阈值化后的图存为 NIfTI；<b>Surface</b> 在 BrainNet Viewer 中把图显示到皮层上。</li>
+<li><b>Neuro / Radio</b>：左脑显示在左边，或在右边。</li>
+</ul>
+{{IMG viewer_mosaic.png | 拼图视图。}}
+<pre><code>seecat.viewer('group/PCConeSampleHC/PCConeSampleHC_contrast-pos_stat-t_statmap.nii.gz')</code></pre>
+
+<h3>共用选项：去噪、剔除与平滑</h3>
+<p>以下选项在 Preprocessing 和 fMRIPrep denoising 中相同。</p>
+{{PARAMS prep Denoising|Censoring|Smoothing}}
+
+<h3>共用选项：质量控制</h3>
+{{PARAMS prep Quality control}}
+
+<h3>共用选项：run 的选择</h3>
+<p>处理 run 的页面都可以按被试、session、任务和 run 选择数据。Seed FC、Degree、Gradients、Harmonize 和 Statistics 还会排除质量控制剔除的数据：</p>
+{{PARAMS fc Selection}}
+
+<h3>共用选项：输出与运行</h3>
+{{PARAMS prep Output|Run}}

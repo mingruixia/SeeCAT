@@ -15,3 +15,6 @@ external/dcm2niix/*/
 # Release builds (tools/make_release.m) and local screenshots
 build/
 Doc/screenshots/
+
+# PDF manuals: built by Doc/manual/src/build.py --pdf and added by the release script
+Doc/manual/*.pdf

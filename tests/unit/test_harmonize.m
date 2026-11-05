@@ -86,6 +86,8 @@ for i = 1:n
     v = randn(6, 6, 6) + 5 + shift(i) + strcmp(grp{i}, 'PAT') * 0.8;
     seecat.io.write_nii(v, struct('dim', [6 6 6], 'mat', M), ...
         fullfile(d, ['sub-' sub '_task-rest_space-IXI549Space_res-3_desc-PCC_stat-z_connectivity.nii.gz']));
+    seecat.io.write_nii(v + randn(6, 6, 6), struct('dim', [6 6 6], 'mat', M), ...
+        fullfile(d, ['sub-' sub '_task-rest_space-IXI549Space_res-3_desc-B_stat-z_connectivity.nii.gz']));
 end
 P = table(strcat('sub-', arrayfun(@(i) sprintf('%02d', i), (1:n)', 'UniformOutput', false)), site, grp, age, ...
     'VariableNames', {'participant_id', 'site', 'group', 'age'});
@@ -106,7 +108,13 @@ tc.verifyTrue(exist(f, 'file') == 2);
 j = jsondecode(fileread(strrep(f, '.nii.gz', '.json')));
 tc.verifyEqual(j.Harmonization, 'combat_gam');
 tc.verifyEqual(j.Site, 'S1');
-tc.verifyTrue(exist(fullfile(in, 'group', 'harmonizeComBat', 'harmonizeComBat_report.json'), 'file') == 2);
+tc.verifyTrue(exist(fullfile(in, 'group', 'harmonizeComBat_PCCz', 'harmonizeComBat_PCCz_report.json'), 'file') == 2);
+% a second measure is its own unit: the first one's maps stay
+cfg.maps = struct('desc', 'B', 'stat', 'z');
+S2 = quiet(@() seecat.run(cfg));
+tc.verifyEqual(S2.status, {'ok'});
+tc.verifyTrue(exist(f, 'file') == 2);
+tc.verifyTrue(exist(strrep(f, 'desc-PCCComBat', 'desc-BComBat'), 'file') == 2);
 % the harmonised maps are what Statistics then selects
 cfg2 = seecat.config('stat');
 cfg2.name = 'h';

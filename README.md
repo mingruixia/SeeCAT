@@ -86,6 +86,13 @@ Each run writes an HTML QC report per subject and per dataset. The Data check
 page lists every BOLD run's volumes, TR and head motion, and the viewer steps
 through a 4D series volume by volume.
 
+## Manual
+
+The user manual, in English and Chinese, is in `Doc/manual`: open
+`Doc/manual/index.html`, or the PDFs `SeeCAT_Manual_EN.pdf` and
+`SeeCAT_Manual_ZH.pdf` in the release. The window's Manual button opens it.
+It covers every module and option and works through a three-site example.
+
 ## Tests
 
 ```matlab

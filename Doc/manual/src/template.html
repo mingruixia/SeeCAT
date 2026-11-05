@@ -1,0 +1,28 @@
+<!doctype html>
+<html lang="{{LANG}}">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>{{TITLE}}</title>
+<style>
+{{CSS}}
+</style>
+</head>
+<body>
+<nav class="toc">
+<div class="brand">SeeCAT {{VERSION}}</div>
+<div class="lang"><a href="{{OTHER_HREF}}">{{OTHER}}</a></div>
+<div class="toch">{{CONTENTS}}</div>
+<ol>
+{{TOC}}
+</ol>
+</nav>
+<main>
+<h1 class="title">{{TITLE}}</h1>
+<div class="printtoc"><p class="toch">{{CONTENTS}}</p><ol>
+{{TOC}}
+</ol></div>
+{{BODY}}
+</main>
+</body>
+</html>

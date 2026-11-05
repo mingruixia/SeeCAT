@@ -1,0 +1,1899 @@
+{
+  "prep": [
+    {
+      "path": "bids_dir",
+      "label": "BIDS folder",
+      "section": "Input",
+      "advanced": false,
+      "widget": "folder",
+      "default": "",
+      "help": "The raw BIDS dataset, e.g. D:/study/bids, with sub-<label>/anat/*_T1w.nii.gz and sub-<label>/func/*_bold.nii.gz plus their JSON sidecars (DICOM to BIDS writes this).\n\nResults go to <BIDS folder>/derivatives/seecat unless Output folder is set. Use Data check first to see the runs, TR and head motion.",
+      "choices": []
+    },
+    {
+      "path": "dummy_scans",
+      "label": "Dummy scans",
+      "section": "Input",
+      "advanced": true,
+      "widget": "text",
+      "default": "auto",
+      "help": "Volumes removed from the start of each run, before the signal is steady.\n\nauto (default): detected from the data (leading volumes whose mean brain intensity is an outlier). Scanners that already discard them give none.\nA number, e.g. 5: remove that many from every run.",
+      "choices": []
+    },
+    {
+      "path": "slice_timing.enable",
+      "label": "Slice timing",
+      "section": "Preprocessing",
+      "advanced": false,
+      "widget": "flag",
+      "default": "true",
+      "help": "Correct for the different acquisition times of the slices within a volume (SPM slice timing). On by default; it needs the slice times (SliceTiming in the sidecar, written by dcm2niix). Turn it off when the slice times are unknown.",
+      "choices": []
+    },
+    {
+      "path": "slice_timing.slice_times",
+      "label": "Slice times (s)",
+      "section": "Preprocessing",
+      "advanced": true,
+      "widget": "text",
+      "default": "auto",
+      "help": "auto (default): SliceTiming from each run's JSON sidecar.\nOtherwise the acquisition time of every slice in seconds, in slice order, e.g. for 4 interleaved slices and TR 2: 0 1 0.5 1.5.",
+      "choices": []
+    },
+    {
+      "path": "slice_timing.ref_time",
+      "label": "Reference time",
+      "section": "Preprocessing",
+      "advanced": true,
+      "widget": "text",
+      "default": "middle",
+      "help": "The time within the TR that all slices are shifted to.\n\nmiddle (default): half the TR.\nA number in seconds, e.g. 0 for the first slice.",
+      "choices": []
+    },
+    {
+      "path": "realign.enable",
+      "label": "Realign",
+      "section": "Preprocessing",
+      "advanced": true,
+      "widget": "flag",
+      "default": "true",
+      "help": "Correct head motion by aligning every volume (SPM realign). The six motion parameters and framewise displacement go into the confounds table. Keep it on.",
+      "choices": []
+    },
+    {
+      "path": "realign.register_to_mean",
+      "label": "Register to mean",
+      "section": "Preprocessing",
+      "advanced": true,
+      "widget": "flag",
+      "default": "true",
+      "help": "Two passes: first to the first volume, then to the mean of the aligned volumes (SPM's \"register to mean\"). More accurate; on by default.",
+      "choices": []
+    },
+    {
+      "path": "normalise.enable",
+      "label": "Normalise",
+      "section": "Preprocessing",
+      "advanced": true,
+      "widget": "flag",
+      "default": "true",
+      "help": "Bring the data into MNI space (SPM's IXI549Space template) so subjects can be compared voxel by voxel. Needed by the group analyses.",
+      "choices": []
+    },
+    {
+      "path": "normalise.method",
+      "label": "Normalisation",
+      "section": "Preprocessing",
+      "advanced": false,
+      "widget": "choice",
+      "default": "auto",
+      "help": "auto (default): segment when the subject has a T1w image, otherwise epi.\nsegment: the T1w image is segmented (SPM unified segmentation) and its deformation applied to the functional data, after registering the mean EPI to the T1w. The most accurate.\nepi: the mean EPI is normalised directly to the tissue templates; for data without a T1w.",
+      "choices": [
+        "auto",
+        "segment",
+        "epi"
+      ]
+    },
+    {
+      "path": "normalise.voxel_size",
+      "label": "Voxel size (mm)",
+      "section": "Preprocessing",
+      "advanced": false,
+      "widget": "number",
+      "default": "3",
+      "help": "Voxel size of the normalised data, e.g. 3 (default) or 2. Smaller voxels need more disk and memory (a 2 mm run is 3.4 times as large) and make Degree much slower. Three numbers, e.g. 3 3 4, give different sizes per axis.",
+      "choices": []
+    },
+    {
+      "path": "normalise.bounding_box",
+      "label": "Bounding box",
+      "section": "Preprocessing",
+      "advanced": true,
+      "widget": "text",
+      "default": "[-90 -126 -72;90 90 108]",
+      "help": "The extent of the normalised images in MNI mm, [xmin ymin zmin; xmax ymax zmax]. Default [-90 -126 -72; 90 90 108], SPM's box, which holds the whole brain and cerebellum.",
+      "choices": []
+    },
+    {
+      "path": "vbm.enable",
+      "label": "VBM maps",
+      "section": "Anatomy (VBM)",
+      "advanced": false,
+      "widget": "flag",
+      "default": "false",
+      "help": "Also write the grey- and white-matter (and CSF) maps of the T1w segmentation normalised to MNI (IXI549Space, 1.5 mm, as SPM writes them), for voxel-based morphometry with the Statistics page (Map: modulatedSm8, Suffix: probseg). Only for runs with a T1w; written once per T1w.\n\nTissue volumes (GM, WM, CSF, TIV in mL) are always written (reports/anat_volumes.tsv); Statistics and Harmonize can use tiv_ml as a covariate without adding it to participants.tsv. This uses SPM's unified segmentation without DARTEL.",
+      "choices": []
+    },
+    {
+      "path": "vbm.modulated",
+      "label": "Modulated",
+      "section": "Anatomy (VBM)",
+      "advanced": false,
+      "widget": "flag",
+      "default": "true",
+      "help": "Ticked (default): modulated maps (desc-modulated), scaled by the Jacobian of the warp so they keep the amount of tissue: the usual VBM input, analysed with TIV as a covariate.\nUnticked: unmodulated maps (desc-warped), tissue concentration.",
+      "choices": []
+    },
+    {
+      "path": "vbm.fwhm",
+      "label": "VBM smoothing (mm)",
+      "section": "Anatomy (VBM)",
+      "advanced": false,
+      "widget": "number",
+      "default": "8",
+      "help": "FWHM of the smoothed copy (desc-modulatedSm8 for 8 mm, the default); 0 writes none. 6 to 10 mm is usual for VBM.",
+      "choices": []
+    },
+    {
+      "path": "masks.wm_threshold",
+      "label": "WM probability",
+      "section": "Nuisance masks",
+      "advanced": true,
+      "widget": "number",
+      "default": "0.99",
+      "help": "White-matter mask for the wm regressor (and aCompCor): voxels whose WM probability from segmentation is above this, 0.99 by default, then eroded. A strict mask keeps grey-matter signal out of the nuisance signal.",
+      "choices": []
+    },
+    {
+      "path": "masks.csf_threshold",
+      "label": "CSF probability",
+      "section": "Nuisance masks",
+      "advanced": true,
+      "widget": "number",
+      "default": "0.95",
+      "help": "CSF mask for the csf regressor: CSF probability above this, 0.95 by default (0.99 eroded can leave no voxels in small ventricles), then eroded.",
+      "choices": []
+    },
+    {
+      "path": "masks.erode_mm",
+      "label": "Erosion (mm)",
+      "section": "Nuisance masks",
+      "advanced": true,
+      "widget": "number",
+      "default": "2",
+      "help": "The WM and CSF masks are shrunk by a ball of this radius (2 mm by default) in the subject's own space, away from grey matter. 0: no erosion.",
+      "choices": []
+    },
+    {
+      "path": "denoise.enable",
+      "label": "Denoise",
+      "section": "Denoising",
+      "advanced": false,
+      "widget": "flag",
+      "default": "true",
+      "help": "Remove nuisance signal from every voxel: one regression of a polynomial trend and the chosen Regressors, with data and regressors band-passed by the same filter, so the filter does not bring removed signal back. The result is desc-denoised (unsmoothed), the input of Seed FC and Degree.",
+      "choices": []
+    },
+    {
+      "path": "denoise.regressors",
+      "label": "Regressors",
+      "section": "Denoising",
+      "advanced": false,
+      "widget": "multi",
+      "default": "friston24, wm, csf",
+      "help": "friston24: the 6 head-motion parameters, their derivatives and squares (Friston 1996).\nwm, csf: mean signal of the eroded white-matter and CSF masks.\ngs: global signal (global signal regression). Off by default: it removes widespread neural signal too and creates negative correlations; tick it if your study uses it.\nacompcor: principal components of WM and CSF (aCompCor; see aCompCor components); use it instead of wm and csf.\n\nDefault friston24 + wm + csf. Any other column of the confounds table can be added in a config file (denoise.regressors).",
+      "choices": [
+        "friston24",
+        "wm",
+        "csf",
+        "gs",
+        "acompcor"
+      ]
+    },
+    {
+      "path": "denoise.acompcor_n",
+      "label": "aCompCor components",
+      "section": "Denoising",
+      "advanced": true,
+      "widget": "number",
+      "default": "5",
+      "help": "acompcor only: components taken per tissue (WM and CSF), 5 by default (Behzadi 2007).",
+      "choices": []
+    },
+    {
+      "path": "denoise.detrend_order",
+      "label": "Detrend order",
+      "section": "Denoising",
+      "advanced": true,
+      "widget": "number",
+      "default": "1",
+      "help": "Order of the polynomial trend removed with the regressors: 0 = mean only, 1 = linear (default), 2 = quadratic, up to 3.",
+      "choices": []
+    },
+    {
+      "path": "denoise.band",
+      "label": "Band-pass (Hz)",
+      "section": "Denoising",
+      "advanced": false,
+      "widget": "range",
+      "default": "0.01 0.1",
+      "help": "Frequencies kept, low to high in Hz. 0.01 to 0.1 (default) is the usual resting-state band. Leave the second box 0 for a high-pass only (e.g. 0.01 to 0), and both empty for no filter (e.g. for ALFF-type measures computed later).",
+      "choices": []
+    },
+    {
+      "path": "censor.mode",
+      "label": "High-motion frames",
+      "section": "Censoring",
+      "advanced": false,
+      "widget": "choice",
+      "default": "censor",
+      "help": "What happens to volumes with large head motion (framewise displacement above the FD threshold).\n\ncensor (default): they are filled in from the good volumes before filtering (so the spike is not spread), left out of the regression, and marked in the confounds table; Seed FC and Degree then leave them out. Runs keep their length.\ninterp_keep: the same, but the filled-in volumes are used by later analyses.\nnone: no special handling.",
+      "choices": [
+        "censor",
+        "interp_keep",
+        "none"
+      ]
+    },
+    {
+      "path": "censor.fd_threshold",
+      "label": "FD threshold (mm)",
+      "section": "Censoring",
+      "advanced": false,
+      "widget": "number",
+      "default": "0.5",
+      "help": "Framewise displacement (Power et al. 2012) above which a volume counts as high-motion. 0.5 mm (default) is common; 0.2 to 0.3 is stricter (e.g. for children or patient groups, at the cost of more lost volumes).",
+      "choices": []
+    },
+    {
+      "path": "censor.before",
+      "label": "Frames before",
+      "section": "Censoring",
+      "advanced": true,
+      "widget": "number",
+      "default": "1",
+      "help": "Also flag this many volumes before each high-motion volume, 1 by default.",
+      "choices": []
+    },
+    {
+      "path": "censor.after",
+      "label": "Frames after",
+      "section": "Censoring",
+      "advanced": true,
+      "widget": "number",
+      "default": "2",
+      "help": "Also flag this many volumes after each high-motion volume, 2 by default (motion effects outlast the movement).",
+      "choices": []
+    },
+    {
+      "path": "censor.interp",
+      "label": "Interpolation",
+      "section": "Censoring",
+      "advanced": true,
+      "widget": "choice",
+      "default": "spectral",
+      "help": "How flagged volumes are filled in before filtering.\n\nspectral (default): a fit of sinusoids up to the low-pass edge to the good volumes; in tests it changed the good volumes and the seed maps less than spline.\nspline: cubic spline through the good volumes.",
+      "choices": [
+        "spectral",
+        "spline"
+      ]
+    },
+    {
+      "path": "censor.min_minutes",
+      "label": "Minimum minutes",
+      "section": "Censoring",
+      "advanced": true,
+      "widget": "number",
+      "default": "5",
+      "help": "Runs with less good (unflagged) data than this many minutes, 5 by default, are flagged in the QC report so you can exclude them.",
+      "choices": []
+    },
+    {
+      "path": "smooth.enable",
+      "label": "Smooth",
+      "section": "Smoothing",
+      "advanced": false,
+      "widget": "flag",
+      "default": "true",
+      "help": "Also write a spatially smoothed copy of the denoised data (desc-denoisedSm<FWHM>). The unsmoothed desc-denoised is always kept: Seed FC and Degree use it by default.",
+      "choices": []
+    },
+    {
+      "path": "smooth.fwhm",
+      "label": "FWHM (mm)",
+      "section": "Smoothing",
+      "advanced": false,
+      "widget": "number",
+      "default": "6",
+      "help": "Width of the Gaussian kernel, e.g. 6 (default; about twice the voxel size) or 4. Three numbers give a different FWHM per axis.",
+      "choices": []
+    },
+    {
+      "path": "qc.iqm",
+      "label": "Image quality metrics (IQM)",
+      "section": "Quality control",
+      "advanced": false,
+      "widget": "flag",
+      "default": "true",
+      "help": "Compute MRIQC's image quality metrics of the raw T1w and BOLD data while preprocessing (the T1w segmentation, realignment and coregistration are shared, so it adds about half a minute per run). BOLD: tSNR, SNR, ghost-to-signal, EFC, FBER, standardised DVARS, AFNI outlier ratio and quality index, global correlation, FD, smoothness. T1w: CNR, CJV, SNR (tissue and Dietrich), EFC, FBER, bias-field spread, WM-to-max, volume fractions, partial-volume residuals, smoothness, and TIV.\n\nThe values agree with MRIQC's formulas; the masks (head, air, brain) are SeeCAT's own, so absolute values can differ from an MRIQC run. The group report shows their distribution per site and warns about outliers.",
+      "choices": []
+    },
+    {
+      "path": "qc.max_translation",
+      "label": "Max. translation (mm)",
+      "section": "Quality control",
+      "advanced": false,
+      "widget": "number",
+      "default": "3",
+      "help": "A run whose largest absolute translation (any axis, any frame, from realignment) is above this is suggested for exclusion; 3 mm (default) is the common limit, about one voxel.",
+      "choices": []
+    },
+    {
+      "path": "qc.max_rotation",
+      "label": "Max. rotation (degrees)",
+      "section": "Quality control",
+      "advanced": false,
+      "widget": "number",
+      "default": "3",
+      "help": "As Max. translation, for the largest absolute rotation; 3 degrees by default.",
+      "choices": []
+    },
+    {
+      "path": "qc.max_mean_fd",
+      "label": "Max. mean FD (mm)",
+      "section": "Quality control",
+      "advanced": false,
+      "widget": "number",
+      "default": "0.5",
+      "help": "A run whose mean framewise displacement (Power) is above this is suggested for exclusion: 0.5 mm by default; 0.2 to 0.3 mm is stricter (Parkes et al. 2018 use 0.55 lenient, 0.25 stringent). Above 0.25 mm the report always warns.",
+      "choices": []
+    },
+    {
+      "path": "qc.min_coverage",
+      "label": "Min. brain coverage",
+      "section": "Quality control",
+      "advanced": false,
+      "widget": "number",
+      "default": "0.9",
+      "help": "Share of the template brain mask that must lie inside the scan's field of view after normalisation (in every frame); 0.9 by default. Lower means part of the brain (often the cerebellum or the top of the cortex) was not scanned; such runs are suggested for exclusion. The report also shows the coverage of the top and bottom separately.",
+      "choices": []
+    },
+    {
+      "path": "qc.min_brain_dice",
+      "label": "Min. brain Dice",
+      "section": "Quality control",
+      "advanced": false,
+      "widget": "number",
+      "default": "0.85",
+      "help": "Registration check: the Dice overlap of the run's brain mask with the template brain mask after normalisation (1 = identical). Runs below this, 0.85 by default, are suggested for exclusion as failed normalisations; good ones are usually above 0.9.\n\nThe reports also give, for each run: the correlation of the normalised GM, WM and CSF maps with SPM's tissue templates (reg_gm_corr ...), and the Dice of a brain mask taken from the mean EPI's own intensity with the T1w brain (reg_epi_t1_dice, EPI-T1w alignment; about 0.85-0.92 when good). Outliers within a site are warnings.",
+      "choices": []
+    },
+    {
+      "path": "qc.iqm_z",
+      "label": "IQM outlier z",
+      "section": "Quality control",
+      "advanced": true,
+      "widget": "number",
+      "default": "3",
+      "help": "An image quality metric is flagged (a warning, not an exclusion) when its robust z (distance from the median in MADs) within the run's site exceeds this in the bad direction, 3 by default. Sites come from the \"site\" column of participants.tsv; without it, or with fewer than 5 runs in a site, the whole dataset is the reference.",
+      "choices": []
+    },
+    {
+      "path": "output_dir",
+      "label": "Output folder",
+      "section": "Output",
+      "advanced": false,
+      "widget": "folder",
+      "default": "",
+      "help": "Where the results go. Empty: the default of the pipeline, next to the input (for the analyses, the derivatives folder itself, so the maps sit beside the runs they come from).\n\nSet it to keep the results of different settings apart, e.g. D:/study/derivatives/degree_r03. Logs and the config of every run are written to its logs folder.",
+      "choices": []
+    },
+    {
+      "path": "work_dir",
+      "label": "Work folder",
+      "section": "Output",
+      "advanced": true,
+      "widget": "folder",
+      "default": "",
+      "help": "Intermediate files, one subfolder per unit. Empty: seecat_work next to the output folder.\n\nIt is deleted after a unit succeeds (unless Keep work files) and kept after a failure, so a rerun does not redo finished steps. A fast local disk helps.",
+      "choices": []
+    },
+    {
+      "path": "subjects",
+      "label": "Subjects",
+      "section": "Selection",
+      "advanced": false,
+      "widget": "labels",
+      "default": "",
+      "help": "Which subjects to process: labels without \"sub-\", comma separated, e.g. 01, 02, 15. Empty: all subjects found.",
+      "choices": []
+    },
+    {
+      "path": "sessions",
+      "label": "Sessions",
+      "section": "Selection",
+      "advanced": true,
+      "widget": "labels",
+      "default": "",
+      "help": "Labels without \"ses-\", comma separated, e.g. 1, 2. Empty: all sessions.",
+      "choices": []
+    },
+    {
+      "path": "task",
+      "label": "Task",
+      "section": "Selection",
+      "advanced": false,
+      "widget": "text",
+      "default": "",
+      "help": "The task label of the runs, e.g. rest. Empty: the only task present; if the data hold several tasks, name one.",
+      "choices": []
+    },
+    {
+      "path": "runs",
+      "label": "Runs",
+      "section": "Selection",
+      "advanced": true,
+      "widget": "labels",
+      "default": "",
+      "help": "Run labels, comma separated, e.g. 1, 2. Empty: all runs.",
+      "choices": []
+    },
+    {
+      "path": "n_workers",
+      "label": "Parallel workers",
+      "section": "Run",
+      "advanced": false,
+      "widget": "number",
+      "default": "0",
+      "help": "How many units (runs or subjects) are processed at the same time, each by a worker of a parallel pool (Parallel Computing Toolbox).\n\n0: one after another, no pool (the default).\nauto: as many workers as fit in memory. SeeCAT estimates the memory one unit needs (from the size of the largest run) plus about 1 GB per worker, and uses at most 85% of the free memory, one worker per core and one per unit; the log shows the estimate and the choice. With too little memory for two workers it runs one after another.\nA number, e.g. 4: at most that many workers, whatever the memory.\n\nWithout the toolbox SeeCAT runs one after another. A pool that is already open is reused as it is.",
+      "choices": []
+    },
+    {
+      "path": "overwrite",
+      "label": "Overwrite finished units",
+      "section": "Run",
+      "advanced": true,
+      "widget": "flag",
+      "default": "false",
+      "help": "A unit that already finished with the same settings is skipped. Tick to compute it again anyway. A unit whose settings changed is always redone.",
+      "choices": []
+    },
+    {
+      "path": "keep_work",
+      "label": "Keep work files",
+      "section": "Run",
+      "advanced": true,
+      "widget": "flag",
+      "default": "false",
+      "help": "Keep the work folder of units that succeeded, e.g. to inspect intermediate images.",
+      "choices": []
+    }
+  ],
+  "fmriprep": [
+    {
+      "path": "fmriprep_dir",
+      "label": "fMRIPrep folder",
+      "section": "Input",
+      "advanced": false,
+      "widget": "folder",
+      "default": "",
+      "help": "The output folder of fMRIPrep, e.g. D:/study/bids/derivatives/fmriprep. SeeCAT reads, for each BOLD run, *_space-<space>_desc-preproc_bold.nii.gz, its brain mask and the confounds table; fMRIPrep's own steps are not repeated.\n\nResults go to derivatives/seecat next to it unless Output folder is set, with the same names as the Preprocessing page, so Seed FC, Degree and Statistics work the same way.",
+      "choices": []
+    },
+    {
+      "path": "space",
+      "label": "Space",
+      "section": "Input",
+      "advanced": false,
+      "widget": "text",
+      "default": "MNI152NLin2009cAsym",
+      "help": "Which fMRIPrep output space to denoise, the space-<label> in the file names. Default MNI152NLin2009cAsym. Group analyses need a template space, not T1w or fsnative.",
+      "choices": []
+    },
+    {
+      "path": "res",
+      "label": "Resolution label",
+      "section": "Input",
+      "advanced": true,
+      "widget": "text",
+      "default": "",
+      "help": "The res-<label> of the files, e.g. 2, needed only when fMRIPrep wrote the space at more than one resolution. Empty: the only one present.",
+      "choices": []
+    },
+    {
+      "path": "dummy_scans",
+      "label": "Dummy scans",
+      "section": "Input",
+      "advanced": true,
+      "widget": "text",
+      "default": "auto",
+      "help": "Volumes removed from the start of each run.\n\nauto (default): those fMRIPrep marked as non-steady-state (non_steady_state_outlier columns).\nA number, e.g. 5: that many from every run.",
+      "choices": []
+    },
+    {
+      "path": "denoise.enable",
+      "label": "Denoise",
+      "section": "Denoising",
+      "advanced": false,
+      "widget": "flag",
+      "default": "true",
+      "help": "Remove nuisance signal from every voxel: one regression of a polynomial trend and the chosen Regressors, with data and regressors band-passed by the same filter, so the filter does not bring removed signal back. The result is desc-denoised (unsmoothed), the input of Seed FC and Degree.",
+      "choices": []
+    },
+    {
+      "path": "denoise.regressors",
+      "label": "Regressors",
+      "section": "Denoising",
+      "advanced": false,
+      "widget": "multi",
+      "default": "friston24, wm, csf",
+      "help": "friston24: the 6 head-motion parameters, their derivatives and squares (Friston 1996).\nwm, csf: mean signal of the eroded white-matter and CSF masks.\ngs: global signal (global signal regression). Off by default: it removes widespread neural signal too and creates negative correlations; tick it if your study uses it.\nacompcor: principal components of WM and CSF (aCompCor; see aCompCor components); use it instead of wm and csf.\n\nDefault friston24 + wm + csf. Any other column of the confounds table can be added in a config file (denoise.regressors).",
+      "choices": [
+        "friston24",
+        "wm",
+        "csf",
+        "gs",
+        "acompcor"
+      ]
+    },
+    {
+      "path": "denoise.acompcor_n",
+      "label": "aCompCor components",
+      "section": "Denoising",
+      "advanced": true,
+      "widget": "number",
+      "default": "5",
+      "help": "acompcor only: components taken per tissue (WM and CSF), 5 by default (Behzadi 2007).",
+      "choices": []
+    },
+    {
+      "path": "denoise.detrend_order",
+      "label": "Detrend order",
+      "section": "Denoising",
+      "advanced": true,
+      "widget": "number",
+      "default": "1",
+      "help": "Order of the polynomial trend removed with the regressors: 0 = mean only, 1 = linear (default), 2 = quadratic, up to 3.",
+      "choices": []
+    },
+    {
+      "path": "denoise.band",
+      "label": "Band-pass (Hz)",
+      "section": "Denoising",
+      "advanced": false,
+      "widget": "range",
+      "default": "0.01 0.1",
+      "help": "Frequencies kept, low to high in Hz. 0.01 to 0.1 (default) is the usual resting-state band. Leave the second box 0 for a high-pass only (e.g. 0.01 to 0), and both empty for no filter (e.g. for ALFF-type measures computed later).",
+      "choices": []
+    },
+    {
+      "path": "censor.mode",
+      "label": "High-motion frames",
+      "section": "Censoring",
+      "advanced": false,
+      "widget": "choice",
+      "default": "censor",
+      "help": "What happens to volumes with large head motion (framewise displacement above the FD threshold).\n\ncensor (default): they are filled in from the good volumes before filtering (so the spike is not spread), left out of the regression, and marked in the confounds table; Seed FC and Degree then leave them out. Runs keep their length.\ninterp_keep: the same, but the filled-in volumes are used by later analyses.\nnone: no special handling.",
+      "choices": [
+        "censor",
+        "interp_keep",
+        "none"
+      ]
+    },
+    {
+      "path": "censor.fd_threshold",
+      "label": "FD threshold (mm)",
+      "section": "Censoring",
+      "advanced": false,
+      "widget": "number",
+      "default": "0.5",
+      "help": "Framewise displacement (Power et al. 2012) above which a volume counts as high-motion. 0.5 mm (default) is common; 0.2 to 0.3 is stricter (e.g. for children or patient groups, at the cost of more lost volumes).",
+      "choices": []
+    },
+    {
+      "path": "censor.before",
+      "label": "Frames before",
+      "section": "Censoring",
+      "advanced": true,
+      "widget": "number",
+      "default": "1",
+      "help": "Also flag this many volumes before each high-motion volume, 1 by default.",
+      "choices": []
+    },
+    {
+      "path": "censor.after",
+      "label": "Frames after",
+      "section": "Censoring",
+      "advanced": true,
+      "widget": "number",
+      "default": "2",
+      "help": "Also flag this many volumes after each high-motion volume, 2 by default (motion effects outlast the movement).",
+      "choices": []
+    },
+    {
+      "path": "censor.interp",
+      "label": "Interpolation",
+      "section": "Censoring",
+      "advanced": true,
+      "widget": "choice",
+      "default": "spectral",
+      "help": "How flagged volumes are filled in before filtering.\n\nspectral (default): a fit of sinusoids up to the low-pass edge to the good volumes; in tests it changed the good volumes and the seed maps less than spline.\nspline: cubic spline through the good volumes.",
+      "choices": [
+        "spectral",
+        "spline"
+      ]
+    },
+    {
+      "path": "censor.min_minutes",
+      "label": "Minimum minutes",
+      "section": "Censoring",
+      "advanced": true,
+      "widget": "number",
+      "default": "5",
+      "help": "Runs with less good (unflagged) data than this many minutes, 5 by default, are flagged in the QC report so you can exclude them.",
+      "choices": []
+    },
+    {
+      "path": "smooth.enable",
+      "label": "Smooth",
+      "section": "Smoothing",
+      "advanced": false,
+      "widget": "flag",
+      "default": "true",
+      "help": "Also write a spatially smoothed copy of the denoised data (desc-denoisedSm<FWHM>). The unsmoothed desc-denoised is always kept: Seed FC and Degree use it by default.",
+      "choices": []
+    },
+    {
+      "path": "smooth.fwhm",
+      "label": "FWHM (mm)",
+      "section": "Smoothing",
+      "advanced": false,
+      "widget": "number",
+      "default": "6",
+      "help": "Width of the Gaussian kernel, e.g. 6 (default; about twice the voxel size) or 4. Three numbers give a different FWHM per axis.",
+      "choices": []
+    },
+    {
+      "path": "qc.max_translation",
+      "label": "Max. translation (mm)",
+      "section": "Quality control",
+      "advanced": false,
+      "widget": "number",
+      "default": "3",
+      "help": "A run whose largest absolute translation (any axis, any frame, from realignment) is above this is suggested for exclusion; 3 mm (default) is the common limit, about one voxel.",
+      "choices": []
+    },
+    {
+      "path": "qc.max_rotation",
+      "label": "Max. rotation (degrees)",
+      "section": "Quality control",
+      "advanced": false,
+      "widget": "number",
+      "default": "3",
+      "help": "As Max. translation, for the largest absolute rotation; 3 degrees by default.",
+      "choices": []
+    },
+    {
+      "path": "qc.max_mean_fd",
+      "label": "Max. mean FD (mm)",
+      "section": "Quality control",
+      "advanced": false,
+      "widget": "number",
+      "default": "0.5",
+      "help": "A run whose mean framewise displacement (Power) is above this is suggested for exclusion: 0.5 mm by default; 0.2 to 0.3 mm is stricter (Parkes et al. 2018 use 0.55 lenient, 0.25 stringent). Above 0.25 mm the report always warns.",
+      "choices": []
+    },
+    {
+      "path": "qc.min_coverage",
+      "label": "Min. brain coverage",
+      "section": "Quality control",
+      "advanced": false,
+      "widget": "number",
+      "default": "0.9",
+      "help": "Share of the template brain mask that must lie inside the scan's field of view after normalisation (in every frame); 0.9 by default. Lower means part of the brain (often the cerebellum or the top of the cortex) was not scanned; such runs are suggested for exclusion. The report also shows the coverage of the top and bottom separately.",
+      "choices": []
+    },
+    {
+      "path": "qc.min_brain_dice",
+      "label": "Min. brain Dice",
+      "section": "Quality control",
+      "advanced": false,
+      "widget": "number",
+      "default": "0.85",
+      "help": "Registration check: the Dice overlap of the run's brain mask with the template brain mask after normalisation (1 = identical). Runs below this, 0.85 by default, are suggested for exclusion as failed normalisations; good ones are usually above 0.9.\n\nThe reports also give, for each run: the correlation of the normalised GM, WM and CSF maps with SPM's tissue templates (reg_gm_corr ...), and the Dice of a brain mask taken from the mean EPI's own intensity with the T1w brain (reg_epi_t1_dice, EPI-T1w alignment; about 0.85-0.92 when good). Outliers within a site are warnings.",
+      "choices": []
+    },
+    {
+      "path": "qc.iqm_z",
+      "label": "IQM outlier z",
+      "section": "Quality control",
+      "advanced": true,
+      "widget": "number",
+      "default": "3",
+      "help": "An image quality metric is flagged (a warning, not an exclusion) when its robust z (distance from the median in MADs) within the run's site exceeds this in the bad direction, 3 by default. Sites come from the \"site\" column of participants.tsv; without it, or with fewer than 5 runs in a site, the whole dataset is the reference.",
+      "choices": []
+    },
+    {
+      "path": "output_dir",
+      "label": "Output folder",
+      "section": "Output",
+      "advanced": false,
+      "widget": "folder",
+      "default": "",
+      "help": "Where the results go. Empty: the default of the pipeline, next to the input (for the analyses, the derivatives folder itself, so the maps sit beside the runs they come from).\n\nSet it to keep the results of different settings apart, e.g. D:/study/derivatives/degree_r03. Logs and the config of every run are written to its logs folder.",
+      "choices": []
+    },
+    {
+      "path": "work_dir",
+      "label": "Work folder",
+      "section": "Output",
+      "advanced": true,
+      "widget": "folder",
+      "default": "",
+      "help": "Intermediate files, one subfolder per unit. Empty: seecat_work next to the output folder.\n\nIt is deleted after a unit succeeds (unless Keep work files) and kept after a failure, so a rerun does not redo finished steps. A fast local disk helps.",
+      "choices": []
+    },
+    {
+      "path": "subjects",
+      "label": "Subjects",
+      "section": "Selection",
+      "advanced": false,
+      "widget": "labels",
+      "default": "",
+      "help": "Which subjects to process: labels without \"sub-\", comma separated, e.g. 01, 02, 15. Empty: all subjects found.",
+      "choices": []
+    },
+    {
+      "path": "sessions",
+      "label": "Sessions",
+      "section": "Selection",
+      "advanced": true,
+      "widget": "labels",
+      "default": "",
+      "help": "Labels without \"ses-\", comma separated, e.g. 1, 2. Empty: all sessions.",
+      "choices": []
+    },
+    {
+      "path": "task",
+      "label": "Task",
+      "section": "Selection",
+      "advanced": false,
+      "widget": "text",
+      "default": "",
+      "help": "The task label of the runs, e.g. rest. Empty: the only task present; if the data hold several tasks, name one.",
+      "choices": []
+    },
+    {
+      "path": "runs",
+      "label": "Runs",
+      "section": "Selection",
+      "advanced": true,
+      "widget": "labels",
+      "default": "",
+      "help": "Run labels, comma separated, e.g. 1, 2. Empty: all runs.",
+      "choices": []
+    },
+    {
+      "path": "n_workers",
+      "label": "Parallel workers",
+      "section": "Run",
+      "advanced": false,
+      "widget": "number",
+      "default": "0",
+      "help": "How many units (runs or subjects) are processed at the same time, each by a worker of a parallel pool (Parallel Computing Toolbox).\n\n0: one after another, no pool (the default).\nauto: as many workers as fit in memory. SeeCAT estimates the memory one unit needs (from the size of the largest run) plus about 1 GB per worker, and uses at most 85% of the free memory, one worker per core and one per unit; the log shows the estimate and the choice. With too little memory for two workers it runs one after another.\nA number, e.g. 4: at most that many workers, whatever the memory.\n\nWithout the toolbox SeeCAT runs one after another. A pool that is already open is reused as it is.",
+      "choices": []
+    },
+    {
+      "path": "overwrite",
+      "label": "Overwrite finished units",
+      "section": "Run",
+      "advanced": true,
+      "widget": "flag",
+      "default": "false",
+      "help": "A unit that already finished with the same settings is skipped. Tick to compute it again anyway. A unit whose settings changed is always redone.",
+      "choices": []
+    },
+    {
+      "path": "keep_work",
+      "label": "Keep work files",
+      "section": "Run",
+      "advanced": true,
+      "widget": "flag",
+      "default": "false",
+      "help": "Keep the work folder of units that succeeded, e.g. to inspect intermediate images.",
+      "choices": []
+    }
+  ],
+  "fc": [
+    {
+      "path": "input_dir",
+      "label": "Derivatives folder",
+      "section": "Input",
+      "advanced": false,
+      "widget": "folder",
+      "default": "",
+      "help": "The SeeCAT derivatives folder written by the Preprocessing or fMRIPrep page, e.g. D:/study/bids/derivatives/seecat. It holds, per run, the denoised BOLD series, the brain mask and the confounds table with the censored frames.\n\nThe maps are written next to the runs (desc-<seed>_stat-r and stat-z), in the same folder unless Output folder is set.",
+      "choices": []
+    },
+    {
+      "path": "input",
+      "label": "Input series",
+      "section": "Input",
+      "advanced": false,
+      "widget": "text",
+      "default": "denoised",
+      "help": "Which series of each run is used: the desc label of the file name.\n\ndenoised (default): denoised, band-passed, not smoothed. The seed signal then comes only from the seed's own voxels.\ndenoisedSm6 (or another Sm label your preprocessing wrote): the smoothed series, as in many published FC studies; the maps are then smooth without a further step.",
+      "choices": []
+    },
+    {
+      "path": "space",
+      "label": "Space",
+      "section": "Input",
+      "advanced": true,
+      "widget": "text",
+      "default": "",
+      "help": "Needed only when the derivatives hold the runs in more than one space. Empty: the only space present.",
+      "choices": []
+    },
+    {
+      "path": "seeds",
+      "label": "Seeds",
+      "section": "Seeds",
+      "advanced": false,
+      "widget": "seeds",
+      "default": "",
+      "help": "One row per seed; spheres and masks can be mixed. For each run and seed, the mean signal of the seed's voxels (inside the brain mask, censored frames left out) is correlated with every voxel: a map of r and of Fisher z (desc-<name>_stat-z, the one to use in Statistics).\n\nSphere: centre in MNI mm as \"x y z\" and a radius in mm, e.g. PCC: 0 -53 26, radius 6; mPFC: 0 52 -6; left motor cortex: -38 -22 56.\nMask: a NIfTI image in MNI space (any voxel size; voxels above 0 are the seed), e.g. an atlas region saved as a binary mask. It is resampled to the data.\n\nAdd sphere adds a row; Add mask files adds one row per chosen file, named after it; Choose file sets the file of the selected row; Remove deletes the selected rows. Names are letters and digits and name the output maps. The Check column says what a row still needs.",
+      "choices": []
+    },
+    {
+      "path": "output_dir",
+      "label": "Output folder",
+      "section": "Output",
+      "advanced": false,
+      "widget": "folder",
+      "default": "",
+      "help": "Where the results go. Empty: the default of the pipeline, next to the input (for the analyses, the derivatives folder itself, so the maps sit beside the runs they come from).\n\nSet it to keep the results of different settings apart, e.g. D:/study/derivatives/degree_r03. Logs and the config of every run are written to its logs folder.",
+      "choices": []
+    },
+    {
+      "path": "work_dir",
+      "label": "Work folder",
+      "section": "Output",
+      "advanced": true,
+      "widget": "folder",
+      "default": "",
+      "help": "Intermediate files, one subfolder per unit. Empty: seecat_work next to the output folder.\n\nIt is deleted after a unit succeeds (unless Keep work files) and kept after a failure, so a rerun does not redo finished steps. A fast local disk helps.",
+      "choices": []
+    },
+    {
+      "path": "subjects",
+      "label": "Subjects",
+      "section": "Selection",
+      "advanced": false,
+      "widget": "labels",
+      "default": "",
+      "help": "Which subjects to process: labels without \"sub-\", comma separated, e.g. 01, 02, 15. Empty: all subjects found.",
+      "choices": []
+    },
+    {
+      "path": "sessions",
+      "label": "Sessions",
+      "section": "Selection",
+      "advanced": true,
+      "widget": "labels",
+      "default": "",
+      "help": "Labels without \"ses-\", comma separated, e.g. 1, 2. Empty: all sessions.",
+      "choices": []
+    },
+    {
+      "path": "task",
+      "label": "Task",
+      "section": "Selection",
+      "advanced": false,
+      "widget": "text",
+      "default": "",
+      "help": "The task label of the runs, e.g. rest. Empty: the only task present; if the data hold several tasks, name one.",
+      "choices": []
+    },
+    {
+      "path": "runs",
+      "label": "Runs",
+      "section": "Selection",
+      "advanced": true,
+      "widget": "labels",
+      "default": "",
+      "help": "Run labels, comma separated, e.g. 1, 2. Empty: all runs.",
+      "choices": []
+    },
+    {
+      "path": "n_workers",
+      "label": "Parallel workers",
+      "section": "Run",
+      "advanced": false,
+      "widget": "number",
+      "default": "0",
+      "help": "How many units (runs or subjects) are processed at the same time, each by a worker of a parallel pool (Parallel Computing Toolbox).\n\n0: one after another, no pool (the default).\nauto: as many workers as fit in memory. SeeCAT estimates the memory one unit needs (from the size of the largest run) plus about 1 GB per worker, and uses at most 85% of the free memory, one worker per core and one per unit; the log shows the estimate and the choice. With too little memory for two workers it runs one after another.\nA number, e.g. 4: at most that many workers, whatever the memory.\n\nWithout the toolbox SeeCAT runs one after another. A pool that is already open is reused as it is.",
+      "choices": []
+    },
+    {
+      "path": "overwrite",
+      "label": "Overwrite finished units",
+      "section": "Run",
+      "advanced": true,
+      "widget": "flag",
+      "default": "false",
+      "help": "A unit that already finished with the same settings is skipped. Tick to compute it again anyway. A unit whose settings changed is always redone.",
+      "choices": []
+    },
+    {
+      "path": "keep_work",
+      "label": "Keep work files",
+      "section": "Run",
+      "advanced": true,
+      "widget": "flag",
+      "default": "false",
+      "help": "Keep the work folder of units that succeeded, e.g. to inspect intermediate images.",
+      "choices": []
+    },
+    {
+      "path": "qc_exclusions",
+      "label": "Leave out QC exclusions",
+      "section": "Selection",
+      "advanced": false,
+      "widget": "flag",
+      "default": "true",
+      "help": "Ticked (default): runs (and T1w images) marked \"exclude\" in the derivatives folder's reports/qc_exclusions.tsv are left out, and the log lists them. That list is made by the group QC report after Preprocessing or fMRIPrep denoising, from the rules there (head motion, coverage, too little data); confirm or change each decision on the QC reports page.\n\nUntick to use every run, e.g. to compare results with and without the excluded data.",
+      "choices": []
+    }
+  ],
+  "degree": [
+    {
+      "path": "input_dir",
+      "label": "Derivatives folder",
+      "section": "Input",
+      "advanced": false,
+      "widget": "folder",
+      "default": "",
+      "help": "The SeeCAT derivatives folder written by the Preprocessing or fMRIPrep page, e.g. D:/study/bids/derivatives/seecat. It holds, per run, the preprocessed BOLD series (*_desc-<input>_bold.nii.gz), the subject brain mask and the confounds table with the censored frames.\n\nDegree maps are written next to them, in the same folder unless Output folder is set.",
+      "choices": []
+    },
+    {
+      "path": "input",
+      "label": "Input series",
+      "section": "Input",
+      "advanced": false,
+      "widget": "text",
+      "default": "denoised",
+      "help": "Which series of each run the network is built from: the desc label of the file name.\n\ndenoised (default): denoised and band-pass filtered, NOT smoothed. Use this one: smoothing before correlating inflates the connections between neighbouring voxels.\nOther labels, e.g. denoisedSm6, if your preprocessing wrote them.",
+      "choices": []
+    },
+    {
+      "path": "space",
+      "label": "Space",
+      "section": "Input",
+      "advanced": true,
+      "widget": "text",
+      "default": "",
+      "help": "Needed only when the derivatives hold the runs in more than one space, e.g. MNI152NLin2009cAsym and T1w from fMRIPrep. Empty: the only space present.",
+      "choices": []
+    },
+    {
+      "path": "mask",
+      "label": "Mask",
+      "section": "Network",
+      "advanced": false,
+      "widget": "mask",
+      "default": "gm",
+      "help": "The voxels that make up the network: every voxel of this mask is a node and is correlated with every other.\n\nGrey matter (gm, default): SeeCAT's grey-matter mask (SPM TPM GM > 0.2) resampled to the data, as in SeeCAT 1.0. White matter and CSF voxels would add noise connections.\nWhole brain (brain): every voxel of the subject's brain mask.\nMask file: your own NIfTI image in the space of the data (MNI); voxels > 0 are kept, e.g. a cortical mask or a mask shared by all subjects. Choose it with the folder button.\n\nThe mask is always limited to the subject's brain mask. The time and memory grow with the square of the number of voxels: about 50 000 grey-matter voxels at 3 mm, 4 times more at 2 mm.",
+      "choices": []
+    },
+    {
+      "path": "threshold",
+      "label": "r threshold",
+      "section": "Network",
+      "advanced": false,
+      "widget": "number",
+      "default": "0.2",
+      "help": "A connection counts when its correlation r is at least this value (after the sign rule below), e.g. 0.2 (default, as in SeeCAT 1.0), 0.25 or 0.3.\n\nHigher thresholds keep fewer, stronger connections. The value appears in the output name, e.g. desc-degPosBinR0p2. Range 0 to below 1.",
+      "choices": []
+    },
+    {
+      "path": "sign",
+      "label": "Correlations",
+      "section": "Network",
+      "advanced": false,
+      "widget": "multi",
+      "default": "positive",
+      "help": "Which correlations count; each ticked option gives its own maps.\n\npositive (default, desc-degPos...): r >= threshold. The usual choice, since negative correlations depend on the denoising (e.g. global signal regression).\nabsolute (desc-degAbs...): |r| >= threshold, positive and negative together.\nnegative (desc-degNeg...): -r >= threshold, the anti-correlations only.",
+      "choices": [
+        "positive",
+        "absolute",
+        "negative"
+      ]
+    },
+    {
+      "path": "weight",
+      "label": "Measures",
+      "section": "Network",
+      "advanced": false,
+      "widget": "multi",
+      "default": "binary, weighted",
+      "help": "What is added up over a voxel's connections; each ticked option gives its own maps.\n\nbinary = degree (desc-deg...Bin...): the number of connections above the threshold.\nweighted = strength (desc-deg...Wei...): the sum of their r values.\n\nExample: a voxel with 3 connections of r = 0.3, 0.5 and 0.6 has degree 3 and strength 1.4.",
+      "choices": [
+        "binary",
+        "weighted"
+      ]
+    },
+    {
+      "path": "exclude_local_mm",
+      "label": "Exclude within (mm)",
+      "section": "Network",
+      "advanced": true,
+      "widget": "number",
+      "default": "0",
+      "help": "Connections between voxels closer than this distance are not counted. Neighbouring voxels correlate partly through the data's own smoothness, so short connections can dominate degree.\n\n0 (default): count all. E.g. 20: leave out connections shorter than 20 mm (leaves out the immediate neighbourhood).",
+      "choices": []
+    },
+    {
+      "path": "distance_edges",
+      "label": "Distance bins (mm)",
+      "section": "Network",
+      "advanced": true,
+      "widget": "text",
+      "default": "[0 Inf]",
+      "help": "Splits the connections by length, with one map per bin. Give the bin edges in mm, increasing, starting at 0 or more; Inf means no upper limit.\n\n[0 Inf] (default): one map with all connections.\n[0 75 Inf]: short-range (up to 75 mm) and long-range (beyond 75 mm) degree, e.g. desc-degPosBinR0p2D0to75 and ...D75toInf.\n[0 25 75 Inf]: three bins.\n\nA connection of length d is in the bin lo < d <= hi.",
+      "choices": []
+    },
+    {
+      "path": "zscore",
+      "label": "Also z-scored maps",
+      "section": "Output maps",
+      "advanced": false,
+      "widget": "flag",
+      "default": "true",
+      "help": "Also write each map z-scored within the mask (minus the mean, divided by the standard deviation over the mask voxels), as stat-z next to the stat-raw maps.\n\nRaw degree depends on the number of voxels and the data quality of each subject; z-scored maps are easier to compare between subjects and are the usual input to group statistics.",
+      "choices": []
+    },
+    {
+      "path": "smooth_fwhm",
+      "label": "Smooth maps",
+      "section": "Output maps",
+      "advanced": false,
+      "widget": "optnumber",
+      "default": "6",
+      "help": "Smooth the finished maps with a Gaussian kernel of this FWHM in mm, e.g. 6 (default) or 4. Smoothed copies are written with Sm<fwhm> in the name (desc-degPosBinR0p2Sm6); the unsmoothed maps are always kept.\n\nThe network itself is built from the unsmoothed series, and only the maps are smoothed, as group statistics usually need. Untick On to skip smoothing. Three values, e.g. 6 6 8, give a different FWHM per axis.",
+      "choices": []
+    },
+    {
+      "path": "output_dir",
+      "label": "Output folder",
+      "section": "Output",
+      "advanced": false,
+      "widget": "folder",
+      "default": "",
+      "help": "Where the results go. Empty: the default of the pipeline, next to the input (for the analyses, the derivatives folder itself, so the maps sit beside the runs they come from).\n\nSet it to keep the results of different settings apart, e.g. D:/study/derivatives/degree_r03. Logs and the config of every run are written to its logs folder.",
+      "choices": []
+    },
+    {
+      "path": "work_dir",
+      "label": "Work folder",
+      "section": "Output",
+      "advanced": true,
+      "widget": "folder",
+      "default": "",
+      "help": "Intermediate files, one subfolder per unit. Empty: seecat_work next to the output folder.\n\nIt is deleted after a unit succeeds (unless Keep work files) and kept after a failure, so a rerun does not redo finished steps. A fast local disk helps.",
+      "choices": []
+    },
+    {
+      "path": "subjects",
+      "label": "Subjects",
+      "section": "Selection",
+      "advanced": false,
+      "widget": "labels",
+      "default": "",
+      "help": "Which subjects to process: labels without \"sub-\", comma separated, e.g. 01, 02, 15. Empty: all subjects found.",
+      "choices": []
+    },
+    {
+      "path": "sessions",
+      "label": "Sessions",
+      "section": "Selection",
+      "advanced": true,
+      "widget": "labels",
+      "default": "",
+      "help": "Labels without \"ses-\", comma separated, e.g. 1, 2. Empty: all sessions.",
+      "choices": []
+    },
+    {
+      "path": "task",
+      "label": "Task",
+      "section": "Selection",
+      "advanced": false,
+      "widget": "text",
+      "default": "",
+      "help": "The task label of the runs, e.g. rest. Empty: the only task present; if the data hold several tasks, name one.",
+      "choices": []
+    },
+    {
+      "path": "runs",
+      "label": "Runs",
+      "section": "Selection",
+      "advanced": true,
+      "widget": "labels",
+      "default": "",
+      "help": "Run labels, comma separated, e.g. 1, 2. Empty: all runs.",
+      "choices": []
+    },
+    {
+      "path": "n_workers",
+      "label": "Parallel workers",
+      "section": "Run",
+      "advanced": false,
+      "widget": "number",
+      "default": "0",
+      "help": "How many units (runs or subjects) are processed at the same time, each by a worker of a parallel pool (Parallel Computing Toolbox).\n\n0: one after another, no pool (the default).\nauto: as many workers as fit in memory. SeeCAT estimates the memory one unit needs (from the size of the largest run) plus about 1 GB per worker, and uses at most 85% of the free memory, one worker per core and one per unit; the log shows the estimate and the choice. With too little memory for two workers it runs one after another.\nA number, e.g. 4: at most that many workers, whatever the memory.\n\nWithout the toolbox SeeCAT runs one after another. A pool that is already open is reused as it is.",
+      "choices": []
+    },
+    {
+      "path": "overwrite",
+      "label": "Overwrite finished units",
+      "section": "Run",
+      "advanced": true,
+      "widget": "flag",
+      "default": "false",
+      "help": "A unit that already finished with the same settings is skipped. Tick to compute it again anyway. A unit whose settings changed is always redone.",
+      "choices": []
+    },
+    {
+      "path": "keep_work",
+      "label": "Keep work files",
+      "section": "Run",
+      "advanced": true,
+      "widget": "flag",
+      "default": "false",
+      "help": "Keep the work folder of units that succeeded, e.g. to inspect intermediate images.",
+      "choices": []
+    },
+    {
+      "path": "qc_exclusions",
+      "label": "Leave out QC exclusions",
+      "section": "Selection",
+      "advanced": false,
+      "widget": "flag",
+      "default": "true",
+      "help": "Ticked (default): runs (and T1w images) marked \"exclude\" in the derivatives folder's reports/qc_exclusions.tsv are left out, and the log lists them. That list is made by the group QC report after Preprocessing or fMRIPrep denoising, from the rules there (head motion, coverage, too little data); confirm or change each decision on the QC reports page.\n\nUntick to use every run, e.g. to compare results with and without the excluded data.",
+      "choices": []
+    }
+  ],
+  "gradient": [
+    {
+      "path": "input_dir",
+      "label": "Derivatives folder",
+      "section": "Input",
+      "advanced": false,
+      "widget": "folder",
+      "default": "",
+      "help": "The SeeCAT derivatives folder written by the Preprocessing or fMRIPrep page, e.g. D:/study/bids/derivatives/seecat. Every run found there is used (or those chosen under Selection); they are analysed together because their gradients are aligned to each other.",
+      "choices": []
+    },
+    {
+      "path": "input",
+      "label": "Input series",
+      "section": "Input",
+      "advanced": false,
+      "widget": "text",
+      "default": "denoised",
+      "help": "Which series of each run is used: denoised (default; unsmoothed) or another desc label such as denoisedSm6. Voxel nodes average their voxels anyway, so smoothing adds little.",
+      "choices": []
+    },
+    {
+      "path": "space",
+      "label": "Space",
+      "section": "Input",
+      "advanced": true,
+      "widget": "text",
+      "default": "",
+      "help": "Needed only when the derivatives hold the runs in more than one space. Empty: the only space present.",
+      "choices": []
+    },
+    {
+      "path": "nodes",
+      "label": "Nodes",
+      "section": "Nodes",
+      "advanced": false,
+      "widget": "choice",
+      "default": "voxels",
+      "help": "What the connectivity matrix is built between.\n\nvoxels (default): the cells of a grid of Node size in MNI space inside the Mask; each node's signal is the mean of the data voxels in it. Gives voxel-wise gradient maps.\natlas: the parcels of an atlas image (e.g. Schaefer 400 in MNI space); fast, and the values are also written as a table per run.\n\nTime and memory grow with the SQUARE of the number of nodes (see Node size).",
+      "choices": [
+        "voxels",
+        "atlas"
+      ]
+    },
+    {
+      "path": "node_size",
+      "label": "Node size (mm)",
+      "section": "Nodes",
+      "advanced": false,
+      "widget": "number",
+      "default": "4",
+      "help": "voxels only: the grid spacing. Nodes in the grey-matter mask, and the memory one run needs (about three node x node matrices, a fourth with group alignment):\n  8 mm:  2 700 nodes, < 0.3 GB, about 1 s per run\n  6 mm:  6 500 nodes, about 1.3 GB, about 3 s per run\n  5 mm: 11 200 nodes, about 2 GB, about 10 s per run\n  4 mm: 22 000 nodes, about 7 GB, about 30 s per run (default)\n  3 mm: 52 000 nodes, about 40 GB and several minutes per run: workstations only.\n(Times measured on a 32-core desktop with 200-volume runs; fewer cores take longer.)\nWith the brain mask there are about a third more nodes. Each parallel worker needs this memory again. SeeCAT checks the free memory before it starts and stops with advice when it is not enough.",
+      "choices": []
+    },
+    {
+      "path": "mask",
+      "label": "Mask",
+      "section": "Nodes",
+      "advanced": false,
+      "widget": "mask",
+      "default": "gm",
+      "help": "voxels only: where the nodes are.\n\nGrey matter (gm, default): cells at least half inside SeeCAT's grey-matter mask; the usual choice (Margulies et al. 2016 used cortex).\nWhole brain (brain): cells inside the brain mask, including white matter.\nMask file: your own NIfTI mask in MNI space, e.g. cortex only.",
+      "choices": []
+    },
+    {
+      "path": "atlas",
+      "label": "Atlas",
+      "section": "Nodes",
+      "advanced": false,
+      "widget": "file",
+      "default": "",
+      "help": "atlas only: a NIfTI image in MNI space whose voxels hold integer parcel labels (0 = background), e.g. Schaefer2018_400Parcels_7Networks_order_FSLMNI152_2mm.nii.gz. Every label becomes a node; the gradient maps paint each parcel with its value.",
+      "choices": []
+    },
+    {
+      "path": "n_components",
+      "label": "Components",
+      "section": "Embedding",
+      "advanced": true,
+      "widget": "number",
+      "default": "10",
+      "help": "How many gradients are computed and used in the alignment, 10 by default (BrainSpace). More components make the alignment more stable; they cost little.",
+      "choices": []
+    },
+    {
+      "path": "n_maps",
+      "label": "Maps written",
+      "section": "Embedding",
+      "advanced": false,
+      "widget": "number",
+      "default": "3",
+      "help": "How many gradients are written per run, 3 by default (desc-grad1, grad2, grad3 ...). Gradient 1 explains the most variance (usually sensory to default-mode cortex), gradient 2 the next (often visual to somatomotor), and so on. The eigenvalues of all components are in the JSON sidecars and the group table.",
+      "choices": []
+    },
+    {
+      "path": "sparsity",
+      "label": "Sparsity",
+      "section": "Embedding",
+      "advanced": true,
+      "widget": "number",
+      "default": "0.9",
+      "help": "Share of each node's connections set to 0 before the affinity, keeping only its strongest ones: 0.9 (default) keeps the top 10%, as Margulies et al. 2016 and BrainSpace.",
+      "choices": []
+    },
+    {
+      "path": "kernel",
+      "label": "Affinity",
+      "section": "Embedding",
+      "advanced": true,
+      "widget": "choice",
+      "default": "normalized_angle",
+      "help": "How similar two nodes' connectivity profiles are.\n\nnormalized_angle (default): 1 - angle/pi between the profiles; BrainSpace's recommendation.\ncosine: cosine similarity, negative values set to 0 (Margulies et al. 2016).\nnone: the sparsified connectivity itself (symmetrised).",
+      "choices": [
+        "normalized_angle",
+        "cosine",
+        "none"
+      ]
+    },
+    {
+      "path": "alpha",
+      "label": "Diffusion alpha",
+      "section": "Embedding",
+      "advanced": true,
+      "widget": "number",
+      "default": "0.5",
+      "help": "Anisotropy of the diffusion map: 0.5 (default) lowers the influence of how densely nodes are sampled (Coifman & Lafon 2006); 0 is a Laplacian eigenmap, 1 the Laplace-Beltrami operator.",
+      "choices": []
+    },
+    {
+      "path": "align",
+      "label": "Alignment",
+      "section": "Embedding",
+      "advanced": false,
+      "widget": "choice",
+      "default": "group",
+      "help": "Gradients of separate runs can come out in a different order or sign; alignment makes gradient k comparable across runs, which group statistics need.\n\ngroup and procrustes both use generalized Procrustes, as BrainSpace: every run is rotated (rotation and sign flips only, no scaling) onto a reference, the mean of the rotated runs becomes the new reference, and this repeats up to 10 times or until the reference changes by less than 1e-5. They differ in the first reference:\ngroup (default): the gradients of the group-mean connectivity matrix, so gradient k keeps its group-level meaning. Needs one more node x node matrix of memory. These starting gradients are also written (desc-grad<k>_groupmatrix).\nprocrustes: the first run's gradients; no group matrix.\nnone: each run's own gradients; only for looking at single runs.",
+      "choices": [
+        "group",
+        "procrustes",
+        "none"
+      ]
+    },
+    {
+      "path": "output_dir",
+      "label": "Output folder",
+      "section": "Output",
+      "advanced": false,
+      "widget": "folder",
+      "default": "",
+      "help": "Where the results go. Empty: the default of the pipeline, next to the input (for the analyses, the derivatives folder itself, so the maps sit beside the runs they come from).\n\nSet it to keep the results of different settings apart, e.g. D:/study/derivatives/degree_r03. Logs and the config of every run are written to its logs folder.",
+      "choices": []
+    },
+    {
+      "path": "work_dir",
+      "label": "Work folder",
+      "section": "Output",
+      "advanced": true,
+      "widget": "folder",
+      "default": "",
+      "help": "Intermediate files, one subfolder per unit. Empty: seecat_work next to the output folder.\n\nIt is deleted after a unit succeeds (unless Keep work files) and kept after a failure, so a rerun does not redo finished steps. A fast local disk helps.",
+      "choices": []
+    },
+    {
+      "path": "subjects",
+      "label": "Subjects",
+      "section": "Selection",
+      "advanced": false,
+      "widget": "labels",
+      "default": "",
+      "help": "Which subjects to process: labels without \"sub-\", comma separated, e.g. 01, 02, 15. Empty: all subjects found.",
+      "choices": []
+    },
+    {
+      "path": "sessions",
+      "label": "Sessions",
+      "section": "Selection",
+      "advanced": true,
+      "widget": "labels",
+      "default": "",
+      "help": "Labels without \"ses-\", comma separated, e.g. 1, 2. Empty: all sessions.",
+      "choices": []
+    },
+    {
+      "path": "task",
+      "label": "Task",
+      "section": "Selection",
+      "advanced": false,
+      "widget": "text",
+      "default": "",
+      "help": "The task label of the runs, e.g. rest. Empty: the only task present; if the data hold several tasks, name one.",
+      "choices": []
+    },
+    {
+      "path": "runs",
+      "label": "Runs",
+      "section": "Selection",
+      "advanced": true,
+      "widget": "labels",
+      "default": "",
+      "help": "Run labels, comma separated, e.g. 1, 2. Empty: all runs.",
+      "choices": []
+    },
+    {
+      "path": "n_workers",
+      "label": "Parallel workers",
+      "section": "Run",
+      "advanced": false,
+      "widget": "number",
+      "default": "0",
+      "help": "Runs computed at the same time, each on a worker of a parallel pool. Every worker needs the memory of one run (see Node size) plus about 1 GB, and with group alignment the main MATLAB keeps about four node x node matrices for the group step.\n\n0: one after another (default).\nauto: as many workers as fit in 85% of the free memory after that (at most one per core and per run); e.g. with 4 mm nodes and 64 GB free, about 5 workers. The log shows the estimate.\nA number: at most that many; SeeCAT stops before starting if they cannot fit.",
+      "choices": []
+    },
+    {
+      "path": "overwrite",
+      "label": "Overwrite finished units",
+      "section": "Run",
+      "advanced": true,
+      "widget": "flag",
+      "default": "false",
+      "help": "A unit that already finished with the same settings is skipped. Tick to compute it again anyway. A unit whose settings changed is always redone.",
+      "choices": []
+    },
+    {
+      "path": "keep_work",
+      "label": "Keep work files",
+      "section": "Run",
+      "advanced": true,
+      "widget": "flag",
+      "default": "false",
+      "help": "Keep the work folder of units that succeeded, e.g. to inspect intermediate images.",
+      "choices": []
+    },
+    {
+      "path": "qc_exclusions",
+      "label": "Leave out QC exclusions",
+      "section": "Selection",
+      "advanced": false,
+      "widget": "flag",
+      "default": "true",
+      "help": "Ticked (default): runs (and T1w images) marked \"exclude\" in the derivatives folder's reports/qc_exclusions.tsv are left out, and the log lists them. That list is made by the group QC report after Preprocessing or fMRIPrep denoising, from the rules there (head motion, coverage, too little data); confirm or change each decision on the QC reports page.\n\nUntick to use every run, e.g. to compare results with and without the excluded data.",
+      "choices": []
+    }
+  ],
+  "harmonize": [
+    {
+      "path": "input_dir",
+      "label": "Derivatives folder",
+      "section": "Input",
+      "advanced": false,
+      "widget": "folder",
+      "default": "",
+      "help": "The SeeCAT derivatives folder with the per-subject maps to harmonise (output of Seed FC, Degree or Gradients), e.g. D:/study/bids/derivatives/seecat. The harmonised maps are written next to the originals unless Output folder is set.",
+      "choices": []
+    },
+    {
+      "path": "maps",
+      "label": "Maps",
+      "section": "Input",
+      "advanced": false,
+      "widget": "maps",
+      "default": "",
+      "help": "Which maps to harmonise, by the parts of their file names, as in Statistics: e.g. Map PCC and Statistic z for seed FC, or Map grad1Vox4 for the first gradient. Open a list to pick from the values found; the line below counts the matching maps.\n\nHarmonise each kind of map separately (one run of this page per measure). All maps of all sites are needed together.",
+      "choices": []
+    },
+    {
+      "path": "participants",
+      "label": "participants.tsv",
+      "section": "Input",
+      "advanced": true,
+      "widget": "file",
+      "default": "",
+      "help": "The table with participant_id, the site column and the covariates. Empty: participants.tsv of the BIDS dataset the derivatives come from.",
+      "choices": []
+    },
+    {
+      "path": "site",
+      "label": "Site column",
+      "section": "Model",
+      "advanced": false,
+      "widget": "text",
+      "default": "site",
+      "help": "The participants.tsv column that names the site or scanner of each subject, e.g. site, scanner or center. Every site needs at least 2 subjects; ComBat works best with 10 or more per site. A study scanned on two scanners at one centre has two sites.",
+      "choices": []
+    },
+    {
+      "path": "method",
+      "label": "Method",
+      "section": "Model",
+      "advanced": false,
+      "widget": "choice",
+      "default": "combat",
+      "help": "combat (default): ComBat with parametric empirical Bayes (Johnson et al. 2007; Fortin et al. 2017, 2018). Site differences in the mean and variance of every voxel are removed; the estimates borrow strength across voxels, which helps small sites. Same results as neuroCombat.\ncombat_nonparam: empirical Bayes without assuming a distribution for the site effects; slower (prior from up to 5000 other voxels).\ncombat_noeb: location and scale per voxel without shrinkage; for large sites.\ncombat_mean: site means only, variances left as they are.\ncombat_gam: ComBat-GAM (Pomponio et al. 2020): Nonlinear covariates such as age are kept as smooth curves, for wide age ranges.\ncovbat: CovBat (Chen et al. 2022): ComBat, then also the site differences in how voxels co-vary are removed.\nlm: linear regression; site means removed with the covariates in the model, no empirical Bayes or scaling.\n\nSmall sites (fewer than about 20 subjects each): the variance adjustment of combat, combat_nonparam, combat_noeb, combat_gam and covbat can make later tests of the kept covariates too liberal (Nygaard et al. 2016). In the manual's example (3 sites of 10, simulated age) a GM-age regression found 3 false clusters after combat and none after combat_mean or lm. Prefer combat_mean or lm for small samples; the log warns.",
+      "choices": [
+        "combat",
+        "combat_nonparam",
+        "combat_noeb",
+        "combat_mean",
+        "combat_gam",
+        "covbat",
+        "lm"
+      ]
+    },
+    {
+      "path": "covariates",
+      "label": "Covariates kept",
+      "section": "Model",
+      "advanced": false,
+      "widget": "labels",
+      "default": "",
+      "help": "participants.tsv columns whose effects must survive harmonisation, comma separated, e.g. diagnosis, age, sex. Text columns become categories. Include every variable you will test later: an effect that is not listed and differs between sites is partly removed with the site effect.",
+      "choices": []
+    },
+    {
+      "path": "nonlinear",
+      "label": "Nonlinear covariates",
+      "section": "Model",
+      "advanced": false,
+      "widget": "labels",
+      "default": "",
+      "help": "Numeric columns kept as smooth (natural spline) effects instead of straight lines, e.g. age over a lifespan sample. Needed by combat_gam; allowed with every method. Do not list a column in both boxes.",
+      "choices": []
+    },
+    {
+      "path": "spline_df",
+      "label": "Spline df",
+      "section": "Model",
+      "advanced": true,
+      "widget": "number",
+      "default": "3",
+      "help": "Degrees of freedom of each nonlinear covariate's spline, 3 by default; more allow wigglier curves.",
+      "choices": []
+    },
+    {
+      "path": "ref_site",
+      "label": "Reference site",
+      "section": "Model",
+      "advanced": true,
+      "widget": "text",
+      "default": "",
+      "help": "A site whose maps are left unchanged; the other sites are mapped onto it (e.g. the largest site, or the one a normative model was built on). Empty (default): all sites are mapped to their common average.",
+      "choices": []
+    },
+    {
+      "path": "covbat_var",
+      "label": "CovBat variance",
+      "section": "Model",
+      "advanced": true,
+      "widget": "number",
+      "default": "0.95",
+      "help": "covbat only: share of the residual variance whose principal components are harmonised, 0.95 by default.",
+      "choices": []
+    },
+    {
+      "path": "mask",
+      "label": "Mask",
+      "section": "Model",
+      "advanced": false,
+      "widget": "mask",
+      "default": "gm",
+      "help": "The voxels harmonised: grey matter (gm, default), whole brain, or a mask file; always only voxels that are non-zero in every map. Voxels outside are 0 in the outputs, so Statistics leaves them out.",
+      "choices": []
+    },
+    {
+      "path": "label",
+      "label": "Output label",
+      "section": "Output",
+      "advanced": false,
+      "widget": "text",
+      "default": "ComBat",
+      "help": "Added to the desc label of each map, e.g. desc-PCC -> desc-PCCComBat (default ComBat). Use another label to keep the results of different methods apart (e.g. CovBat). In Statistics, choose Map PCCComBat.",
+      "choices": []
+    },
+    {
+      "path": "output_dir",
+      "label": "Output folder",
+      "section": "Output",
+      "advanced": false,
+      "widget": "folder",
+      "default": "",
+      "help": "Where the results go. Empty: the default of the pipeline, next to the input (for the analyses, the derivatives folder itself, so the maps sit beside the runs they come from).\n\nSet it to keep the results of different settings apart, e.g. D:/study/derivatives/degree_r03. Logs and the config of every run are written to its logs folder.",
+      "choices": []
+    },
+    {
+      "path": "work_dir",
+      "label": "Work folder",
+      "section": "Output",
+      "advanced": true,
+      "widget": "folder",
+      "default": "",
+      "help": "Intermediate files, one subfolder per unit. Empty: seecat_work next to the output folder.\n\nIt is deleted after a unit succeeds (unless Keep work files) and kept after a failure, so a rerun does not redo finished steps. A fast local disk helps.",
+      "choices": []
+    },
+    {
+      "path": "overwrite",
+      "label": "Overwrite finished units",
+      "section": "Run",
+      "advanced": true,
+      "widget": "flag",
+      "default": "false",
+      "help": "A unit that already finished with the same settings is skipped. Tick to compute it again anyway. A unit whose settings changed is always redone.",
+      "choices": []
+    },
+    {
+      "path": "keep_work",
+      "label": "Keep work files",
+      "section": "Run",
+      "advanced": true,
+      "widget": "flag",
+      "default": "false",
+      "help": "Keep the work folder of units that succeeded, e.g. to inspect intermediate images.",
+      "choices": []
+    },
+    {
+      "path": "qc_exclusions",
+      "label": "Leave out QC exclusions",
+      "section": "Input",
+      "advanced": false,
+      "widget": "flag",
+      "default": "true",
+      "help": "Ticked (default): runs (and T1w images) marked \"exclude\" in the derivatives folder's reports/qc_exclusions.tsv are left out, and the log lists them. That list is made by the group QC report after Preprocessing or fMRIPrep denoising, from the rules there (head motion, coverage, too little data); confirm or change each decision on the QC reports page.\n\nUntick to use every run, e.g. to compare results with and without the excluded data.",
+      "choices": []
+    },
+    {
+      "path": "subjects",
+      "label": "Subjects",
+      "section": "Input",
+      "advanced": true,
+      "widget": "labels",
+      "default": "",
+      "help": "Only these subjects, labels without \"sub-\", comma separated. Empty: all with a matching map.",
+      "choices": []
+    }
+  ],
+  "stat": [
+    {
+      "path": "name",
+      "label": "Analysis name",
+      "section": "Input",
+      "advanced": false,
+      "widget": "text",
+      "default": "",
+      "help": "A name for this analysis, letters and digits only, e.g. PCCzSCHZvsCTL. Results go to <output folder>/group/<name>/ and every file starts with it, so different analyses of the same data stay apart. Running again with the same name and settings skips the analysis (tick Overwrite to redo it).",
+      "choices": []
+    },
+    {
+      "path": "input_dir",
+      "label": "Derivatives folder",
+      "section": "Input",
+      "advanced": false,
+      "widget": "folder",
+      "default": "",
+      "help": "The SeeCAT derivatives folder that holds the per-subject maps, e.g. D:/study/bids/derivatives/seecat (the output of Seed FC or Degree).\n\nOnce it is set, the Maps fields below list the values found there.",
+      "choices": []
+    },
+    {
+      "path": "maps",
+      "label": "Maps",
+      "section": "Input",
+      "advanced": false,
+      "widget": "maps",
+      "default": "",
+      "help": "Which per-subject map enters the analysis, by the parts of its file name. Every subject must have exactly one matching map (two for paired designs, one per level).\n\nMap (desc): the seed or measure, e.g. PCC (seed FC) or degPosBinR0p2Sm6 (degree).\nStatistic (stat): z (Fisher z of r, or z-scored degree; the usual choice) or raw.\nSuffix: connectivity for SeeCAT's maps.\nSpace and Task: needed only when several are present.\nOther: further entities as key=value, comma separated, e.g. ses=1, run=1.\n\nOpen a list to pick from the values in the derivatives folder, or type a value. Empty fields match anything. The line below the fields counts the matching maps.\n\nExample: sub-01_task-rest_space-MNI152NLin2009cAsym_desc-PCC_stat-z_connectivity.nii.gz is chosen by Map PCC, Statistic z, Suffix connectivity.",
+      "choices": []
+    },
+    {
+      "path": "participants",
+      "label": "participants.tsv",
+      "section": "Input",
+      "advanced": true,
+      "widget": "file",
+      "default": "",
+      "help": "The table of subject information (group, age, sex, ...) with a participant_id column (sub-01, ...). Empty: participants.tsv of the BIDS dataset the derivatives come from.\n\nFactor, Regressors and Covariates name its columns. Subjects with an empty or n/a value in a used column are left out and listed in the log.",
+      "choices": []
+    },
+    {
+      "path": "design",
+      "label": "Design",
+      "section": "Model",
+      "advanced": false,
+      "widget": "choice",
+      "default": "one_sample",
+      "help": "one_sample: is the mean map different from 0? (e.g. the PCC network of all subjects). Contrasts pos and neg.\ntwo_sample: do two groups differ? Factor = the participants column of the group; contrasts AgtB and BgtA.\npaired: two maps per subject (e.g. ses-1 and ses-2, before and after); Factor = the entity that differs (ses, desc, ...).\nanova1: three or more groups; F contrast of equal means.\nanova1_rm: three or more maps per subject (repeated measures); F contrast.\nregression: does the map vary with a score (age, symptoms)? Regressors = the columns; contrasts <name>pos and <name>neg.\ncustom: your own design matrix (Design TSV) and Contrasts.",
+      "choices": [
+        "one_sample",
+        "two_sample",
+        "paired",
+        "anova1",
+        "anova1_rm",
+        "regression",
+        "custom"
+      ]
+    },
+    {
+      "path": "factor",
+      "label": "Factor",
+      "section": "Model",
+      "advanced": false,
+      "widget": "text",
+      "default": "",
+      "help": "two_sample and anova1: the participants.tsv column that holds the group, e.g. diagnosis.\npaired and anova1_rm: the file-name entity whose value differs between a subject's maps, e.g. ses (sessions) or desc (two seeds or measures).\nNot used by the other designs.",
+      "choices": []
+    },
+    {
+      "path": "levels",
+      "label": "Levels",
+      "section": "Model",
+      "advanced": false,
+      "widget": "labels",
+      "default": "",
+      "help": "The levels of Factor in the order the contrasts use, comma separated, e.g. CONTROL, SCHZ: AgtB is then CONTROL > SCHZ. Levels not listed are left out, so this also picks two groups out of several. Empty: all levels, in the order found.",
+      "choices": []
+    },
+    {
+      "path": "regressors",
+      "label": "Regressors",
+      "section": "Model",
+      "advanced": false,
+      "widget": "labels",
+      "default": "",
+      "help": "regression only: participants.tsv columns of the scores tested, comma separated, e.g. age or PANSS_total, MoCA. They are mean-centred and fitted in one model, so each is tested adjusted for the others.",
+      "choices": []
+    },
+    {
+      "path": "covariates",
+      "label": "Covariates",
+      "section": "Model",
+      "advanced": false,
+      "widget": "labels",
+      "default": "",
+      "help": "participants.tsv columns to adjust for (not tested), comma separated, e.g. age, sex, mean_fd. Numbers are mean-centred; text columns (e.g. sex, site) become centred dummy columns. The log warns when a column is strongly collinear with others (VIF > 5). Paired and repeated-measures designs cannot take between-subject covariates.",
+      "choices": []
+    },
+    {
+      "path": "design_tsv",
+      "label": "Design TSV",
+      "section": "Model",
+      "advanced": true,
+      "widget": "file",
+      "default": "",
+      "help": "custom design only: a tab-separated table with a path column (the map of each row, absolute or relative to the table) and one numeric column per design column, e.g.\npath  A  B  age\nsub-01_map.nii  1  0  23\n...\nContrasts then have one weight per design column, in this order.",
+      "choices": []
+    },
+    {
+      "path": "contrasts",
+      "label": "Contrasts",
+      "section": "Model",
+      "advanced": true,
+      "widget": "contrasts",
+      "default": "",
+      "help": "One row per contrast: a name (letters and digits), type t or F, and the weights, one per design column (see <name>_design.tsv of a first run for the columns and their order). F weights have one row per line, separated by \";\", e.g. [1 -1 0; 0 1 -1].\n\nEmpty: the design's defaults (both directions of each T test, or the F test of equal means).",
+      "choices": []
+    },
+    {
+      "path": "variance",
+      "label": "Variance",
+      "section": "Model",
+      "advanced": true,
+      "widget": "choice",
+      "default": "auto",
+      "help": "Whether the groups or levels may have different variances (and, for repeated measures, correlated levels), as SPM's non-sphericity.\n\nauto (default): equal, except unequal for anova1_rm.\nequal: one variance for all (ordinary least squares).\nunequal: estimated with ReML over the strongly responding voxels, as SPM does.",
+      "choices": [
+        "auto",
+        "equal",
+        "unequal"
+      ]
+    },
+    {
+      "path": "mask",
+      "label": "Mask",
+      "section": "Inference",
+      "advanced": false,
+      "widget": "mask",
+      "default": "gm",
+      "help": "The voxels tested.\n\nGrey matter (gm, default): SeeCAT's grey-matter mask (SPM TPM GM > 0.2).\nWhole brain (brain): no extra mask.\nMask file: your own NIfTI image in MNI space (voxels > 0), e.g. a region of interest for a small-volume analysis; choose it with the folder button.\n\nIn every case only voxels that are non-zero in every subject's map are kept. A smaller mask means a milder correction.",
+      "choices": []
+    },
+    {
+      "path": "inference",
+      "label": "Correction",
+      "section": "Inference",
+      "advanced": false,
+      "widget": "multi",
+      "default": "cluster_fwe",
+      "help": "How the maps are corrected for multiple comparisons; each ticked method gives its own thresholded map and cluster table (desc-clusterFWE, -voxelFWE, -voxelFDR, -tfceFWE).\n\ncluster_fwe (default): clusters above the cluster-forming p, kept when their size has FWE p < Alpha (random field theory, as SPM).\nvoxel_fwe: voxels with FWE p < Alpha (random field theory, as SPM); strict.\nvoxel_fdr: voxels with false discovery rate < Alpha (Benjamini-Hochberg).\ntfce_fwe: threshold-free cluster enhancement with FWE p from permutations (as FSL randomise); no cluster-forming threshold to choose, robust, but slow: see TFCE permutations and Parallel workers.\n\nUnthresholded T/F, Z, p and effect maps are always written.",
+      "choices": [
+        "cluster_fwe",
+        "voxel_fwe",
+        "voxel_fdr",
+        "tfce_fwe"
+      ]
+    },
+    {
+      "path": "cdt_p",
+      "label": "Cluster-forming p",
+      "section": "Inference",
+      "advanced": false,
+      "widget": "number",
+      "default": "0.001",
+      "help": "cluster_fwe only: voxels below this uncorrected p form the clusters. 0.001 (default) is the recommended value; above 0.001 random field theory clusters are too liberal (Eklund et al. 2016), and the log warns.",
+      "choices": []
+    },
+    {
+      "path": "alpha",
+      "label": "Alpha",
+      "section": "Inference",
+      "advanced": false,
+      "widget": "number",
+      "default": "0.05",
+      "help": "The corrected significance level of every method, e.g. 0.05 (default). With Two-tailed, each T contrast is tested at Alpha/2.",
+      "choices": []
+    },
+    {
+      "path": "two_tailed",
+      "label": "Two-tailed (alpha/2 per T contrast)",
+      "section": "Inference",
+      "advanced": false,
+      "widget": "flag",
+      "default": "true",
+      "help": "The default T contrasts come in pairs (AgtB and BgtA, pos and neg), one per direction. Ticked (default): each is tested at Alpha/2, so the pair together is a two-tailed test at Alpha. Untick only for a direction chosen before looking at the data.",
+      "choices": []
+    },
+    {
+      "path": "tfce.n_perm",
+      "label": "TFCE permutations",
+      "section": "Inference",
+      "advanced": false,
+      "widget": "number",
+      "default": "5000",
+      "help": "tfce_fwe only: how many permutations (sign flips for one_sample, swaps within subjects for paired designs) build the null distribution. 5000 (default) as FSL randomise; the smallest possible p is 1/permutations. When fewer distinct permutations exist (e.g. 2^n sign flips of n maps), all are used.\n\nTime grows with the permutations, the contrasts and the mask: several minutes to an hour. Parallel workers (Run) share the permutations. The random seed is fixed, so results repeat exactly.",
+      "choices": []
+    },
+    {
+      "path": "tfce.E",
+      "label": "TFCE extent exponent E",
+      "section": "Inference",
+      "advanced": true,
+      "widget": "number",
+      "default": "0.5",
+      "help": "TFCE weight of cluster extent, 0.5 (default, Smith & Nichols 2009; as FSL for 3D data).",
+      "choices": []
+    },
+    {
+      "path": "tfce.H",
+      "label": "TFCE height exponent H",
+      "section": "Inference",
+      "advanced": true,
+      "widget": "number",
+      "default": "2",
+      "help": "TFCE weight of height, 2 (default, Smith & Nichols 2009; as FSL).",
+      "choices": []
+    },
+    {
+      "path": "output_dir",
+      "label": "Output folder",
+      "section": "Output",
+      "advanced": false,
+      "widget": "folder",
+      "default": "",
+      "help": "Where the results go. Empty: the default of the pipeline, next to the input (for the analyses, the derivatives folder itself, so the maps sit beside the runs they come from).\n\nSet it to keep the results of different settings apart, e.g. D:/study/derivatives/degree_r03. Logs and the config of every run are written to its logs folder.",
+      "choices": []
+    },
+    {
+      "path": "work_dir",
+      "label": "Work folder",
+      "section": "Output",
+      "advanced": true,
+      "widget": "folder",
+      "default": "",
+      "help": "Intermediate files, one subfolder per unit. Empty: seecat_work next to the output folder.\n\nIt is deleted after a unit succeeds (unless Keep work files) and kept after a failure, so a rerun does not redo finished steps. A fast local disk helps.",
+      "choices": []
+    },
+    {
+      "path": "n_workers",
+      "label": "Parallel workers",
+      "section": "Run",
+      "advanced": false,
+      "widget": "number",
+      "default": "0",
+      "help": "Used only by tfce_fwe: the permutations are shared among this many workers of a parallel pool (Parallel Computing Toolbox). The other corrections run in seconds and ignore it.\n\n0: no pool (default).\nauto: as many workers as fit in memory (each holds the maps of all subjects, plus about 1 GB), at most one per core; the log shows the estimate.\nA number, e.g. 8: at most that many.",
+      "choices": []
+    },
+    {
+      "path": "overwrite",
+      "label": "Overwrite finished units",
+      "section": "Run",
+      "advanced": true,
+      "widget": "flag",
+      "default": "false",
+      "help": "A unit that already finished with the same settings is skipped. Tick to compute it again anyway. A unit whose settings changed is always redone.",
+      "choices": []
+    },
+    {
+      "path": "keep_work",
+      "label": "Keep work files",
+      "section": "Run",
+      "advanced": true,
+      "widget": "flag",
+      "default": "false",
+      "help": "Keep the work folder of units that succeeded, e.g. to inspect intermediate images.",
+      "choices": []
+    },
+    {
+      "path": "qc_exclusions",
+      "label": "Leave out QC exclusions",
+      "section": "Input",
+      "advanced": false,
+      "widget": "flag",
+      "default": "true",
+      "help": "Ticked (default): runs (and T1w images) marked \"exclude\" in the derivatives folder's reports/qc_exclusions.tsv are left out, and the log lists them. That list is made by the group QC report after Preprocessing or fMRIPrep denoising, from the rules there (head motion, coverage, too little data); confirm or change each decision on the QC reports page.\n\nUntick to use every run, e.g. to compare results with and without the excluded data.",
+      "choices": []
+    },
+    {
+      "path": "subjects",
+      "label": "Subjects",
+      "section": "Input",
+      "advanced": true,
+      "widget": "labels",
+      "default": "",
+      "help": "Only these subjects, labels without \"sub-\", comma separated. Empty: every subject with a matching map.",
+      "choices": []
+    }
+  ]
+}

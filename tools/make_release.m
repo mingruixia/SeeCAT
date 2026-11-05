@@ -61,13 +61,22 @@ tarFile = fullfile(o.out, [name '.tar']);
 git(repo, sprintf('archive --format=tar -o "%s" HEAD', tarFile));
 untar(tarFile, stage);
 delete(tarFile);
-for drop = {'tools', 'tests/legacy_baseline', '.gitignore', '.gitattributes', 'Doc/description.docx', 'pax_global_header'}
+for drop = {'tools', 'tests/legacy_baseline', '.gitignore', '.gitattributes', 'Doc/description.docx', 'Doc/manual/src', 'pax_global_header'}
     f = fullfile(stage, drop{1});
     if exist(f, 'dir')
         rmdir(f, 's');
     elseif exist(f, 'file')
         delete(f);
     end
+end
+
+% the PDF manuals: built by Doc/manual/src/build.py --pdf, not kept in git
+for f = {'SeeCAT_Manual_EN.pdf', 'SeeCAT_Manual_ZH.pdf'}
+    src = fullfile(repo, 'Doc', 'manual', f{1});
+    if ~exist(src, 'file')
+        error('release:manual', 'Missing %s: run python Doc/manual/src/build.py --pdf first.', src);
+    end
+    copyfile(src, fullfile(stage, 'Doc', 'manual', f{1}));
 end
 
 % version stamp

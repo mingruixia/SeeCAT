@@ -1,0 +1,240 @@
+<h2>Batch scripting</h2>
+<p>Everything in the window is available from MATLAB code. A pipeline is configured by a struct and run by <code>seecat.run</code>; the window's Save button writes the same struct as JSON.</p>
+
+<h3>Functions</h3>
+<table>
+<tr><th>Function</th><th>Purpose</th></tr>
+<tr><td><code>SeeCAT</code></td><td>open the main window</td></tr>
+<tr><td><code>cfg = seecat.config('prep')</code></td><td>every option of a pipeline at its default (<code>prep</code>, <code>fmriprep</code>, <code>fc</code>, <code>degree</code>, <code>gradient</code>, <code>harmonize</code>, <code>stat</code>)</td></tr>
+<tr><td><code>cfg = seecat.config('file.json')</code></td><td>load a saved configuration; missing options take their defaults</td></tr>
+<tr><td><code>seecat.check_config(cfg)</code></td><td>report every invalid option at once</td></tr>
+<tr><td><code>seecat.save_config(cfg, 'file.json')</code></td><td>save a configuration</td></tr>
+<tr><td><code>S = seecat.run(cfg)</code></td><td>run a pipeline; <code>S</code> is the summary table (one row per unit)</td></tr>
+<tr><td><code>seecat.run('file.json')</code></td><td>run a saved configuration</td></tr>
+<tr><td><code>seecat.bids.scan_dicom(dir)</code>, <code>seecat.bids.from_dicom(dir, bids)</code></td><td>DICOM to BIDS</td></tr>
+<tr><td><code>R = seecat.qc.runs(folder, 'raw')</code></td><td>Data check table</td></tr>
+<tr><td><code>seecat.qc.exclusion_list(folder)</code></td><td>read the QC exclusion list with metrics; <code>(folder, 'set', ids, exclude, notes)</code> changes it</td></tr>
+<tr><td><code>seecat.viewer(file, ...)</code></td><td>open the viewer with maps</td></tr>
+</table>
+
+<h3>A complete study</h3>
+<p>The scripts of chapter 7, in one file. Each <code>seecat.run</code> call can be run on its own; finished units are skipped when run again.</p>
+<pre><code>bids = 'D:/data/test_seecat/DIDA/bids2';
+out  = 'D:/data/test_seecat/DIDA/manual_run/derivatives/seecat';
+
+% 1. Preprocessing with image quality metrics and VBM maps
+cfg = seecat.config('prep');
+cfg.bids_dir   = bids;
+cfg.output_dir = out;
+cfg.vbm.enable = true;
+cfg.n_workers  = 'auto';
+seecat.run(cfg);
+% ... review reports/prep_qc.html and the QC reports page ...
+
+% 2. Seed FC
+cfg = seecat.config('fc');
+cfg.input_dir = out;
+cfg.seeds = struct('name', {'PCC', 'mPFC'}, 'center', {[0 -53 26], [0 52 -6]}, ...
+                   'radius', {6, 6}, 'file', {'', ''});
+cfg.n_workers = 'auto';
+seecat.run(cfg);
+
+% 3. Degree and gradients
+cfg = seecat.config('degree');   cfg.input_dir = out;   cfg.n_workers = 'auto';   seecat.run(cfg);
+cfg = seecat.config('gradient'); cfg.input_dir = out;   cfg.n_workers = 'auto';   seecat.run(cfg);
+
+% 4. Harmonize the PCC maps across the three sites
+cfg = seecat.config('harmonize');
+cfg.input_dir  = out;
+cfg.maps       = struct('desc', 'PCC', 'stat', 'z');
+cfg.site       = 'site';
+cfg.covariates = {'group', 'sex', 'age'};
+seecat.run(cfg);                                  % writes desc-PCCComBat maps
+
+% 5. One-sample t test in the HC group, with TFCE
+P  = seecat.io.read_tsv(fullfile(bids, 'participants.tsv'));
+hc = erase(P.participant_id(strcmp(P.group, 'HC')), 'sub-')';
+cfg = seecat.config('stat');
+cfg.name      = 'PCConeSampleHC';
+cfg.input_dir = out;
+cfg.maps      = struct('desc', 'PCCComBat', 'stat', 'z');
+cfg.design    = 'one_sample';
+cfg.subjects  = hc;
+cfg.inference = {'cluster_fwe', 'tfce_fwe'};
+cfg.n_workers = 'auto';
+seecat.run(cfg);
+
+% 6. VBM: grey matter and age, unharmonised maps with site as a covariate
+cfg = seecat.config('stat');
+cfg.name       = 'VBMage';
+cfg.input_dir  = out;
+cfg.maps       = struct('desc', 'modulatedSm8', 'label', 'GM', 'suffix', 'probseg');
+cfg.design     = 'regression';
+cfg.regressors = {'age'};
+cfg.covariates = {'sex', 'tiv_ml', 'site'};
+cfg.mask       = 'gm';
+seecat.run(cfg);
+
+seecat.viewer(fullfile(out, 'group', 'PCConeSampleHC', 'PCConeSampleHC_contrast-pos_stat-t_statmap.nii.gz'));</code></pre>
+
+<h3>Configuration files</h3>
+<p>A configuration file is the struct as JSON. Only the options you change need to be in it; the others take their defaults. Numbers with Inf are written as text (<code>"[0 75 Inf]"</code>) and read back as numbers.</p>
+<pre><code>{
+  "pipeline": "stat",
+  "name": "PCCtwoSample",
+  "input_dir": "D:/data/test_seecat/DIDA/manual_run/derivatives/seecat",
+  "maps": {"desc": "PCCComBat", "stat": "z"},
+  "design": "two_sample",
+  "factor": "group",
+  "levels": ["HC", "MDD"],
+  "covariates": ["age", "sex"]
+}</code></pre>
+<p>Run several configurations in sequence:</p>
+<pre><code>for f = {'prep.json', 'fc.json', 'harmonize.json', 'stat.json'}
+    seecat.run(fullfile('D:/study/configs', f{1}));
+end</code></pre>
+
+<h3>Running on a server</h3>
+<p>Without a display, start MATLAB with <code>-batch</code>:</p>
+<pre><code>matlab -batch "addpath('/opt/spm'); addpath('/opt/SeeCAT/SeeCAT'); seecat.run('/data/configs/prep.json')"</code></pre>
+<p>Logs are written as the run goes (<code>&lt;output&gt;/logs</code>), so progress can be followed with <code>tail -f</code>.</p>
+
+<h2>Output reference</h2>
+
+<h3>The derivatives folder</h3>
+<pre><code>derivatives/seecat/
+  dataset_description.json                 names the source dataset (SourceDatasets)
+  sub-&lt;label&gt;/[ses-&lt;label&gt;/]
+    anat/                                  T1w outputs (Preprocessing)
+    func/                                  run outputs and per-run maps (all pipelines)
+    sub-&lt;label&gt;_…_desc-qc_report.html      run reports, qc_metrics.json, figures/
+  group/
+    &lt;name&gt;/                                Statistics
+    harmonize&lt;label&gt;_&lt;maps&gt;/                      Harmonize: maps.tsv, report.json
+    gradients&lt;nodes&gt;/                      Gradients: reference maps, lambdas.tsv
+  reports/
+    prep_qc.html, prep_qc.tsv              group QC (or fmriprep_qc.*)
+    qc_exclusions.tsv                      the exclusion list
+    anat_volumes.tsv                       GM, WM, CSF, TIV per T1w
+    &lt;pipeline&gt;_&lt;time&gt;_summary.tsv          one per run of a pipeline
+  logs/
+    &lt;pipeline&gt;_&lt;time&gt;.log, _config.json    main log and the configuration used
+    &lt;pipeline&gt;_&lt;time&gt;/&lt;unit&gt;.log           one log per unit
+    done/                                  finished units and their settings (for skipping)
+    outputs/                               files written by each unit
+seecat_work/                               work files (next to the output folder)</code></pre>
+
+<h3>File names</h3>
+<table>
+<tr><th>File</th><th>Written by</th><th>Content</th></tr>
+<tr><td><code>*_desc-preproc_bold</code></td><td>Preprocessing</td><td>normalised BOLD, not denoised</td></tr>
+<tr><td><code>*_desc-denoised_bold</code></td><td>Preprocessing, fMRIPrep denoising</td><td>denoised, band-passed, unsmoothed</td></tr>
+<tr><td><code>*_desc-denoisedSm&lt;fwhm&gt;_bold</code></td><td>same</td><td>denoised and smoothed</td></tr>
+<tr><td><code>*_desc-brain_mask</code></td><td>same</td><td>brain mask in output space</td></tr>
+<tr><td><code>*_desc-confounds_timeseries.tsv</code></td><td>same</td><td>confounds; the <code>censor</code> column marks frames left out of later analyses</td></tr>
+<tr><td><code>*_label-GM_probseg</code></td><td>Preprocessing</td><td>native tissue map; sidecar holds the tissue volumes and TIV</td></tr>
+<tr><td><code>*_space-IXI549Space_res-1p5_label-GM_desc-modulated[Sm8]_probseg</code></td><td>Preprocessing (VBM)</td><td>normalised, modulated GM (and WM, CSF)</td></tr>
+<tr><td><code>*_desc-&lt;seed&gt;_stat-r|z_connectivity</code></td><td>Seed FC</td><td>seed correlation, Fisher z</td></tr>
+<tr><td><code>*_desc-deg…_stat-raw|z_connectivity</code></td><td>Degree</td><td>degree or strength</td></tr>
+<tr><td><code>*_desc-grad&lt;k&gt;&lt;nodes&gt;_connectivity</code></td><td>Gradients</td><td>aligned gradient k of the run</td></tr>
+<tr><td><code>*_desc-&lt;desc&gt;ComBat_*</code></td><td>Harmonize</td><td>the harmonised map</td></tr>
+<tr><td><code>group/&lt;name&gt;/…_statmap</code></td><td>Statistics</td><td>statistic maps (t, F, z, p, effect, TFCE)</td></tr>
+</table>
+
+<h3>Confounds table</h3>
+<table>
+<tr><th>Columns</th><th>Content</th></tr>
+<tr><td><code>trans_x … rot_z</code>, <code>*_derivative1</code>, <code>*_power2</code>, <code>*_derivative1_power2</code></td><td>Friston 24 motion regressors (rotations in radians)</td></tr>
+<tr><td><code>framewise_displacement</code></td><td>Power FD (mm; head radius 50 mm)</td></tr>
+<tr><td><code>global_signal</code>, <code>white_matter</code>, <code>csf</code></td><td>mean signals of the brain, WM and CSF masks</td></tr>
+<tr><td><code>c_comp_cor_XX</code>, <code>w_comp_cor_XX</code></td><td>aCompCor components of CSF and WM</td></tr>
+<tr><td><code>motion_outlier_XX</code></td><td>one column per flagged frame (1 at that frame)</td></tr>
+<tr><td><code>censor</code></td><td>1 = frame left out by Seed FC, Degree and Gradients</td></tr>
+</table>
+
+<h3>JSON sidecars</h3>
+<p>Each image's sidecar describes how it was made. Common fields: <code>Sources</code> (the files it came from, as BIDS URIs), <code>Software</code>, and step-specific fields, for example <code>FramesUsed</code>, <code>FramesTotal</code> and <code>Seed</code> (Seed FC); <code>Threshold</code>, <code>Sign</code>, <code>Measure</code> (Degree); <code>Lambdas</code>, <code>VarianceExplained</code>, <code>Alignment</code> (Gradients); <code>Harmonization</code>, <code>Site</code>, <code>KeptEffects</code> (Harmonize); <code>DegreesOfFreedom</code>, <code>FWHMmm</code>, <code>Resels</code>, <code>Contrast</code>, <code>Inference</code> (Statistics).</p>
+
+<h2>Performance and common questions</h2>
+
+<h3>Time and memory</h3>
+<table>
+<tr><th>Step</th><th>Per run (typical)</th><th>Memory</th></tr>
+<tr><td>Preprocessing, 3 mm, 200 volumes</td><td>4–6 minutes (segmentation about 2)</td><td>2–5 GB; with IQMs of a large T1w (e.g. 512×512×156) more</td></tr>
+<tr><td>Seed FC</td><td>seconds</td><td>&lt; 1 GB</td></tr>
+<tr><td>Degree, 3 mm grey matter</td><td>seconds to a minute</td><td>about 3 GB</td></tr>
+<tr><td>Gradients</td><td>see the table in 6.8</td><td>grows with the square of the node count</td></tr>
+<tr><td>Harmonize</td><td>seconds for the whole study</td><td>maps × voxels</td></tr>
+<tr><td>Statistics, TFCE</td><td>about 0.2 s per permutation and contrast (52 000 voxels)</td><td>maps × voxels per worker</td></tr>
+</table>
+<p>With <code>n_workers = auto</code>, SeeCAT chooses the number of workers from these estimates and the free memory; the log shows the choice.</p>
+
+<h3>Common questions</h3>
+<h4>A subject failed. Do I have to run everything again?</h4>
+<p>No. Run the same configuration again: finished subjects are skipped and the failed one resumes at the step where it stopped. The unit's log (<code>logs/&lt;pipeline&gt;_&lt;time&gt;/&lt;unit&gt;.log</code>) gives the reason.</p>
+<h4>I changed an option. What is recomputed?</h4>
+<p>Every unit whose result depends on it. Changing only Parallel workers, Overwrite or Keep work files recomputes nothing.</p>
+<h4>Seed FC says "no desc-denoised bold" or finds no runs.</h4>
+<p>Check that the derivatives folder is the output of Preprocessing or fMRIPrep denoising and that Denoise was on. If the folder holds runs in more than one space, set Space; with several tasks, set Task. If every run is excluded by QC, check the QC reports page.</p>
+<h4>Statistics finds several maps per subject.</h4>
+<p>The map fields must pick exactly one map per subject (two for paired designs). Add Space, Task or Other (e.g. <code>run=1</code>) until the line below the fields counts one map per subject.</p>
+<h4>Where are age, sex and group taken from?</h4>
+<p>From participants.tsv of the BIDS dataset (see 3.7). Values that are empty or <code>n/a</code> drop that subject from the analysis that uses the column, and the log lists it.</p>
+<h4>Should I smooth before Seed FC?</h4>
+<p>The default input is the unsmoothed <code>desc-denoised</code>; use <code>denoisedSm6</code> to follow studies that correlate smoothed data. Degree and Gradients should use unsmoothed data; Degree smooths its maps afterwards.</p>
+<h4>Why harmonize, and when not?</h4>
+<p>Harmonize when maps from several sites or scanners enter one analysis and the sites have enough subjects (ComBat works best with 10 or more per site). Keep every effect you will test among the covariates. With a single site, skip it.</p>
+<h4>How do I report the quality control?</h4>
+<p>The group report gives the rules, the runs excluded and why; <code>reports/qc_exclusions.tsv</code> and <code>prep_qc.tsv</code> hold the numbers. Report the exclusion rules, how many runs were excluded per group and site, and mean FD per group.</p>
+<h4>The window does not respond during a run.</h4>
+<p>It should: runs happen in a separate MATLAB process. If MATLAB itself is busy (e.g. a long command in the command window), the window waits for it.</p>
+
+<h2>References</h2>
+<ul>
+<li>Ashburner J, Friston KJ (2005). Unified segmentation. NeuroImage 26:839–851.</li>
+<li>Behzadi Y, Restom K, Liau J, Liu TT (2007). A component based noise correction method (CompCor) for BOLD and perfusion based fMRI. NeuroImage 37:90–101.</li>
+<li>Buckner RL et al. (2009). Cortical hubs revealed by intrinsic functional connectivity. J Neurosci 29:1860–1873.</li>
+<li>Chen AA et al. (2022). Mitigating site effects in covariance for machine learning in neuroimaging data (CovBat). Hum Brain Mapp 43:1179–1195.</li>
+<li>Coifman RR, Lafon S (2006). Diffusion maps. Appl Comput Harmon Anal 21:5–30.</li>
+<li>Eklund A, Nichols TE, Knutsson H (2016). Cluster failure. PNAS 113:7900–7905.</li>
+<li>Esteban O et al. (2017). MRIQC: advancing the automatic prediction of image quality in MRI from unseen sites. PLoS ONE 12:e0184661.</li>
+<li>Esteban O et al. (2019). fMRIPrep: a robust preprocessing pipeline for functional MRI. Nat Methods 16:111–116.</li>
+<li>Fortin JP et al. (2017). Harmonization of multi-site diffusion tensor imaging data. NeuroImage 161:149–170.</li>
+<li>Fortin JP et al. (2018). Harmonization of cortical thickness measurements across scanners and sites. NeuroImage 167:104–120.</li>
+<li>Freedman D, Lane D (1983). A nonstochastic interpretation of reported significance levels. J Bus Econ Stat 1:292–298.</li>
+<li>Friston KJ et al. (1996). Movement-related effects in fMRI time-series. Magn Reson Med 35:346–355.</li>
+<li>Gorgolewski KJ et al. (2016). The brain imaging data structure. Sci Data 3:160044.</li>
+<li>Hallquist MN, Hwang K, Luna B (2013). The nuisance of nuisance regression. NeuroImage 82:208–225.</li>
+<li>Johnson WE, Li C, Rabinovic A (2007). Adjusting batch effects in microarray expression data using empirical Bayes methods. Biostatistics 8:118–127.</li>
+<li>Li X, Morgan PS, Ashburner J, Smith J, Rorden C (2016). The first step for neuroimaging data analysis: DICOM to NIfTI conversion (dcm2niix). J Neurosci Methods 264:47–56.</li>
+<li>Lindquist MA, Geuter S, Wager TD, Caffo BS (2019). Modular preprocessing pipelines can reintroduce artifacts into fMRI data. Hum Brain Mapp 40:2358–2376.</li>
+<li>Margulies DS et al. (2016). Situating the default-mode network along a principal gradient of macroscale cortical organization. PNAS 113:12574–12579.</li>
+<li>Nichols TE (2013). Notes on creating a standardized version of DVARS. arXiv:1704.01469.</li>
+<li>Nygaard V, Rødland EA, Hovig E (2016). Methods that remove batch effects while retaining group differences may lead to exaggerated confidence in downstream analyses. Biostatistics 17:29–39.</li>
+<li>Parkes L, Fulcher B, Yücel M, Fornito A (2018). An evaluation of the efficacy, reliability, and sensitivity of motion correction strategies for resting-state functional MRI. NeuroImage 171:415–436.</li>
+<li>Pomponio R et al. (2020). Harmonization of large MRI datasets for the analysis of brain imaging patterns throughout the lifespan (ComBat-GAM). NeuroImage 208:116450.</li>
+<li>Power JD et al. (2012). Spurious but systematic correlations in functional connectivity MRI networks arise from subject motion. NeuroImage 59:2142–2154.</li>
+<li>Power JD et al. (2014). Methods to detect, characterize, and remove motion artifact in resting state fMRI. NeuroImage 84:320–341.</li>
+<li>Power JD (2017). A simple but useful way to assess fMRI scan qualities. NeuroImage 154:150–158.</li>
+<li>Smith SM, Nichols TE (2009). Threshold-free cluster enhancement. NeuroImage 44:83–98.</li>
+<li>Vos de Wael R et al. (2020). BrainSpace: a toolbox for the analysis of macroscale gradients in neuroimaging and connectomics datasets. Commun Biol 3:103.</li>
+<li>Worsley KJ et al. (1996). A unified statistical approach for determining significant signals in images of cerebral activation. Hum Brain Mapp 4:58–73.</li>
+<li>Xia M, Wang J, He Y (2013). BrainNet Viewer: a network visualization tool for human brain connectomics. PLoS ONE 8:e68910.</li>
+<li>Zuo XN et al. (2012). Network centrality in the human functional connectome. Cereb Cortex 22:1862–1875.</li>
+</ul>
+
+<h2>Appendix</h2>
+<h3>Index of options</h3>
+<p>Every option of every pipeline, by batch field. The tables in chapter 6 explain each one.</p>
+{{INDEX}}
+<h3>Coming from SeeCAT 1.x</h3>
+<table>
+<tr><th>1.x</th><th>2.0</th></tr>
+<tr><td>DPABI-style folders (<code>FunRaw</code>, <code>FunImgARW…</code>)</td><td>a BIDS dataset; DICOM to BIDS converts DICOM folders</td></tr>
+<tr><td>preprocessing through DPABI functions</td><td>Preprocessing with SPM only; outputs in <code>derivatives/seecat</code></td></tr>
+<tr><td>VoxDeg</td><td>Degree (same definition: thresholded correlations, binary and weighted)</td></tr>
+<tr><td>FuncConnect</td><td>Seed FC (spheres and masks, r and Fisher z)</td></tr>
+<tr><td>Stat with DPABI's GRF/AlphaSim</td><td>Statistics with SPM's random field theory, FDR or TFCE</td></tr>
+<tr><td>DPABI viewer</td><td>SeeCAT's own viewer, BrainNet Viewer for surfaces</td></tr>
+<tr><td>settings in the GUI only</td><td>every setting is a JSON configuration that runs from scripts</td></tr>
+</table>

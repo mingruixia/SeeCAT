@@ -52,7 +52,10 @@ if ischar(cfg.n_workers) || isstring(cfg.n_workers)  % 'auto': as many as memory
     [cfg.n_workers, note] = seecat.util.auto_workers(cfg, units);
     log('Parallel workers (auto): %s', note);
 end
-nWorkers = seecat.util.start_pool(cfg.n_workers);
+[nWorkers, poolNote] = seecat.util.start_pool(cfg.n_workers);
+if ~isempty(poolNote)
+    log('Parallel pool: %s', poolNote);
+end
 if isfield(cfg, 'qc_excluded') && ~isempty(cfg.qc_excluded)
     log('Left out by QC (reports/qc_exclusions.tsv): %s', strjoin(cfg.qc_excluded, ', '));
 end

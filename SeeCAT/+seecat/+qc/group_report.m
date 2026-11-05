@@ -327,13 +327,13 @@ end
 
 function s = strip(v, site, ids, name, dirn, lim)
 % A small SVG strip plot: one dot per value, x jittered by site
-W = 260; H = 150; L = 44; B = 22;
+W = 260; H = 160; L = 48; B = 22;
 ok = isfinite(v);
 if nnz(ok) == 0, s = ''; return, end
 [g, ~, gi] = unique(site);
 lo = min(v(ok)); hi = max(v(ok));
 if hi == lo, hi = lo + 1; end
-y = @(x) H - B - (x - lo) / (hi - lo) * (H - B - 10);
+y = @(x) H - B - (x - lo) / (hi - lo) * (H - B - 30);   % top 30 px: the title
 pal = {'#3b6fd8', '#d8873b', '#3ba06f', '#9b59b6', '#c0392b', '#16a2b8'};
 dots = '';
 mdn = zeros(size(v));
@@ -363,6 +363,6 @@ arrow = '&uarr; better';
 if dirn > 0, arrow = '&darr; better'; end
 s = sprintf(['<svg class="strip" viewBox="0 0 %d %d" role="img" aria-label="%s"><text x="0" y="12">%s (%s)</text>' ...
     '<text x="%d" y="%.1f" text-anchor="end">%.3g</text><text x="%d" y="%.1f" text-anchor="end">%.3g</text>' ...
-    '<line x1="%d" y1="16" x2="%d" y2="%d" stroke="currentColor" stroke-opacity="0.3"/>%s%s</svg>'], ...
+    '<line x1="%d" y1="26" x2="%d" y2="%d" stroke="currentColor" stroke-opacity="0.3"/>%s%s</svg>'], ...
     W, H, name, name, arrow, L - 4, y(hi) + 4, hi, L - 4, y(lo), lo, L, L, H - B, labels, dots);
 end

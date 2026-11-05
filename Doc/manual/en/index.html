@@ -1,0 +1,1114 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>SeeCAT 2.0 User Manual</title>
+<style>
+:root{--bg:#ffffff;--fg:#1d2433;--mute:#5d6678;--line:#dde1e8;--soft:#f4f6fa;--accent:#3157d5;--code:#f1f3f8;--note:#eef3ff;--warn:#fff4dc}
+@media (prefers-color-scheme:dark){:root{--bg:#14171f;--fg:#e4e7ee;--mute:#9aa3b5;--line:#2f3542;--soft:#1b1f29;--accent:#8fb0ff;--code:#202634;--note:#1d2640;--warn:#3a321c}}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--fg);font:16px/1.65 system-ui,-apple-system,"Segoe UI","Microsoft YaHei","PingFang SC",sans-serif}
+nav.toc{position:fixed;top:0;left:0;bottom:0;width:290px;overflow-y:auto;padding:20px 16px 40px;border-right:1px solid var(--line);background:var(--soft);font-size:14px}
+nav.toc .brand{font-weight:700;font-size:18px}
+nav.toc .lang{margin:4px 0 12px}
+nav.toc .toch{color:var(--mute);text-transform:uppercase;font-size:12px;letter-spacing:.05em;margin-bottom:4px}
+nav.toc ol{list-style:none;margin:0;padding:0}
+nav.toc li.l2{margin-top:8px;font-weight:600}
+nav.toc li.l3{padding-left:14px;font-weight:400}
+nav.toc a{color:var(--fg);text-decoration:none}
+nav.toc a:hover{color:var(--accent)}
+main{margin-left:290px;max-width:1000px;padding:24px 40px 80px}
+h1.title{font-size:32px;margin:8px 0 24px}
+h2{font-size:26px;margin:56px 0 12px;padding-top:12px;border-top:2px solid var(--line)}
+h3{font-size:20px;margin:36px 0 8px}
+h4{font-size:17px;margin:24px 0 6px}
+h2 .num,h3 .num{color:var(--mute);font-weight:500;margin-right:6px}
+a{color:var(--accent)}
+code{font-family:Consolas,"Cascadia Mono",Menlo,monospace;font-size:.88em;background:var(--code);padding:1px 4px;border-radius:4px}
+pre{background:var(--code);padding:12px 14px;border-radius:6px;overflow-x:auto;font-size:13.5px;line-height:1.5}
+pre code{background:none;padding:0}
+table{border-collapse:collapse;width:100%;margin:12px 0}
+th,td{border:1px solid var(--line);padding:6px 9px;vertical-align:top;text-align:left}
+th{background:var(--soft);font-weight:600}
+table.params td:nth-child(1){width:17%}
+table.params td:nth-child(2){width:16%;word-break:break-word}
+table.params td:nth-child(3){width:11%;min-width:6.5em;word-break:break-word}
+table.params td p{margin:0 0 6px}
+table.params td p:last-child{margin:0}
+.wrap{overflow-x:auto}
+.tag{display:inline-block;font-size:11px;color:var(--mute);border:1px solid var(--line);border-radius:3px;padding:0 4px}
+span.en{color:var(--mute);font-size:12px}
+p.choices{color:var(--mute);font-size:13px}
+figure{margin:18px 0;text-align:center}
+figure img{max-width:100%;border:1px solid var(--line);border-radius:6px}
+figcaption{color:var(--mute);font-size:14px;margin-top:6px}
+.note,.tip,.warn{padding:10px 14px;border-radius:6px;margin:14px 0}
+.note,.tip{background:var(--note)}
+.warn{background:var(--warn)}
+.note b:first-child,.tip b:first-child,.warn b:first-child{margin-right:4px}
+.flow{display:flex;flex-wrap:wrap;gap:6px;align-items:center;margin:12px 0}
+.flow span{border:1px solid var(--line);border-radius:6px;padding:4px 10px;background:var(--soft)}
+.flow i{color:var(--mute);font-style:normal}
+@media (max-width:900px){nav.toc{position:static;width:auto;border-right:none;border-bottom:1px solid var(--line)}main{margin-left:0;padding:16px}}
+.printtoc{display:none}
+@media print{
+  nav.toc{display:none}
+  .printtoc{display:block;page-break-after:always;column-count:2;column-gap:24px;font-size:10pt}
+  .printtoc .toch{font-size:16pt;font-weight:700;column-span:all;margin:0 0 10px}
+  .printtoc ol{list-style:none;margin:0;padding:0}
+  .printtoc li{break-inside:avoid;margin:1px 0}
+  .printtoc li.l2{font-weight:700;margin-top:8px}
+  .printtoc li.l3{padding-left:1.6em}
+  main{margin:0;max-width:none;padding:0}
+  body{font-size:11pt;background:#fff;color:#000}
+  h2{page-break-before:always;border-top:none}
+  h2:first-of-type{page-break-before:avoid}
+  figure,table.params tr,pre{page-break-inside:avoid}
+  pre{white-space:pre-wrap;overflow-wrap:anywhere;overflow:visible}
+  a{color:#000;text-decoration:none}
+  code,pre,th,.note,.tip,.warn,.flow span{background:#f3f3f3!important}
+  @page{size:A4;margin:16mm 14mm}
+}
+
+</style>
+</head>
+<body>
+<nav class="toc">
+<div class="brand">SeeCAT 2.0</div>
+<div class="lang"><a href="../zh/index.html">中文版</a></div>
+<div class="toch">Contents</div>
+<ol>
+<li class="l2"><a href="#s1">1 Introduction</a></li>
+<li class="l3"><a href="#s1-1">1.1 What SeeCAT does</a></li>
+<li class="l3"><a href="#s1-2">1.2 What is new in 2.0</a></li>
+<li class="l3"><a href="#s1-3">1.3 Licence and citation</a></li>
+<li class="l2"><a href="#s2">2 Installation and start</a></li>
+<li class="l3"><a href="#s2-1">2.1 Requirements</a></li>
+<li class="l3"><a href="#s2-2">2.2 Install</a></li>
+<li class="l3"><a href="#s2-3">2.3 What is in the release</a></li>
+<li class="l3"><a href="#s2-4">2.4 Two ways to work</a></li>
+<li class="l2"><a href="#s3">3 Concepts</a></li>
+<li class="l3"><a href="#s3-1">3.1 BIDS and BIDS-derivatives</a></li>
+<li class="l3"><a href="#s3-2">3.2 Spaces and templates</a></li>
+<li class="l3"><a href="#s3-3">3.3 Units, resuming and skipping</a></li>
+<li class="l3"><a href="#s3-4">3.4 Logs, configurations and summaries</a></li>
+<li class="l3"><a href="#s3-5">3.5 Parallel processing and memory</a></li>
+<li class="l3"><a href="#s3-6">3.6 Quality-control exclusions</a></li>
+<li class="l3"><a href="#s3-7">3.7 participants.tsv</a></li>
+<li class="l2"><a href="#s4">4 The main window</a></li>
+<li class="l3"><a href="#s4-1">4.1 Layout</a></li>
+<li class="l3"><a href="#s4-2">4.2 Running</a></li>
+<li class="l3"><a href="#s4-3">4.3 Kinds of fields</a></li>
+<li class="l2"><a href="#s5">5 Workflow</a></li>
+<li class="l2"><a href="#s6">6 The modules</a></li>
+<li class="l3"><a href="#s6-1">6.1 DICOM to BIDS</a></li>
+<li class="l3"><a href="#s6-2">6.2 Data check</a></li>
+<li class="l3"><a href="#s6-3">6.3 Preprocessing</a></li>
+<li class="l3"><a href="#s6-4">6.4 fMRIPrep denoising</a></li>
+<li class="l3"><a href="#s6-5">6.5 Quality control</a></li>
+<li class="l3"><a href="#s6-6">6.6 Seed FC</a></li>
+<li class="l3"><a href="#s6-7">6.7 Degree</a></li>
+<li class="l3"><a href="#s6-8">6.8 Gradients</a></li>
+<li class="l3"><a href="#s6-9">6.9 Harmonize</a></li>
+<li class="l3"><a href="#s6-10">6.10 Statistics</a></li>
+<li class="l3"><a href="#s6-11">6.11 Viewer</a></li>
+<li class="l3"><a href="#s6-12">6.12 Shared: denoising, censoring and smoothing</a></li>
+<li class="l3"><a href="#s6-13">6.13 Shared: quality control</a></li>
+<li class="l3"><a href="#s6-14">6.14 Shared: selection of runs</a></li>
+<li class="l3"><a href="#s6-15">6.15 Shared: output and run</a></li>
+<li class="l2"><a href="#s7">7 Worked examples</a></li>
+<li class="l3"><a href="#s7-1">7.1 The example dataset</a></li>
+<li class="l3"><a href="#s7-2">7.2 Example A: seed connectivity of the default-mode network</a></li>
+<li class="l3"><a href="#s7-3">7.3 Example B: grey-matter volume and age (VBM)</a></li>
+<li class="l3"><a href="#s7-4">7.4 Example C: degree centrality and gradients</a></li>
+<li class="l3"><a href="#s7-5">7.5 Time for the whole study</a></li>
+<li class="l2"><a href="#s8">8 Batch scripting</a></li>
+<li class="l3"><a href="#s8-1">8.1 Functions</a></li>
+<li class="l3"><a href="#s8-2">8.2 A complete study</a></li>
+<li class="l3"><a href="#s8-3">8.3 Configuration files</a></li>
+<li class="l3"><a href="#s8-4">8.4 Running on a server</a></li>
+<li class="l2"><a href="#s9">9 Output reference</a></li>
+<li class="l3"><a href="#s9-1">9.1 The derivatives folder</a></li>
+<li class="l3"><a href="#s9-2">9.2 File names</a></li>
+<li class="l3"><a href="#s9-3">9.3 Confounds table</a></li>
+<li class="l3"><a href="#s9-4">9.4 JSON sidecars</a></li>
+<li class="l2"><a href="#s10">10 Performance and common questions</a></li>
+<li class="l3"><a href="#s10-1">10.1 Time and memory</a></li>
+<li class="l3"><a href="#s10-2">10.2 Common questions</a></li>
+<li class="l2"><a href="#s11">11 References</a></li>
+<li class="l2"><a href="#s12">12 Appendix</a></li>
+<li class="l3"><a href="#s12-1">12.1 Index of options</a></li>
+<li class="l3"><a href="#s12-2">12.2 Coming from SeeCAT 1.x</a></li>
+</ol>
+</nav>
+<main>
+<h1 class="title">SeeCAT 2.0 User Manual</h1>
+<div class="printtoc"><p class="toch">Contents</p><ol>
+<li class="l2"><a href="#s1">1 Introduction</a></li>
+<li class="l3"><a href="#s1-1">1.1 What SeeCAT does</a></li>
+<li class="l3"><a href="#s1-2">1.2 What is new in 2.0</a></li>
+<li class="l3"><a href="#s1-3">1.3 Licence and citation</a></li>
+<li class="l2"><a href="#s2">2 Installation and start</a></li>
+<li class="l3"><a href="#s2-1">2.1 Requirements</a></li>
+<li class="l3"><a href="#s2-2">2.2 Install</a></li>
+<li class="l3"><a href="#s2-3">2.3 What is in the release</a></li>
+<li class="l3"><a href="#s2-4">2.4 Two ways to work</a></li>
+<li class="l2"><a href="#s3">3 Concepts</a></li>
+<li class="l3"><a href="#s3-1">3.1 BIDS and BIDS-derivatives</a></li>
+<li class="l3"><a href="#s3-2">3.2 Spaces and templates</a></li>
+<li class="l3"><a href="#s3-3">3.3 Units, resuming and skipping</a></li>
+<li class="l3"><a href="#s3-4">3.4 Logs, configurations and summaries</a></li>
+<li class="l3"><a href="#s3-5">3.5 Parallel processing and memory</a></li>
+<li class="l3"><a href="#s3-6">3.6 Quality-control exclusions</a></li>
+<li class="l3"><a href="#s3-7">3.7 participants.tsv</a></li>
+<li class="l2"><a href="#s4">4 The main window</a></li>
+<li class="l3"><a href="#s4-1">4.1 Layout</a></li>
+<li class="l3"><a href="#s4-2">4.2 Running</a></li>
+<li class="l3"><a href="#s4-3">4.3 Kinds of fields</a></li>
+<li class="l2"><a href="#s5">5 Workflow</a></li>
+<li class="l2"><a href="#s6">6 The modules</a></li>
+<li class="l3"><a href="#s6-1">6.1 DICOM to BIDS</a></li>
+<li class="l3"><a href="#s6-2">6.2 Data check</a></li>
+<li class="l3"><a href="#s6-3">6.3 Preprocessing</a></li>
+<li class="l3"><a href="#s6-4">6.4 fMRIPrep denoising</a></li>
+<li class="l3"><a href="#s6-5">6.5 Quality control</a></li>
+<li class="l3"><a href="#s6-6">6.6 Seed FC</a></li>
+<li class="l3"><a href="#s6-7">6.7 Degree</a></li>
+<li class="l3"><a href="#s6-8">6.8 Gradients</a></li>
+<li class="l3"><a href="#s6-9">6.9 Harmonize</a></li>
+<li class="l3"><a href="#s6-10">6.10 Statistics</a></li>
+<li class="l3"><a href="#s6-11">6.11 Viewer</a></li>
+<li class="l3"><a href="#s6-12">6.12 Shared: denoising, censoring and smoothing</a></li>
+<li class="l3"><a href="#s6-13">6.13 Shared: quality control</a></li>
+<li class="l3"><a href="#s6-14">6.14 Shared: selection of runs</a></li>
+<li class="l3"><a href="#s6-15">6.15 Shared: output and run</a></li>
+<li class="l2"><a href="#s7">7 Worked examples</a></li>
+<li class="l3"><a href="#s7-1">7.1 The example dataset</a></li>
+<li class="l3"><a href="#s7-2">7.2 Example A: seed connectivity of the default-mode network</a></li>
+<li class="l3"><a href="#s7-3">7.3 Example B: grey-matter volume and age (VBM)</a></li>
+<li class="l3"><a href="#s7-4">7.4 Example C: degree centrality and gradients</a></li>
+<li class="l3"><a href="#s7-5">7.5 Time for the whole study</a></li>
+<li class="l2"><a href="#s8">8 Batch scripting</a></li>
+<li class="l3"><a href="#s8-1">8.1 Functions</a></li>
+<li class="l3"><a href="#s8-2">8.2 A complete study</a></li>
+<li class="l3"><a href="#s8-3">8.3 Configuration files</a></li>
+<li class="l3"><a href="#s8-4">8.4 Running on a server</a></li>
+<li class="l2"><a href="#s9">9 Output reference</a></li>
+<li class="l3"><a href="#s9-1">9.1 The derivatives folder</a></li>
+<li class="l3"><a href="#s9-2">9.2 File names</a></li>
+<li class="l3"><a href="#s9-3">9.3 Confounds table</a></li>
+<li class="l3"><a href="#s9-4">9.4 JSON sidecars</a></li>
+<li class="l2"><a href="#s10">10 Performance and common questions</a></li>
+<li class="l3"><a href="#s10-1">10.1 Time and memory</a></li>
+<li class="l3"><a href="#s10-2">10.2 Common questions</a></li>
+<li class="l2"><a href="#s11">11 References</a></li>
+<li class="l2"><a href="#s12">12 Appendix</a></li>
+<li class="l3"><a href="#s12-1">12.1 Index of options</a></li>
+<li class="l3"><a href="#s12-2">12.2 Coming from SeeCAT 1.x</a></li>
+</ol></div>
+<p class="lead">SeeCAT (Seed-based Connectivity Analysis Toolbox) is a MATLAB toolbox for resting-state functional MRI. It takes a study from DICOM files or a BIDS dataset through preprocessing, quality control, connectivity measures and multi-site harmonisation to group statistics and figures, in one window or from scripts. This manual describes version 2.0: what each part does, how it does it, every option, the files it reads and writes, and worked examples on real data.</p>
+
+<h2 id="s1"><span class="num">1</span> Introduction</h2>
+
+<h3 id="s1-1"><span class="num">1.1</span> What SeeCAT does</h3>
+<p>SeeCAT covers the whole path of a resting-state study:</p>
+<ul>
+<li><b>DICOM to BIDS</b>: converts DICOM folders in any common layout into a BIDS dataset with dcm2niix (bundled), finding subjects and sessions by itself.</li>
+<li><b>Data check</b>: lists every BOLD run with its volumes, TR and head motion.</li>
+<li><b>Preprocessing</b>: dummy-scan removal, slice timing, realignment, coregistration, unified segmentation, normalisation to MNI space, nuisance regression with band-pass filtering, handling of high-motion frames, smoothing; MRIQC image quality metrics, an HTML quality report per run and per study, and optional VBM maps.</li>
+<li><b>fMRIPrep denoising</b>: the same denoising, censoring and smoothing applied to fMRIPrep outputs.</li>
+<li><b>Quality control</b>: rules suggest which runs to exclude (motion, coverage, registration), image quality outliers are flagged per site, and a table lets you confirm each decision. Later steps leave excluded runs out.</li>
+<li><b>Seed FC</b>: seed-based functional connectivity from spheres or masks.</li>
+<li><b>Degree</b>: voxel-wise degree centrality and strength.</li>
+<li><b>Gradients</b>: connectivity gradients by diffusion map embedding, aligned across runs.</li>
+<li><b>Harmonize</b>: removes site and scanner effects from per-subject maps with ComBat and related models.</li>
+<li><b>Statistics</b>: group GLM (one- and two-sample t tests, paired tests, one-way and repeated-measures ANOVA, regression, custom designs) with covariates, random field theory and FDR correction as in SPM, or TFCE with permutations.</li>
+<li><b>Viewer</b>: slices, thresholds, cluster tables with atlas labels, mosaics, time series and surfaces.</li>
+</ul>
+<p>Everything the window does is a configuration (a MATLAB struct, saved as JSON) passed to <code>seecat.run</code>, so every analysis can be repeated from a script.</p>
+
+<h3 id="s1-2"><span class="num">1.2</span> What is new in 2.0</h3>
+<ul>
+<li>A rewrite: SeeCAT needs only SPM. It no longer uses DPABI or the <code>FunImgARW…</code> folder layout of 1.x.</li>
+<li>Inputs are BIDS datasets and outputs follow BIDS-derivatives naming, so results can be read by other tools and other tools' results (fMRIPrep) can be read by SeeCAT.</li>
+<li>New: DICOM conversion, fMRIPrep input, MRIQC-style quality metrics, quality-control exclusions, connectivity gradients, multi-site harmonisation, TFCE, VBM maps, parallel processing that sizes itself to the computer's memory, and a new viewer.</li>
+<li>Steps resume after an interruption, and finished work with unchanged settings is skipped.</li>
+</ul>
+
+<h3 id="s1-3"><span class="num">1.3</span> Licence and citation</h3>
+<p>SeeCAT is free software under the GNU General Public License, version 3 or later. It is developed by Mingrui Xia and colleagues at Beijing Normal University and distributed on GitHub and NITRC. When you publish results, please cite SeeCAT and the methods behind the steps you used (SPM, and the papers listed in <a href="#s11">References</a>).</p>
+
+<h2 id="s2"><span class="num">2</span> Installation and start</h2>
+
+<h3 id="s2-1"><span class="num">2.1</span> Requirements</h3>
+<table>
+<tr><th>Item</th><th>Needed</th><th>Notes</th></tr>
+<tr><td>MATLAB</td><td>R2025a or later</td><td>Windows, macOS or Linux. No other MathWorks toolbox is required.</td></tr>
+<tr><td>SPM</td><td>SPM25, or SPM12 r7771 or later</td><td>On the MATLAB path. Used for slice timing, realignment, coregistration, segmentation, normalisation, smoothing and random field theory.</td></tr>
+<tr><td>Parallel Computing Toolbox</td><td>optional</td><td>Processes runs at the same time; without it SeeCAT runs them one after another.</td></tr>
+<tr><td>BrainNet Viewer 2.0</td><td>optional</td><td>Surface figures from the viewer.</td></tr>
+<tr><td>dcm2niix</td><td>bundled</td><td>Windows, macOS and Linux builds are in the release.</td></tr>
+<tr><td>Memory</td><td>8 GB or more</td><td>Degree and Gradients at fine resolution need more; see <a href="#s10">Performance</a>.</td></tr>
+</table>
+
+<h3 id="s2-2"><span class="num">2.2</span> Install</h3>
+<ol>
+<li>Download <code>SeeCAT-2.0.zip</code> from GitHub or NITRC and unzip it.</li>
+<li>In MATLAB:
+<pre><code>addpath('path/to/spm');
+addpath('path/to/SeeCAT-2.0/SeeCAT');
+savepath   % optional: keep the paths for later sessions</code></pre></li>
+<li>Open the main window:
+<pre><code>SeeCAT</code></pre></li>
+</ol>
+<div class="note"><b>macOS.</b> If dcm2niix is blocked the first time, allow it in System Settings → Privacy &amp; Security, or run <code>xattr -dr com.apple.quarantine SeeCAT-2.0/external</code>.</div>
+<div class="note"><b>Linux.</b> The bundled dcm2niix needs glibc 2.29 or later (Ubuntu 20.04+, Debian 11+, RHEL/Rocky 9+). On older systems install dcm2niix (e.g. <code>pip install dcm2niix</code>) and put it on the PATH or set the environment variable <code>SEECAT_DCM2NIIX</code> to its path.</div>
+
+<h3 id="s2-3"><span class="num">2.3</span> What is in the release</h3>
+<pre><code>SeeCAT-2.0/
+  SeeCAT/              the toolbox: add this folder to the path
+    SeeCAT.m           opens the main window
+    +seecat/           all functions (seecat.config, seecat.run, seecat.viewer, ...)
+    templates/         brain, GM, WM, CSF masks and underlays (IXI549Space, MNI 2009c)
+    resources/         icons and the window's web parts
+  external/dcm2niix/   dcm2niix for win, mac, lnx
+  Doc/manual/          this manual (HTML and PDF)
+  README.md, LICENSE, CHANGELOG.md</code></pre>
+
+<h3 id="s2-4"><span class="num">2.4</span> Two ways to work</h3>
+<p><b>The window</b> (<code>SeeCAT</code>) has a page per step. Each page builds a configuration; Run starts it in a separate MATLAB process so the window stays responsive, and Save writes the configuration as a JSON file.</p>
+<p><b>Scripts</b> use the same configurations:</p>
+<pre><code>cfg = seecat.config('prep');                 % every option at its default
+cfg.bids_dir  = 'D:/study/bids';
+cfg.subjects  = {'01', '02'};                 % empty = all
+cfg.n_workers = 'auto';
+seecat.run(cfg);                             % writes D:/study/bids/derivatives/seecat
+
+seecat.run('my_prep.json');                  % a configuration saved from the window</code></pre>
+<p>Chapter 8 lists the batch functions and complete scripts.</p>
+
+<h2 id="s3"><span class="num">3</span> Concepts</h2>
+
+<h3 id="s3-1"><span class="num">3.1</span> BIDS and BIDS-derivatives</h3>
+<p>SeeCAT reads raw data organised in the <a href="https://bids.neuroimaging.io">Brain Imaging Data Structure</a> and writes its results as BIDS-derivatives. A raw dataset looks like this:</p>
+<pre><code>bids/
+  dataset_description.json
+  participants.tsv                  participant_id, and columns such as group, age, sex, site
+  sub-01/
+    anat/sub-01_T1w.nii.gz (+ .json)
+    func/sub-01_task-rest_bold.nii.gz
+         sub-01_task-rest_bold.json  RepetitionTime, SliceTiming, ...</code></pre>
+<p>File names are made of <b>entities</b>, key-value pairs separated by underscores, and end with a <b>suffix</b> (<code>bold</code>, <code>T1w</code>, <code>mask</code>, <code>connectivity</code>, ...). SeeCAT's outputs keep the entities of their source and add their own:</p>
+<table>
+<tr><th>Entity</th><th>Meaning</th><th>Example</th></tr>
+<tr><td><code>sub</code>, <code>ses</code>, <code>task</code>, <code>acq</code>, <code>run</code></td><td>subject, session, task, acquisition, run of the source</td><td><code>sub-01_ses-1_task-rest_run-2</code></td></tr>
+<tr><td><code>space</code>, <code>res</code></td><td>template space and resolution label</td><td><code>space-IXI549Space_res-3</code></td></tr>
+<tr><td><code>desc</code></td><td>which variant of the data</td><td><code>desc-preproc</code>, <code>desc-denoised</code>, <code>desc-denoisedSm6</code>, <code>desc-PCC</code></td></tr>
+<tr><td><code>stat</code></td><td>which statistic a map holds</td><td><code>stat-r</code>, <code>stat-z</code>, <code>stat-t</code>, <code>stat-p</code></td></tr>
+<tr><td><code>label</code></td><td>tissue of a probability map</td><td><code>label-GM_probseg</code></td></tr>
+</table>
+<p>Every image comes with a JSON sidecar that records how it was made (sources, settings, frames used).</p>
+
+<h3 id="s3-2"><span class="num">3.2</span> Spaces and templates</h3>
+<p>SeeCAT's own preprocessing normalises to SPM's template space, <code>IXI549Space</code> (the space of SPM's tissue probability maps, close to MNI152). Outputs are written at the chosen voxel size (3 mm by default) over SPM's bounding box <code>[-90 -126 -72; 90 90 108]</code>. fMRIPrep outputs stay in their space, usually <code>MNI152NLin2009cAsym</code>. The <code>templates</code> folder holds brain, GM, WM and CSF masks at 2 and 3 mm, made from SPM's TPMs, and underlays for the viewer (ch2, ch2better, ICBM152 2009c).</p>
+
+<h3 id="s3-3"><span class="num">3.3</span> Units, resuming and skipping</h3>
+<p>Each pipeline splits its work into <b>units</b>: one BOLD run for Preprocessing, fMRIPrep denoising, Seed FC and Degree; one unit for a group step (Gradients, Harmonize, Statistics). When a unit finishes, SeeCAT records its settings. Running again:</p>
+<ul>
+<li>skips a unit that finished with the same settings (Overwrite runs it again);</li>
+<li>runs a unit again when its settings changed, after deleting the files it wrote before;</li>
+<li>resumes a unit that failed at the step where it stopped, from its work folder;</li>
+<li>never leaves a failed unit's partial outputs among the derivatives.</li>
+</ul>
+<p>A failed unit does not stop the others; the summary table and the logs say what failed and why.</p>
+
+<h3 id="s3-4"><span class="num">3.4</span> Logs, configurations and summaries</h3>
+<p>Every run writes, under <code>&lt;output&gt;/logs</code>: the configuration as JSON (<code>&lt;pipeline&gt;_&lt;time&gt;_config.json</code>), a main log, one log per unit, and a list of every file each unit wrote. <code>&lt;output&gt;/reports/&lt;pipeline&gt;_&lt;time&gt;_summary.tsv</code> has one row per unit: status, time, message and the unit's key results (frames kept, mean FD, ...).</p>
+
+<h3 id="s3-5"><span class="num">3.5</span> Parallel processing and memory</h3>
+<p>The <b>Parallel workers</b> option of each page sets how many units run at the same time:</p>
+<ul>
+<li><code>0</code>: one after another (default);</li>
+<li>a number: at most that many workers;</li>
+<li><code>auto</code>: as many as fit in memory. SeeCAT estimates the memory one unit needs (from the size of the largest run, the brain mask, the node count of Gradients, the maps of Statistics), adds about 1 GB per worker, keeps what the main MATLAB needs, and uses at most 85 % of the free memory, one worker per core and one per unit. The log states the estimate and the choice.</li>
+</ul>
+<p>Each worker is given its share of the computer's cores as threads (e.g. 5 workers on 32 cores get 6 threads each), so matrix work keeps its speed. For Gradients and TFCE, which are one unit, the workers share the runs or the permutations of that unit. If a pool fails to start, SeeCAT tries once more with half the workers and only then runs one after another, and the log says why.</p>
+
+<h3 id="s3-6"><span class="num">3.6</span> Quality-control exclusions</h3>
+<p>After Preprocessing or fMRIPrep denoising, the group report writes <code>reports/qc_exclusions.tsv</code>, a list of every run (and T1w image) with a decision: keep or exclude. Rules suggest exclusions; on the <b>QC reports</b> page you confirm or change them. Seed FC, Degree, Gradients, Harmonize and Statistics then leave excluded runs out (their option <b>Leave out QC exclusions</b>, on by default) and list them in the log. Chapter 6.5 describes the rules.</p>
+
+<h3 id="s3-7"><span class="num">3.7</span> participants.tsv</h3>
+<p>Group information comes from <code>participants.tsv</code> of the BIDS dataset: the group of each subject, age, sex, site, scores. Statistics and Harmonize read it next to the derivatives, two folders up (<code>bids/derivatives/seecat</code> → <code>bids</code>), or from the dataset named in the derivatives' <code>dataset_description.json</code>; a different file can be chosen. Columns with numbers are used as numbers, text columns as categories. Tissue volumes from Preprocessing (<code>gm_ml</code>, <code>wm_ml</code>, <code>csf_ml</code>, <code>tiv_ml</code>, in <code>reports/anat_volumes.tsv</code>) can be used as if they were columns of participants.tsv.</p>
+
+<h2 id="s4"><span class="num">4</span> The main window</h2>
+<figure><a href="../images/main_window.png"><img src="../images/main_window.png" alt="The main window on the Preprocessing page. Left: the pages. Centre: the options in cards, with tabs that jump to each card. Right: the description of the option in use, and the Run panel. Bottom: the log and summary drawer." loading="lazy"></a><figcaption><b>Figure 1.</b> The main window on the Preprocessing page. Left: the pages. Centre: the options in cards, with tabs that jump to each card. Right: the description of the option in use, and the Run panel. Bottom: the log and summary drawer.</figcaption></figure>
+
+<h3 id="s4-1"><span class="num">4.1</span> Layout</h3>
+<ul>
+<li><b>Pages</b> (left) in three groups: PREPARE (DICOM to BIDS, Preprocessing, fMRIPrep denoising), ANALYSE (Seed FC, Degree, Gradients, Harmonize, Statistics) and RESULTS (Viewer, Data check, QC reports). Manual opens this document, About shows the version.</li>
+<li><b>Options</b> (centre), in cards such as Input, Preprocessing, Denoising. The tabs above jump to a card. <b>Show advanced options</b> adds the options most studies keep at their defaults.</li>
+<li><b>Description</b> (right): click the <b>i</b> icon of an option, or edit it, to read what it does, with examples, its default and its batch field name. Hovering over an option shows a short tooltip.</li>
+<li><b>Run panel</b> (right, bottom): Run, Stop, the progress of the units, and the state (Ready, Running, Finished, Failed).</li>
+<li><b>Drawer</b> (bottom): the Log and the Summary table of the last run; the arrow opens and closes it.</li>
+<li><b>Load</b> and <b>Save</b> (top right): read or write the page's configuration as JSON. A configuration saved here runs unchanged with <code>seecat.run</code>.</li>
+</ul>
+<figure><a href="../images/help_panel.png"><img src="../images/help_panel.png" alt="The description column: what the option does, examples, the default, and the batch field (here Parallel workers)." loading="lazy"></a><figcaption><b>Figure 2.</b> The description column: what the option does, examples, the default, and the batch field (here Parallel workers).</figcaption></figure>
+
+<h3 id="s4-2"><span class="num">4.2</span> Running</h3>
+<p>Run checks every option first and lists all problems at once (an empty required folder, a value out of range). The pipeline then runs in a separate MATLAB process: the window stays usable, the log streams into the drawer, and Stop ends the process (units that finished keep their outputs; the unit that was interrupted resumes next time). When the run ends, the Summary tab of the drawer shows the run's table (one row per unit, as in <code>reports/&lt;pipeline&gt;_&lt;time&gt;_summary.tsv</code>); each unit's own log is in <code>logs/&lt;pipeline&gt;_&lt;time&gt;/</code>.</p>
+<figure><a href="../images/run_finished.png"><img src="../images/run_finished.png" alt="After a run: the summary table with one row per unit and the Run panel reporting the result." loading="lazy"></a><figcaption><b>Figure 3.</b> After a run: the summary table with one row per unit and the Run panel reporting the result.</figcaption></figure>
+
+<h3 id="s4-3"><span class="num">4.3</span> Kinds of fields</h3>
+<table>
+<tr><th>Field</th><th>How to fill it</th></tr>
+<tr><td>Folder, file</td><td>Type a path or use the folder button.</td></tr>
+<tr><td>Number</td><td>One number, or several separated by spaces (e.g. <code>6 6 8</code>). Some accept a word: <code>auto</code>.</td></tr>
+<tr><td>Range</td><td>Two numbers (e.g. band-pass <code>0.01</code> to <code>0.1</code>); both empty switch the step off.</td></tr>
+<tr><td>Labels</td><td>A comma-separated list, e.g. subjects <code>01, 02, 15</code>.</td></tr>
+<tr><td>Ticks and menus</td><td>On/off options and choices.</td></tr>
+<tr><td>Mask</td><td>Grey matter, Whole brain, or Mask file with a file button.</td></tr>
+<tr><td>Number with On</td><td>A value that can be switched off, e.g. smoothing of degree maps.</td></tr>
+<tr><td>Maps</td><td>Fixed fields (Map, Statistic, Suffix, Space, Task, Other) that choose per-subject maps by their file names; the lists offer the values found in the folder and a line counts the matching maps.</td></tr>
+<tr><td>Tables</td><td>Seeds (Seed FC) and contrasts (Statistics), with buttons to add and remove rows.</td></tr>
+</table>
+
+<h2 id="s5"><span class="num">5</span> Workflow</h2>
+<div class="flow"><span>DICOM</span><i>→</i><span>DICOM to BIDS</span><i>→</i><span>BIDS dataset</span><i>→</i><span>Data check</span><i>→</i><span>Preprocessing</span><i>→</i><span>QC reports</span><i>→</i><span>Seed FC / Degree / Gradients</span><i>→</i><span>Harmonize (multi-site)</span><i>→</i><span>Statistics</span><i>→</i><span>Viewer</span></div>
+<p>fMRIPrep users start at <b>fMRIPrep denoising</b> instead of Preprocessing; everything after it is the same. The table shows what each step reads and writes:</p>
+<table>
+<tr><th>Step</th><th>Reads</th><th>Writes</th></tr>
+<tr><td>DICOM to BIDS</td><td>DICOM folders</td><td>BIDS dataset: <code>sub-*/anat</code>, <code>sub-*/func</code>, participants.tsv</td></tr>
+<tr><td>Data check</td><td>BIDS dataset or derivatives</td><td>nothing (a table on screen)</td></tr>
+<tr><td>Preprocessing</td><td>BIDS dataset</td><td><code>derivatives/seecat</code>: preprocessed, denoised and smoothed BOLD, masks, confounds, T1w tissue maps, VBM maps, QC reports, exclusion list</td></tr>
+<tr><td>fMRIPrep denoising</td><td><code>derivatives/fmriprep</code></td><td><code>derivatives/seecat</code>, as above without the anatomical outputs</td></tr>
+<tr><td>QC reports</td><td><code>reports/qc_exclusions.tsv</code></td><td>the same list with your decisions</td></tr>
+<tr><td>Seed FC, Degree, Gradients</td><td>denoised BOLD in <code>derivatives/seecat</code></td><td>per-run maps next to the runs; Gradients also <code>group/gradients…</code></td></tr>
+<tr><td>Harmonize</td><td>per-subject maps, participants.tsv</td><td>harmonised maps next to them (<code>desc-…ComBat</code>)</td></tr>
+<tr><td>Statistics</td><td>per-subject maps, participants.tsv</td><td><code>group/&lt;name&gt;/</code>: statistic maps, thresholded maps, cluster tables</td></tr>
+<tr><td>Viewer</td><td>any NIfTI</td><td>figures, thresholded maps</td></tr>
+</table>
+<p>By default every step writes into the same <code>derivatives/seecat</code> folder, so each next step finds its input there: set the derivatives folder once and leave Output folder empty.</p>
+
+<h2 id="s6"><span class="num">6</span> The modules</h2>
+<p>Each section below describes one page: what it is for, how it works, every option (the tables are generated from the software, so they show exactly what the window offers), what it reads and writes, and how to run it from a script. Options marked <span class="tag">advanced</span> appear after ticking <b>Show advanced options</b>. Options shared by several pages (denoising, censoring, quality control, output, selection, run) are described once, in sections 6.12 to 6.15.</p>
+
+<h3 id="s6-1"><span class="num">6.1</span> DICOM to BIDS</h3>
+<p>Converts DICOM files into a BIDS dataset with dcm2niix. It reads the DICOM headers to find subjects, visits and series, names each series by rules, and writes the images with their JSON sidecars into the BIDS layout.</p>
+<figure><a href="../images/dicom_page.png"><img src="../images/dicom_page.png" alt="DICOM to BIDS after Find subjects: the layout it recognised and one line per subject." loading="lazy"></a><figcaption><b>Figure 4.</b> DICOM to BIDS after Find subjects: the layout it recognised and one line per subject.</figcaption></figure>
+
+<h4>How subjects, sessions and series are found</h4>
+<ol>
+<li><b>Reading headers.</b> SeeCAT reads the first and last file of every folder that holds DICOM files (a fast reader of the header up to the series fields; other files, such as .txt or .nii, are ignored). A folder whose first and last files belong to different people is reported as an error.</li>
+<li><b>Subjects.</b> Folders with the same PatientID belong to one subject. The subject is named after the folder that holds all of that person's folders and no one else's, keeping letters and digits (<code>S_001</code> → <code>sub-S001</code>). When IDs are missing or anonymised (e.g. <code>anonymous</code>, <code>xxxx</code>, <code>0000</code>), the folder tree decides. Layouts that work include one folder per subject (<code>S001/…</code>), modality folders with subject folders inside (<code>T1/S001</code>, <code>REST/S001</code>) and deeper trees (<code>S001/visit1/T1</code>). <b>Find subjects</b> shows the layout it recognised and the subjects before anything is converted.</li>
+<li><b>Sessions.</b> A subject scanned in one visit (one DICOM study) gets no session folder. Several visits become <code>ses-1</code>, <code>ses-2</code>, … by scan date; the assignment is kept in <code>code/seecat/from_dicom_sessions.tsv</code> so a later visit gets the next number.</li>
+<li><b>Series.</b> dcm2niix converts each subject; every series is named by the first rule that matches its sidecar. The default rules take a 3D T1-weighted image (MPRAGE, SPGR, BRAVO, …) as <code>anat/…_T1w</code> and resting-state BOLD (series names containing rest, rsfMRI, or RS as a word) as <code>func/…_task-rest_bold</code>. A resting run must also be a 2D EPI with at least 20 volumes. Series that match no rule are listed, not copied.</li>
+<li><b>Writing.</b> Images go to <code>sub-&lt;label&gt;/[ses-&lt;label&gt;/]anat|func</code> as .nii.gz with their sidecars; <code>dataset_description.json</code> is written if missing and participants.tsv gets the new subjects. Images already present are kept, so converting again only adds what is missing. A table of every series and what happened to it is written to <code>code/seecat/</code>.</li>
+</ol>
+
+<h4>Options</h4>
+<table>
+<tr><th>Option</th><th>Batch</th><th>Default</th><th>Meaning</th></tr>
+<tr><td>DICOM folder</td><td><code>from_dicom(dicom_dir, bids_dir)</code></td><td>(required)</td><td>The folder with the DICOM files, in any of the layouts above: one subject, or a folder of subjects.</td></tr>
+<tr><td>BIDS folder</td><td><code>bids_dir</code></td><td>(required)</td><td>The BIDS dataset to write into; created if missing.</td></tr>
+<tr><td>Subject</td><td><code>'sub', '01'</code></td><td>empty</td><td>Given: everything in the DICOM folder is this subject. Empty: subjects are found as described above.</td></tr>
+<tr><td>Session</td><td><code>'ses', 'pre'</code></td><td>empty</td><td>Given: every image goes into this session. Empty: no session for one visit, <code>ses-1</code>, <code>ses-2</code>, … for several.</td></tr>
+<tr><td>Rules (JSON)</td><td><code>'rules', 'my_rules.json'</code></td><td>empty</td><td>A JSON list of naming rules; each matches sidecar fields with regular expressions (case-insensitive) and gives datatype, suffix and entities. Empty: T1w and resting BOLD.</td></tr>
+</table>
+<p>A rules file that also keeps a task run and a field map:</p>
+<pre><code>[{"match": {"SeriesDescription": "rest"}, "datatype": "func", "suffix": "bold", "entities": {"task": "rest"}},
+ {"match": {"SeriesDescription": "nback"}, "datatype": "func", "suffix": "bold", "entities": {"task": "nback"}},
+ {"match": {"SeriesDescription": "mprage|t1"}, "datatype": "anat", "suffix": "T1w"}]</code></pre>
+<h4>Script</h4>
+<pre><code>seecat.bids.scan_dicom('D:/study/dicom')                   % what would be converted
+S = seecat.bids.from_dicom('D:/study/dicom', 'D:/study/bids');   % convert every subject
+S = seecat.bids.from_dicom('D:/study/dicom/S_001', 'D:/study/bids', 'sub', '01', 'ses', 'pre');</code></pre>
+
+<h3 id="s6-2"><span class="num">6.2</span> Data check</h3>
+<p>Before preprocessing, look at what the dataset holds. Data check lists every BOLD run of a BIDS dataset (or of a derivatives folder) with its number of volumes and TR; where a confounds table exists (after preprocessing or fMRIPrep), also the mean and largest framewise displacement and the frames flagged for motion. Runs with mean FD above 0.25 mm or more than 20 % of frames flagged are highlighted. <b>Open in viewer</b> steps through the volumes of the selected run with its motion trace; <b>QC report</b> opens its report.</p>
+<figure><a href="../images/data_check.png"><img src="../images/data_check.png" alt="Data check on the example dataset: 30 runs from three sites with their volumes and TR." loading="lazy"></a><figcaption><b>Figure 5.</b> Data check on the example dataset: 30 runs from three sites with their volumes and TR.</figcaption></figure>
+<p>The <b>Series</b> menu chooses which images are listed: preprocessed (<code>desc-preproc</code>), denoised, raw (the BIDS dataset) or all BOLD images. Script: <code>R = seecat.qc.runs('D:/study/bids', 'raw')</code>.</p>
+
+<h3 id="s6-3"><span class="num">6.3</span> Preprocessing</h3>
+<p>Preprocesses every BOLD run of a BIDS dataset with SPM and writes analysis-ready data to <code>derivatives/seecat</code>. Each run is a unit; its T1w (from the same session if there is one) is used for registration and segmentation.</p>
+<figure><a href="../images/prep_page.png"><img src="../images/prep_page.png" alt="The Preprocessing page of the example: input, preprocessing, VBM, denoising and quality-control cards." loading="lazy"></a><figcaption><b>Figure 6.</b> The Preprocessing page of the example: input, preprocessing, VBM, denoising and quality-control cards.</figcaption></figure>
+
+<h4>Steps</h4>
+<ol>
+<li><b>Input.</b> The run and its T1w are copied into the work folder. Leading non-steady-state volumes are removed: with <code>dummy_scans = auto</code>, leading volumes whose mean brain intensity is a robust outlier (z &gt; 3.5 against the median and MAD of the run, within the first 20) are dropped; volumes the scanner already discarded are not counted again.</li>
+<li><b>Slice timing</b> (SPM). The slice acquisition times come from <code>SliceTiming</code> in the sidecar (seconds), so any order (sequential, interleaved, multiband) is handled; the reference is the middle of the TR unless set.</li>
+<li><b>Realignment</b> (SPM). Two passes, to the first volume and then to the mean. The six motion parameters go to the confounds table; the data are not resampled here.</li>
+<li><b>Coregistration.</b> The T1w is registered to the mean EPI by normalised mutual information (only its header changes).</li>
+<li><b>Segmentation.</b> SPM unified segmentation of the T1w with SPM's tissue probability maps gives native GM, WM and CSF maps, a bias-corrected T1w and the deformation to IXI549Space. Without a T1w (<code>normalise.method = epi</code>) the mean EPI is segmented instead.</li>
+<li><b>Nuisance masks.</b> WM (p &gt; 0.99) and CSF (p &gt; 0.95) masks in the subject's own space, eroded by a 2 mm ball, so they keep away from grey matter; they are resampled to the output grid.</li>
+<li><b>Normalisation.</b> The deformation is applied once to the BOLD data (4th-degree B-spline; the only resampling of the data) and to the tissue maps, at the chosen voxel size over SPM's bounding box.</li>
+<li><b>Masks</b> in output space: brain = GM + WM + CSF &gt; 0.5, inside the field of view in every frame.</li>
+<li><b>Confounds.</b> A table with fMRIPrep's column names: 24 motion regressors (6 parameters, their derivatives and squares; Friston 1996), framewise displacement (Power 2012), the mean signals of brain (<code>global_signal</code>), WM and CSF, aCompCor components of WM and CSF (computed on good frames), one <code>motion_outlier_XX</code> column per flagged frame and a <code>censor</code> column.</li>
+<li><b>IQMs</b> (optional, on by default): MRIQC image quality metrics of the raw BOLD and T1w; see 6.5.</li>
+<li><b>Denoising.</b> One linear model per voxel: polynomial trend (order 1) + the chosen regressors, with data and regressors band-passed by the same filter, fitted on the good frames. High-motion frames are first filled in from the good frames (spectral interpolation) so that filtering does not spread them, then left out of the fit and marked for later steps. The voxel mean is added back. Output: <code>desc-denoised</code>.</li>
+<li><b>Smoothing</b> (optional): Gaussian kernel of the chosen FWHM; output <code>desc-denoisedSm6</code>. The unsmoothed series is kept.</li>
+<li><b>Outputs</b> and a <b>QC report</b> per run; when all runs have finished, the group report and the exclusion list.</li>
+</ol>
+<div class="note"><b>Why denoise before smoothing, and why filter regressors too.</b> Regressing nuisance signals from smoothed data mixes signals of neighbouring tissue; band-passing the data but not the regressors reintroduces removed signal (Hallquist et al. 2013; Lindquist et al. 2019). SeeCAT filters both and fits them together. High-motion frames are interpolated before filtering because a spike would otherwise spread over its neighbours; the interpolated frames are never used by later statistics (Power et al. 2014).</div>
+
+<h4>Input options</h4>
+<div class="wrap"><table class="params"><thead><tr><th>Option (window)</th><th>Batch field</th><th>Default</th><th>Meaning and advice</th></tr></thead><tbody><tr><td>BIDS folder</td><td><code>bids_dir</code></td><td><code>(empty)</code></td><td><p>The raw BIDS dataset, e.g. D:/study/bids, with sub-&lt;label&gt;/anat/*_T1w.nii.gz and sub-&lt;label&gt;/func/*_bold.nii.gz plus their JSON sidecars (DICOM to BIDS writes this).</p><p>Results go to &lt;BIDS folder&gt;/derivatives/seecat unless Output folder is set. Use Data check first to see the runs, TR and head motion.</p></td></tr><tr><td>Dummy scans <span class="tag">advanced</span></td><td><code>dummy_scans</code></td><td><code>auto</code></td><td><p>Volumes removed from the start of each run, before the signal is steady.</p><p>auto (default): detected from the data (leading volumes whose mean brain intensity is an outlier). Scanners that already discard them give none.<br>A number, e.g. 5: remove that many from every run.</p></td></tr></tbody></table></div>
+<h4>Preprocessing options</h4>
+<div class="wrap"><table class="params"><thead><tr><th>Option (window)</th><th>Batch field</th><th>Default</th><th>Meaning and advice</th></tr></thead><tbody><tr><td>Slice timing</td><td><code>slice_timing.enable</code></td><td><code>true</code></td><td><p>Correct for the different acquisition times of the slices within a volume (SPM slice timing). On by default; it needs the slice times (SliceTiming in the sidecar, written by dcm2niix). Turn it off when the slice times are unknown.</p></td></tr><tr><td>Slice times (s) <span class="tag">advanced</span></td><td><code>slice_timing.slice_times</code></td><td><code>auto</code></td><td><p>auto (default): SliceTiming from each run's JSON sidecar.<br>Otherwise the acquisition time of every slice in seconds, in slice order, e.g. for 4 interleaved slices and TR 2: 0 1 0.5 1.5.</p></td></tr><tr><td>Reference time <span class="tag">advanced</span></td><td><code>slice_timing.ref_time</code></td><td><code>middle</code></td><td><p>The time within the TR that all slices are shifted to.</p><p>middle (default): half the TR.<br>A number in seconds, e.g. 0 for the first slice.</p></td></tr><tr><td>Realign <span class="tag">advanced</span></td><td><code>realign.enable</code></td><td><code>true</code></td><td><p>Correct head motion by aligning every volume (SPM realign). The six motion parameters and framewise displacement go into the confounds table. Keep it on.</p></td></tr><tr><td>Register to mean <span class="tag">advanced</span></td><td><code>realign.register_to_mean</code></td><td><code>true</code></td><td><p>Two passes: first to the first volume, then to the mean of the aligned volumes (SPM's "register to mean"). More accurate; on by default.</p></td></tr><tr><td>Normalise <span class="tag">advanced</span></td><td><code>normalise.enable</code></td><td><code>true</code></td><td><p>Bring the data into MNI space (SPM's IXI549Space template) so subjects can be compared voxel by voxel. Needed by the group analyses.</p></td></tr><tr><td>Normalisation</td><td><code>normalise.method</code></td><td><code>auto</code></td><td><p>auto (default): segment when the subject has a T1w image, otherwise epi.<br>segment: the T1w image is segmented (SPM unified segmentation) and its deformation applied to the functional data, after registering the mean EPI to the T1w. The most accurate.<br>epi: the mean EPI is normalised directly to the tissue templates; for data without a T1w.</p><p class="choices"><code>auto</code> | <code>segment</code> | <code>epi</code></p></td></tr><tr><td>Voxel size (mm)</td><td><code>normalise.voxel_size</code></td><td><code>3</code></td><td><p>Voxel size of the normalised data, e.g. 3 (default) or 2. Smaller voxels need more disk and memory (a 2 mm run is 3.4 times as large) and make Degree much slower. Three numbers, e.g. 3 3 4, give different sizes per axis.</p></td></tr><tr><td>Bounding box <span class="tag">advanced</span></td><td><code>normalise.bounding_box</code></td><td><code>[-90 -126 -72;90 90 108]</code></td><td><p>The extent of the normalised images in MNI mm, [xmin ymin zmin; xmax ymax zmax]. Default [-90 -126 -72; 90 90 108], SPM's box, which holds the whole brain and cerebellum.</p></td></tr></tbody></table></div>
+<h4>VBM options</h4>
+<div class="wrap"><table class="params"><thead><tr><th>Option (window)</th><th>Batch field</th><th>Default</th><th>Meaning and advice</th></tr></thead><tbody><tr><td>VBM maps</td><td><code>vbm.enable</code></td><td><code>false</code></td><td><p>Also write the grey- and white-matter (and CSF) maps of the T1w segmentation normalised to MNI (IXI549Space, 1.5 mm, as SPM writes them), for voxel-based morphometry with the Statistics page (Map: modulatedSm8, Suffix: probseg). Only for runs with a T1w; written once per T1w.</p><p>Tissue volumes (GM, WM, CSF, TIV in mL) are always written (reports/anat_volumes.tsv); Statistics and Harmonize can use tiv_ml as a covariate without adding it to participants.tsv. This uses SPM's unified segmentation without DARTEL.</p></td></tr><tr><td>Modulated</td><td><code>vbm.modulated</code></td><td><code>true</code></td><td><p>Ticked (default): modulated maps (desc-modulated), scaled by the Jacobian of the warp so they keep the amount of tissue: the usual VBM input, analysed with TIV as a covariate.<br>Unticked: unmodulated maps (desc-warped), tissue concentration.</p></td></tr><tr><td>VBM smoothing (mm)</td><td><code>vbm.fwhm</code></td><td><code>8</code></td><td><p>FWHM of the smoothed copy (desc-modulatedSm8 for 8 mm, the default); 0 writes none. 6 to 10 mm is usual for VBM.</p></td></tr></tbody></table></div>
+<h4>Nuisance mask options</h4>
+<div class="wrap"><table class="params"><thead><tr><th>Option (window)</th><th>Batch field</th><th>Default</th><th>Meaning and advice</th></tr></thead><tbody><tr><td>WM probability <span class="tag">advanced</span></td><td><code>masks.wm_threshold</code></td><td><code>0.99</code></td><td><p>White-matter mask for the wm regressor (and aCompCor): voxels whose WM probability from segmentation is above this, 0.99 by default, then eroded. A strict mask keeps grey-matter signal out of the nuisance signal.</p></td></tr><tr><td>CSF probability <span class="tag">advanced</span></td><td><code>masks.csf_threshold</code></td><td><code>0.95</code></td><td><p>CSF mask for the csf regressor: CSF probability above this, 0.95 by default (0.99 eroded can leave no voxels in small ventricles), then eroded.</p></td></tr><tr><td>Erosion (mm) <span class="tag">advanced</span></td><td><code>masks.erode_mm</code></td><td><code>2</code></td><td><p>The WM and CSF masks are shrunk by a ball of this radius (2 mm by default) in the subject's own space, away from grey matter. 0: no erosion.</p></td></tr></tbody></table></div>
+<p>Denoising, censoring, smoothing and quality-control options are in sections 6.12 and 6.13; output, selection and run options in 6.15.</p>
+
+<h4>Outputs</h4>
+<pre><code>derivatives/seecat/
+  dataset_description.json
+  sub-01/
+    anat/  sub-01_desc-preproc_T1w.nii             bias-corrected T1w (coregistered to the EPI)
+           sub-01_label-GM|WM|CSF_probseg.nii       native tissue maps (sidecar: volumes in mL, TIV)
+           sub-01_from-T1w_to-IXI549Space_mode-image_xfm.nii   deformation field
+           sub-01_space-IXI549Space_res-1p5_label-GM_desc-modulated_probseg.nii      VBM (vbm.enable)
+           sub-01_space-IXI549Space_res-1p5_label-GM_desc-modulatedSm8_probseg.nii   VBM, smoothed
+    func/  sub-01_task-rest_space-IXI549Space_res-3_desc-preproc_bold.nii      normalised, not denoised
+           sub-01_task-rest_space-IXI549Space_res-3_desc-denoised_bold.nii     input of Seed FC, Degree, Gradients
+           sub-01_task-rest_space-IXI549Space_res-3_desc-denoisedSm6_bold.nii  smoothed copy
+           sub-01_task-rest_space-IXI549Space_res-3_desc-brain_mask.nii
+           sub-01_task-rest_desc-confounds_timeseries.tsv (+ .json)
+    sub-01_task-rest_desc-qc_report.html, sub-01_task-rest_desc-qc_metrics.json, figures/
+  reports/  prep_qc.html, prep_qc.tsv, qc_exclusions.tsv, anat_volumes.tsv, prep_&lt;time&gt;_summary.tsv
+  logs/</code></pre>
+<p>Images are written compressed (.nii.gz) when the input is compressed, otherwise as .nii. Work files are in <code>seecat_work</code> next to the output folder and are deleted after a unit succeeds (unless Keep work files).</p>
+
+<h3 id="s6-4"><span class="num">6.4</span> fMRIPrep denoising</h3>
+<p>For data already preprocessed by fMRIPrep. For each BOLD run in the chosen space it reads <code>*_desc-preproc_bold</code>, its brain mask and confounds table, removes fMRIPrep's non-steady-state volumes, replaces fMRIPrep's motion outlier columns by SeeCAT's own (the same FD rule for every input), and then denoises, censors and smooths exactly as Preprocessing. Outputs have the same names, so Seed FC, Degree, Gradients and Statistics work unchanged. IQMs are not computed (fMRIPrep's outputs hold no raw data); the motion, coverage and registration checks are (registration uses fMRIPrep's tissue maps in the output space when present).</p>
+<figure><a href="../images/fmriprep_page.png"><img src="../images/fmriprep_page.png" alt="The fMRIPrep denoising page." loading="lazy"></a><figcaption><b>Figure 7.</b> The fMRIPrep denoising page.</figcaption></figure>
+<div class="wrap"><table class="params"><thead><tr><th>Option (window)</th><th>Batch field</th><th>Default</th><th>Meaning and advice</th></tr></thead><tbody><tr><td>fMRIPrep folder</td><td><code>fmriprep_dir</code></td><td><code>(empty)</code></td><td><p>The output folder of fMRIPrep, e.g. D:/study/bids/derivatives/fmriprep. SeeCAT reads, for each BOLD run, *_space-&lt;space&gt;_desc-preproc_bold.nii.gz, its brain mask and the confounds table; fMRIPrep's own steps are not repeated.</p><p>Results go to derivatives/seecat next to it unless Output folder is set, with the same names as the Preprocessing page, so Seed FC, Degree and Statistics work the same way.</p></td></tr><tr><td>Space</td><td><code>space</code></td><td><code>MNI152NLin2009cAsym</code></td><td><p>Which fMRIPrep output space to denoise, the space-&lt;label&gt; in the file names. Default MNI152NLin2009cAsym. Group analyses need a template space, not T1w or fsnative.</p></td></tr><tr><td>Resolution label <span class="tag">advanced</span></td><td><code>res</code></td><td><code>(empty)</code></td><td><p>The res-&lt;label&gt; of the files, e.g. 2, needed only when fMRIPrep wrote the space at more than one resolution. Empty: the only one present.</p></td></tr><tr><td>Dummy scans <span class="tag">advanced</span></td><td><code>dummy_scans</code></td><td><code>auto</code></td><td><p>Volumes removed from the start of each run.</p><p>auto (default): those fMRIPrep marked as non-steady-state (non_steady_state_outlier columns).<br>A number, e.g. 5: that many from every run.</p></td></tr></tbody></table></div>
+<p><code>aCompCor</code> takes the first <i>n</i> <code>c_comp_cor</code>/<code>w_comp_cor</code> columns of fMRIPrep's table; older fMRIPrep versions write only <code>a_comp_cor_*</code>, which must then be listed by name in a config file (<code>denoise.regressors</code>).</p>
+
+<h3 id="s6-5"><span class="num">6.5</span> Quality control</h3>
+<p>Quality control runs inside Preprocessing and fMRIPrep denoising; the <b>QC reports</b> page is where you review it and decide which runs are used.</p>
+<h4>The run report</h4>
+<p>Each run gets <code>sub-*/…_desc-qc_report.html</code> with:</p>
+<ul>
+<li>a summary: frames, dummy scans, mean and largest FD, flagged frames, minutes kept, tSNR, the correlation of FD with DVARS before and after denoising (a good denoising brings it close to 0), largest translation and rotation, coverage;</li>
+<li>head motion: FD over time with the threshold and flagged frames shaded, translations and rotations;</li>
+<li>DVARS before and after denoising;</li>
+<li>carpet plots (Power 2017) before and after denoising, voxels ordered GM, WM, CSF;</li>
+<li>registration and coverage: the mean normalised EPI with the template GM outline and the brain mask, and the registration measures;</li>
+<li>the WM and CSF masks used for the nuisance signals;</li>
+<li>the image quality metrics (MRIQC).</li>
+</ul>
+<figure><a href="../images/qc_run_report.png"><img src="../images/qc_run_report.png" alt="Part of a run report: summary, head motion and DVARS." loading="lazy"></a><figcaption><b>Figure 8.</b> Part of a run report: summary, head motion and DVARS.</figcaption></figure>
+<h4>Image quality metrics (IQMs)</h4>
+<p>With <code>qc.iqm</code> (on by default) Preprocessing computes the metrics of MRIQC (Esteban et al. 2017) on the raw data, reusing its own segmentation, realignment and coregistration: the BOLD run after dummy-scan removal, head-motion corrected, without slice timing; the T1w with its bias-corrected image and native tissue maps. The formula-based metrics give the same values as MRIQC's own functions on the same inputs; the head, air and brain masks are SeeCAT's own, so absolute values can differ from an MRIQC run. Compare runs within a dataset and within a site.</p>
+<table>
+<tr><th>BOLD metric</th><th>Meaning</th><th>Better</th></tr>
+<tr><td><code>bold_tsnr</code></td><td>median temporal SNR in the brain (mean / SD over time)</td><td>higher</td></tr>
+<tr><td><code>bold_snr</code></td><td>SNR of the mean EPI in the brain</td><td>higher</td></tr>
+<tr><td><code>bold_fber</code></td><td>foreground (brain) to background energy ratio</td><td>higher</td></tr>
+<tr><td><code>bold_efc</code></td><td>entropy focus criterion: ghosting and blurring</td><td>lower</td></tr>
+<tr><td><code>bold_gsr_x</code>, <code>bold_gsr_y</code></td><td>ghost to signal ratio along x and y (y is the usual phase-encoding direction)</td><td>lower</td></tr>
+<tr><td><code>bold_dvars_std</code>, <code>_nstd</code>, <code>_vstd</code></td><td>DVARS standardised, raw and voxel-wise standardised (Nichols 2013); near 1 is good for the standardised one</td><td>lower</td></tr>
+<tr><td><code>bold_fd_mean</code>, <code>fd_num</code>, <code>fd_perc</code></td><td>mean FD, frames and percentage with FD &gt; 0.2 mm</td><td>lower</td></tr>
+<tr><td><code>bold_aor</code></td><td>AFNI outlier ratio: mean share of outlier voxels per volume</td><td>lower</td></tr>
+<tr><td><code>bold_aqi</code></td><td>AFNI quality index: mean of 1 − Spearman r of each volume with the median volume</td><td>lower</td></tr>
+<tr><td><code>bold_gcor</code></td><td>global correlation: average correlation of all voxel pairs</td><td>lower</td></tr>
+<tr><td><code>bold_fwhm_*</code></td><td>smoothness in voxels</td><td>–</td></tr>
+</table>
+<table>
+<tr><th>T1w metric</th><th>Meaning</th><th>Better</th></tr>
+<tr><td><code>t1_cnr</code></td><td>GM–WM contrast to noise</td><td>higher</td></tr>
+<tr><td><code>t1_cjv</code></td><td>coefficient of joint variation of GM and WM (Ganzetti et al. 2016)</td><td>lower</td></tr>
+<tr><td><code>t1_snr_*</code></td><td>SNR in CSF, GM, WM and their mean</td><td>higher</td></tr>
+<tr><td><code>t1_snrd_*</code></td><td>Dietrich SNR, with the noise taken from the air around the head</td><td>higher</td></tr>
+<tr><td><code>t1_efc</code>, <code>t1_fber</code></td><td>entropy focus criterion; foreground to background energy</td><td>lower; higher</td></tr>
+<tr><td><code>t1_inu_med</code>, <code>t1_inu_range</code></td><td>median and spread (95th − 5th percentile) of the bias field in the brain</td><td>range lower</td></tr>
+<tr><td><code>t1_wm2max</code></td><td>WM median over the 99.95th percentile of the image; about 0.6–0.8 is typical</td><td>–</td></tr>
+<tr><td><code>t1_icvs_*</code>, <code>t1_rpve_*</code></td><td>tissue volume fractions; residual partial volume</td><td>–</td></tr>
+<tr><td><code>t1_tiv_ml</code>, <code>t1_gm_ml</code>, …</td><td>total intracranial volume and tissue volumes (mL)</td><td>–</td></tr>
+</table>
+<div class="warn"><b>Empty backgrounds.</b> Air-based T1w metrics (FBER, Dietrich SNR) are not comparable when the background holds only a few integer values (e.g. clipped when exported). The group report detects this (air MAD ≤ 1) and does not use those two metrics for warnings on such images.</div>
+<h4>Registration measures</h4>
+<table>
+<tr><th>Measure</th><th>What it checks</th><th>Typical (example dataset)</th></tr>
+<tr><td><code>reg_brain_dice</code></td><td>Dice of the run's brain mask with the template brain mask: the overall fit of the normalisation</td><td>0.95–0.98</td></tr>
+<tr><td><code>reg_gm_corr</code>, <code>reg_wm_corr</code>, <code>reg_csf_corr</code></td><td>spatial correlation of the normalised tissue maps with SPM's TPM</td><td>GM 0.64–0.74, WM 0.79–0.83</td></tr>
+<tr><td><code>reg_gm_dice</code></td><td>Dice of GM &gt; 0.5 with TPM GM &gt; 0.5</td><td>0.70–0.75</td></tr>
+<tr><td><code>reg_epi_t1_dice</code></td><td>Dice of a brain mask taken from the mean EPI's own intensity (above 20 % of its 98th percentile) with the T1w brain: how well the EPI sits on its T1w</td><td>0.85–0.92</td></tr>
+</table>
+<h4>Coverage</h4>
+<p>The share of the template brain inside the field of view in every frame, in total and separately for its top (z &gt; 50 mm) and bottom (z &lt; −30 mm: cerebellum and temporal poles). Low coverage means part of the brain was not scanned.</p>
+<h4>Exclusion rules and warnings</h4>
+<p>When every run has finished, the group report (<code>reports/prep_qc.html</code>) writes <code>reports/qc_exclusions.tsv</code>. A run is suggested for exclusion when it breaks a rule:</p>
+<table>
+<tr><th>Rule</th><th>Option</th><th>Default</th></tr>
+<tr><td>largest absolute translation</td><td><code>qc.max_translation</code></td><td>3 mm</td></tr>
+<tr><td>largest absolute rotation</td><td><code>qc.max_rotation</code></td><td>3°</td></tr>
+<tr><td>mean framewise displacement</td><td><code>qc.max_mean_fd</code></td><td>0.5 mm</td></tr>
+<tr><td>too little data after censoring</td><td><code>censor.min_minutes</code></td><td>5 min</td></tr>
+<tr><td>coverage of the template brain</td><td><code>qc.min_coverage</code></td><td>0.9</td></tr>
+<tr><td>brain Dice with the template (failed normalisation)</td><td><code>qc.min_brain_dice</code></td><td>0.85</td></tr>
+</table>
+<p>Warnings, which do not exclude: mean FD above 0.25 mm; bottom coverage below 80 %; an IQM or registration measure whose robust z (distance from the median in MADs) within the run's site is beyond 3 in the bad direction. Sites come from the <code>site</code> column of participants.tsv; without it, or with fewer than 5 runs in a site, the whole dataset is the reference. T1w images get a row of their own, with warnings only.</p>
+<figure><a href="../images/qc_group_report.png"><img src="../images/qc_group_report.png" alt="The group report: one row per run with its decision, reasons and warnings, then the distribution of each measure by site." loading="lazy"></a><figcaption><b>Figure 9.</b> The group report: one row per run with its decision, reasons and warnings, then the distribution of each measure by site.</figcaption></figure>
+<h4>The QC reports page</h4>
+<p>Choose the derivatives folder: the table lists every run and T1w image with its site, mean FD, largest translation and rotation, coverage, brain Dice, GM correlation with the TPM, minutes kept, tSNR, T1w CNR, the reasons and the warnings. Tick or untick <b>Exclude</b>, add a <b>Note</b>, and <b>Save decisions</b>. Rows you change are marked as your decision and keep it when Preprocessing is run again. <b>Group report</b> and <b>Run report</b> open the HTML pages.</p>
+<figure><a href="../images/qc_page.png"><img src="../images/qc_page.png" alt="The QC reports page: rows in red are excluded, yellow ones have warnings." loading="lazy"></a><figcaption><b>Figure 10.</b> The QC reports page: rows in red are excluded, yellow ones have warnings.</figcaption></figure>
+<p>The list is a plain table:</p>
+<pre><code>id                        kind  exclude  reasons            warnings              decision  note
+sub-PKUHC0001_task-rest   bold  1        mean FD &gt; 0.5 mm                         auto
+sub-SCUMDD0003_task-rest  bold  0                           mean FD &gt; 0.25 mm     user      checked carpet plot
+sub-CSUHC0002_T1w         T1w   0                           cnr outlier           auto</code></pre>
+<p>Later steps match files to this list by the entities that identify an acquisition (sub, ses, task, acq, ce, rec, dir, run, echo), so every map derived from an excluded run, and the VBM maps of an excluded T1w, are left out. Editing the list does not make finished units run again.</p>
+
+<h3 id="s6-6"><span class="num">6.6</span> Seed FC</h3>
+<p>Seed-based functional connectivity. For each run and seed, the mean signal of the seed's voxels (inside the brain mask, on the frames kept after censoring) is correlated with every voxel; the result is written as a Pearson r map and a Fisher z map (z = atanh r). Use the z maps in Harmonize and Statistics.</p>
+<figure><a href="../images/fc_page.png"><img src="../images/fc_page.png" alt="Seed FC with two spheres (PCC and mPFC). Spheres and masks can be mixed in the table; the Check column says what a row still needs." loading="lazy"></a><figcaption><b>Figure 11.</b> Seed FC with two spheres (PCC and mPFC). Spheres and masks can be mixed in the table; the Check column says what a row still needs.</figcaption></figure>
+<h4>Seeds</h4>
+<ul>
+<li><b>Sphere</b>: a centre in MNI millimetres (<code>x y z</code>) and a radius; voxels within the radius of the centre. Examples: PCC <code>0 -53 26</code>, mPFC <code>0 52 -6</code>, left motor cortex <code>-38 -22 56</code>.</li>
+<li><b>Mask</b>: a NIfTI image in MNI space (any voxel size; voxels above 0 are the seed), resampled to the data by nearest neighbour. <b>Add mask files</b> adds one row per chosen file, named after it.</li>
+</ul>
+<p>Names are letters and digits; they become the <code>desc</code> of the output maps.</p>
+<div class="wrap"><table class="params"><thead><tr><th>Option (window)</th><th>Batch field</th><th>Default</th><th>Meaning and advice</th></tr></thead><tbody><tr><td>Derivatives folder</td><td><code>input_dir</code></td><td><code>(empty)</code></td><td><p>The SeeCAT derivatives folder written by the Preprocessing or fMRIPrep page, e.g. D:/study/bids/derivatives/seecat. It holds, per run, the denoised BOLD series, the brain mask and the confounds table with the censored frames.</p><p>The maps are written next to the runs (desc-&lt;seed&gt;_stat-r and stat-z), in the same folder unless Output folder is set.</p></td></tr><tr><td>Input series</td><td><code>input</code></td><td><code>denoised</code></td><td><p>Which series of each run is used: the desc label of the file name.</p><p>denoised (default): denoised, band-passed, not smoothed. The seed signal then comes only from the seed's own voxels.<br>denoisedSm6 (or another Sm label your preprocessing wrote): the smoothed series, as in many published FC studies; the maps are then smooth without a further step.</p></td></tr><tr><td>Space <span class="tag">advanced</span></td><td><code>space</code></td><td><code>(empty)</code></td><td><p>Needed only when the derivatives hold the runs in more than one space. Empty: the only space present.</p></td></tr><tr><td>Seeds</td><td><code>seeds</code></td><td><code>(empty)</code></td><td><p>One row per seed; spheres and masks can be mixed. For each run and seed, the mean signal of the seed's voxels (inside the brain mask, censored frames left out) is correlated with every voxel: a map of r and of Fisher z (desc-&lt;name&gt;_stat-z, the one to use in Statistics).</p><p>Sphere: centre in MNI mm as "x y z" and a radius in mm, e.g. PCC: 0 -53 26, radius 6; mPFC: 0 52 -6; left motor cortex: -38 -22 56.<br>Mask: a NIfTI image in MNI space (any voxel size; voxels above 0 are the seed), e.g. an atlas region saved as a binary mask. It is resampled to the data.</p><p>Add sphere adds a row; Add mask files adds one row per chosen file, named after it; Choose file sets the file of the selected row; Remove deletes the selected rows. Names are letters and digits and name the output maps. The Check column says what a row still needs.</p></td></tr></tbody></table></div>
+<h4>Outputs</h4>
+<pre><code>sub-01/func/sub-01_task-rest_space-IXI549Space_res-3_desc-PCC_stat-r_connectivity.nii (+ .json)
+sub-01/func/sub-01_task-rest_space-IXI549Space_res-3_desc-PCC_stat-z_connectivity.nii (+ .json)</code></pre>
+<p>The sidecar records the seed (centre and radius, or file), the input series and the frames used.</p>
+<pre><code>cfg = seecat.config('fc');
+cfg.input_dir = 'D:/study/bids/derivatives/seecat';
+cfg.seeds = struct('name', {'PCC', 'Amygdala'}, 'center', {[0 -53 26], []}, ...
+                   'radius', {6, []}, 'file', {'', 'D:/masks/amygdala_L.nii'});
+seecat.run(cfg);</code></pre>
+
+<h3 id="s6-7"><span class="num">6.7</span> Degree</h3>
+<p>Voxel-wise degree centrality. Every voxel of the mask is a node of the correlation network of a run (frames kept after censoring). The binary degree of a voxel counts its connections whose correlation reaches the threshold; the weighted degree (strength) sums their r values. As in SeeCAT 1.0: correlations from z-scored series, the sign rule applied (absolute: |r|; negative: −r), values below the threshold set to 0. Optionally connections shorter than a distance are ignored, or split into distance bins (short- and long-range degree). Maps are written raw and z-scored within the mask, and smoothed afterwards if asked (the network is built from unsmoothed data).</p>
+<figure><a href="../images/degree_page.png"><img src="../images/degree_page.png" alt="The Degree page." loading="lazy"></a><figcaption><b>Figure 12.</b> The Degree page.</figcaption></figure>
+<div class="wrap"><table class="params"><thead><tr><th>Option (window)</th><th>Batch field</th><th>Default</th><th>Meaning and advice</th></tr></thead><tbody><tr><td>Derivatives folder</td><td><code>input_dir</code></td><td><code>(empty)</code></td><td><p>The SeeCAT derivatives folder written by the Preprocessing or fMRIPrep page, e.g. D:/study/bids/derivatives/seecat. It holds, per run, the preprocessed BOLD series (*_desc-&lt;input&gt;_bold.nii.gz), the subject brain mask and the confounds table with the censored frames.</p><p>Degree maps are written next to them, in the same folder unless Output folder is set.</p></td></tr><tr><td>Input series</td><td><code>input</code></td><td><code>denoised</code></td><td><p>Which series of each run the network is built from: the desc label of the file name.</p><p>denoised (default): denoised and band-pass filtered, NOT smoothed. Use this one: smoothing before correlating inflates the connections between neighbouring voxels.<br>Other labels, e.g. denoisedSm6, if your preprocessing wrote them.</p></td></tr><tr><td>Space <span class="tag">advanced</span></td><td><code>space</code></td><td><code>(empty)</code></td><td><p>Needed only when the derivatives hold the runs in more than one space, e.g. MNI152NLin2009cAsym and T1w from fMRIPrep. Empty: the only space present.</p></td></tr><tr><td>Mask</td><td><code>mask</code></td><td><code>gm</code></td><td><p>The voxels that make up the network: every voxel of this mask is a node and is correlated with every other.</p><p>Grey matter (gm, default): SeeCAT's grey-matter mask (SPM TPM GM &gt; 0.2) resampled to the data, as in SeeCAT 1.0. White matter and CSF voxels would add noise connections.<br>Whole brain (brain): every voxel of the subject's brain mask.<br>Mask file: your own NIfTI image in the space of the data (MNI); voxels &gt; 0 are kept, e.g. a cortical mask or a mask shared by all subjects. Choose it with the folder button.</p><p>The mask is always limited to the subject's brain mask. The time and memory grow with the square of the number of voxels: about 50 000 grey-matter voxels at 3 mm, 4 times more at 2 mm.</p></td></tr><tr><td>r threshold</td><td><code>threshold</code></td><td><code>0.2</code></td><td><p>A connection counts when its correlation r is at least this value (after the sign rule below), e.g. 0.2 (default, as in SeeCAT 1.0), 0.25 or 0.3.</p><p>Higher thresholds keep fewer, stronger connections. The value appears in the output name, e.g. desc-degPosBinR0p2. Range 0 to below 1.</p></td></tr><tr><td>Correlations</td><td><code>sign</code></td><td><code>positive</code></td><td><p>Which correlations count; each ticked option gives its own maps.</p><p>positive (default, desc-degPos...): r &gt;= threshold. The usual choice, since negative correlations depend on the denoising (e.g. global signal regression).<br>absolute (desc-degAbs...): |r| &gt;= threshold, positive and negative together.<br>negative (desc-degNeg...): -r &gt;= threshold, the anti-correlations only.</p><p class="choices"><code>positive</code> | <code>absolute</code> | <code>negative</code></p></td></tr><tr><td>Measures</td><td><code>weight</code></td><td><code>binary, weighted</code></td><td><p>What is added up over a voxel's connections; each ticked option gives its own maps.</p><p>binary = degree (desc-deg...Bin...): the number of connections above the threshold.<br>weighted = strength (desc-deg...Wei...): the sum of their r values.</p><p>Example: a voxel with 3 connections of r = 0.3, 0.5 and 0.6 has degree 3 and strength 1.4.</p><p class="choices"><code>binary</code> | <code>weighted</code></p></td></tr><tr><td>Exclude within (mm) <span class="tag">advanced</span></td><td><code>exclude_local_mm</code></td><td><code>0</code></td><td><p>Connections between voxels closer than this distance are not counted. Neighbouring voxels correlate partly through the data's own smoothness, so short connections can dominate degree.</p><p>0 (default): count all. E.g. 20: leave out connections shorter than 20 mm (leaves out the immediate neighbourhood).</p></td></tr><tr><td>Distance bins (mm) <span class="tag">advanced</span></td><td><code>distance_edges</code></td><td><code>[0 Inf]</code></td><td><p>Splits the connections by length, with one map per bin. Give the bin edges in mm, increasing, starting at 0 or more; Inf means no upper limit.</p><p>[0 Inf] (default): one map with all connections.<br>[0 75 Inf]: short-range (up to 75 mm) and long-range (beyond 75 mm) degree, e.g. desc-degPosBinR0p2D0to75 and ...D75toInf.<br>[0 25 75 Inf]: three bins.</p><p>A connection of length d is in the bin lo &lt; d &lt;= hi.</p></td></tr><tr><td>Also z-scored maps</td><td><code>zscore</code></td><td><code>true</code></td><td><p>Also write each map z-scored within the mask (minus the mean, divided by the standard deviation over the mask voxels), as stat-z next to the stat-raw maps.</p><p>Raw degree depends on the number of voxels and the data quality of each subject; z-scored maps are easier to compare between subjects and are the usual input to group statistics.</p></td></tr><tr><td>Smooth maps</td><td><code>smooth_fwhm</code></td><td><code>6</code></td><td><p>Smooth the finished maps with a Gaussian kernel of this FWHM in mm, e.g. 6 (default) or 4. Smoothed copies are written with Sm&lt;fwhm&gt; in the name (desc-degPosBinR0p2Sm6); the unsmoothed maps are always kept.</p><p>The network itself is built from the unsmoothed series, and only the maps are smoothed, as group statistics usually need. Untick On to skip smoothing. Three values, e.g. 6 6 8, give a different FWHM per axis.</p></td></tr></tbody></table></div>
+<h4>Outputs</h4>
+<pre><code>…_desc-degPosBinR0p2_stat-raw_connectivity.nii      binary degree, positive r ≥ 0.2
+…_desc-degPosBinR0p2_stat-z_connectivity.nii        the same, z-scored within the mask
+…_desc-degPosWeiR0p2Sm6_stat-z_connectivity.nii     strength, z-scored, smoothed 6 mm
+…_desc-degPosBinR0p2D0to75_stat-raw_connectivity.nii  with distance bins [0 75 Inf]</code></pre>
+<p>Time and memory grow with the square of the number of voxels: about 50 000 grey-matter voxels at 3 mm take seconds to a minute per run; at 2 mm there are 3.4 times as many voxels and over ten times the work.</p>
+
+<h3 id="s6-8"><span class="num">6.8</span> Gradients</h3>
+<p>Connectivity gradients (Margulies et al. 2016): the main axes along which connectivity profiles change across the cortex, the first usually running from sensory and motor cortex to the default-mode network. For each run:</p>
+<ol>
+<li>the node series: the mean of the run's brain-mask voxels in each node (voxels of a coarser MNI grid, or parcels of an atlas), frames kept after censoring;</li>
+<li>the connectivity matrix: Pearson r between nodes;</li>
+<li>each row keeps its strongest 10 % (sparsity 0.9) and the rest is set to 0;</li>
+<li>the affinity between rows: normalised angle (1 − angle/π of their cosine similarity) or cosine;</li>
+<li>diffusion map embedding with α = 0.5 (Coifman &amp; Lafon 2006) and multiscale eigenvalues λ/(1−λ), as BrainSpace (Vos de Wael et al. 2020);</li>
+</ol>
+<p>then the runs are aligned (generalized Procrustes: rotations and sign flips onto a reference, the reference updated to the mean, up to 10 rounds), starting from the gradients of the group-mean connectivity matrix (default) or from the first run. SeeCAT's embedding equals the exact diffusion map; it solves the symmetric form of the problem.</p>
+<figure><a href="../images/gradient_page.png"><img src="../images/gradient_page.png" alt="The Gradients page. The help for Node size lists the memory and time per run." loading="lazy"></a><figcaption><b>Figure 13.</b> The Gradients page. The help for Node size lists the memory and time per run.</figcaption></figure>
+<div class="wrap"><table class="params"><thead><tr><th>Option (window)</th><th>Batch field</th><th>Default</th><th>Meaning and advice</th></tr></thead><tbody><tr><td>Derivatives folder</td><td><code>input_dir</code></td><td><code>(empty)</code></td><td><p>The SeeCAT derivatives folder written by the Preprocessing or fMRIPrep page, e.g. D:/study/bids/derivatives/seecat. Every run found there is used (or those chosen under Selection); they are analysed together because their gradients are aligned to each other.</p></td></tr><tr><td>Input series</td><td><code>input</code></td><td><code>denoised</code></td><td><p>Which series of each run is used: denoised (default; unsmoothed) or another desc label such as denoisedSm6. Voxel nodes average their voxels anyway, so smoothing adds little.</p></td></tr><tr><td>Space <span class="tag">advanced</span></td><td><code>space</code></td><td><code>(empty)</code></td><td><p>Needed only when the derivatives hold the runs in more than one space. Empty: the only space present.</p></td></tr><tr><td>Nodes</td><td><code>nodes</code></td><td><code>voxels</code></td><td><p>What the connectivity matrix is built between.</p><p>voxels (default): the cells of a grid of Node size in MNI space inside the Mask; each node's signal is the mean of the data voxels in it. Gives voxel-wise gradient maps.<br>atlas: the parcels of an atlas image (e.g. Schaefer 400 in MNI space); fast, and the values are also written as a table per run.</p><p>Time and memory grow with the SQUARE of the number of nodes (see Node size).</p><p class="choices"><code>voxels</code> | <code>atlas</code></p></td></tr><tr><td>Node size (mm)</td><td><code>node_size</code></td><td><code>4</code></td><td><p>voxels only: the grid spacing. Nodes in the grey-matter mask, and the memory one run needs (about three node x node matrices, a fourth with group alignment):<br>  8 mm:  2 700 nodes, &lt; 0.3 GB, about 1 s per run<br>  6 mm:  6 500 nodes, about 1.3 GB, about 3 s per run<br>  5 mm: 11 200 nodes, about 2 GB, about 10 s per run<br>  4 mm: 22 000 nodes, about 7 GB, about 30 s per run (default)<br>  3 mm: 52 000 nodes, about 40 GB and several minutes per run: workstations only.<br>(Times measured on a 32-core desktop with 200-volume runs; fewer cores take longer.)<br>With the brain mask there are about a third more nodes. Each parallel worker needs this memory again. SeeCAT checks the free memory before it starts and stops with advice when it is not enough.</p></td></tr><tr><td>Mask</td><td><code>mask</code></td><td><code>gm</code></td><td><p>voxels only: where the nodes are.</p><p>Grey matter (gm, default): cells at least half inside SeeCAT's grey-matter mask; the usual choice (Margulies et al. 2016 used cortex).<br>Whole brain (brain): cells inside the brain mask, including white matter.<br>Mask file: your own NIfTI mask in MNI space, e.g. cortex only.</p></td></tr><tr><td>Atlas</td><td><code>atlas</code></td><td><code>(empty)</code></td><td><p>atlas only: a NIfTI image in MNI space whose voxels hold integer parcel labels (0 = background), e.g. Schaefer2018_400Parcels_7Networks_order_FSLMNI152_2mm.nii.gz. Every label becomes a node; the gradient maps paint each parcel with its value.</p></td></tr><tr><td>Components <span class="tag">advanced</span></td><td><code>n_components</code></td><td><code>10</code></td><td><p>How many gradients are computed and used in the alignment, 10 by default (BrainSpace). More components make the alignment more stable; they cost little.</p></td></tr><tr><td>Maps written</td><td><code>n_maps</code></td><td><code>3</code></td><td><p>How many gradients are written per run, 3 by default (desc-grad1, grad2, grad3 ...). Gradient 1 explains the most variance (usually sensory to default-mode cortex), gradient 2 the next (often visual to somatomotor), and so on. The eigenvalues of all components are in the JSON sidecars and the group table.</p></td></tr><tr><td>Sparsity <span class="tag">advanced</span></td><td><code>sparsity</code></td><td><code>0.9</code></td><td><p>Share of each node's connections set to 0 before the affinity, keeping only its strongest ones: 0.9 (default) keeps the top 10%, as Margulies et al. 2016 and BrainSpace.</p></td></tr><tr><td>Affinity <span class="tag">advanced</span></td><td><code>kernel</code></td><td><code>normalized_angle</code></td><td><p>How similar two nodes' connectivity profiles are.</p><p>normalized_angle (default): 1 - angle/pi between the profiles; BrainSpace's recommendation.<br>cosine: cosine similarity, negative values set to 0 (Margulies et al. 2016).<br>none: the sparsified connectivity itself (symmetrised).</p><p class="choices"><code>normalized_angle</code> | <code>cosine</code> | <code>none</code></p></td></tr><tr><td>Diffusion alpha <span class="tag">advanced</span></td><td><code>alpha</code></td><td><code>0.5</code></td><td><p>Anisotropy of the diffusion map: 0.5 (default) lowers the influence of how densely nodes are sampled (Coifman &amp; Lafon 2006); 0 is a Laplacian eigenmap, 1 the Laplace-Beltrami operator.</p></td></tr><tr><td>Alignment</td><td><code>align</code></td><td><code>group</code></td><td><p>Gradients of separate runs can come out in a different order or sign; alignment makes gradient k comparable across runs, which group statistics need.</p><p>group and procrustes both use generalized Procrustes, as BrainSpace: every run is rotated (rotation and sign flips only, no scaling) onto a reference, the mean of the rotated runs becomes the new reference, and this repeats up to 10 times or until the reference changes by less than 1e-5. They differ in the first reference:<br>group (default): the gradients of the group-mean connectivity matrix, so gradient k keeps its group-level meaning. Needs one more node x node matrix of memory. These starting gradients are also written (desc-grad&lt;k&gt;_groupmatrix).<br>procrustes: the first run's gradients; no group matrix.<br>none: each run's own gradients; only for looking at single runs.</p><p class="choices"><code>group</code> | <code>procrustes</code> | <code>none</code></p></td></tr></tbody></table></div>
+<h4>Choosing the nodes</h4>
+<table>
+<tr><th>Node size</th><th>Nodes (grey matter)</th><th>Memory per run</th><th>Time per run</th></tr>
+<tr><td>8 mm</td><td>2 700</td><td>&lt; 0.3 GB</td><td>about 1 s</td></tr>
+<tr><td>6 mm</td><td>6 500</td><td>about 1.3 GB</td><td>about 3 s</td></tr>
+<tr><td>5 mm</td><td>11 200</td><td>about 2 GB</td><td>about 10 s</td></tr>
+<tr><td>4 mm (default)</td><td>22 000</td><td>about 7 GB</td><td>about 30 s</td></tr>
+<tr><td>3 mm</td><td>52 000</td><td>about 40 GB</td><td>minutes</td></tr>
+</table>
+<p>Times are for a 32-core desktop and 200-volume runs. SeeCAT checks the free memory first and stops with advice when it is not enough. An atlas (e.g. Schaefer 400) is fast and gives a value per parcel, also written as a table.</p>
+<h4>Outputs</h4>
+<pre><code>sub-01/func/…_desc-grad1Vox4_connectivity.nii   gradient 1 of the run, aligned (2, 3 … up to Maps written)
+group/gradientsVox4/gradientsVox4_desc-grad1_reference.nii    final reference (mean of the aligned runs)
+group/gradientsVox4/gradientsVox4_desc-grad1_groupmatrix.nii  gradients of the group-mean matrix
+group/gradientsVox4/gradientsVox4_lambdas.tsv     eigenvalues of every run, variance explained, r with the reference</code></pre>
+
+<h3 id="s6-9"><span class="num">6.9</span> Harmonize</h3>
+<p>Multi-site studies carry site and scanner differences in every map. Harmonize removes them from per-subject maps, between the measures (Seed FC, Degree, Gradients, VBM) and Statistics, while keeping the effects you will test. It writes the harmonised maps next to the originals with the desc label extended (<code>desc-PCC</code> → <code>desc-PCCComBat</code>).</p>
+<figure><a href="../images/harmonize_page.png"><img src="../images/harmonize_page.png" alt="Harmonize for the PCC maps of the example: site column, ComBat, and the covariates whose effects are kept." loading="lazy"></a><figcaption><b>Figure 14.</b> Harmonize for the PCC maps of the example: site column, ComBat, and the covariates whose effects are kept.</figcaption></figure>
+<h4>Methods</h4>
+<table>
+<tr><th>Method</th><th>What it does</th><th>When</th></tr>
+<tr><td><code>combat</code></td><td>ComBat with parametric empirical Bayes (Johnson et al. 2007; Fortin et al. 2017, 2018): per voxel, data = site location + covariate effects + error scaled per site; the site location and scale are estimated per voxel and shrunk across voxels, then removed.</td><td>the default; small sites benefit from the shrinkage</td></tr>
+<tr><td><code>combat_nonparam</code></td><td>empirical Bayes without a distribution for the site effects (prior from up to 5000 other voxels)</td><td>when the site effects are far from normal</td></tr>
+<tr><td><code>combat_noeb</code></td><td>location and scale per voxel without shrinkage</td><td>large sites</td></tr>
+<tr><td><code>combat_mean</code></td><td>site means only</td><td>when variances should stay as they are</td></tr>
+<tr><td><code>combat_gam</code></td><td>ComBat with natural-spline terms for the Nonlinear covariates (Pomponio et al. 2020)</td><td>wide age ranges, non-linear effects</td></tr>
+<tr><td><code>covbat</code></td><td>ComBat, then the site differences in the covariance between voxels are removed (Chen et al. 2022)</td><td>when network structure differs between sites</td></tr>
+<tr><td><code>lm</code></td><td>linear regression: site means removed with the covariates in the model</td><td>a simple reference</td></tr>
+</table>
+<p>The ComBat variants give the same results as neuroCombat. A <b>reference site</b> can be kept unchanged with the others mapped onto it. Every effect you will test later must be among the kept covariates; otherwise, where it differs between sites, it is partly removed with the site effect. The log and <code>group/harmonize&lt;label&gt;_&lt;maps&gt;/…_report.json</code> give the share of voxels with a site effect (F test, p &lt; 0.05, adjusted for the kept effects) before and after.</p>
+<div class="warn"><b>Small sites.</b> The scale (variance) step of <code>combat</code>, <code>combat_nonparam</code>, <code>combat_noeb</code>, <code>combat_gam</code> and <code>covbat</code> divides each site's residuals by its own standard deviation. With few subjects per site those estimates are noisy and the harmonised data look less variable than they are, so later tests of the kept covariates become too liberal (Nygaard et al. 2016). In Example B (three sites of ten, simulated ages) a GM–age regression on ComBat-harmonised VBM maps found three clusters that are not there: none with <code>combat_mean</code>, none with <code>lm</code>, none with the unharmonised maps and site as a covariate. With fewer than about 20 subjects per site, SeeCAT writes a warning in the log and in the report. Then prefer <code>combat_mean</code> or <code>lm</code>, or leave the maps unharmonised and add the site column as a covariate in Statistics; compare with the unharmonised result before reporting.</div>
+<div class="wrap"><table class="params"><thead><tr><th>Option (window)</th><th>Batch field</th><th>Default</th><th>Meaning and advice</th></tr></thead><tbody><tr><td>Derivatives folder</td><td><code>input_dir</code></td><td><code>(empty)</code></td><td><p>The SeeCAT derivatives folder with the per-subject maps to harmonise (output of Seed FC, Degree or Gradients), e.g. D:/study/bids/derivatives/seecat. The harmonised maps are written next to the originals unless Output folder is set.</p></td></tr><tr><td>Maps</td><td><code>maps</code></td><td><code>(empty)</code></td><td><p>Which maps to harmonise, by the parts of their file names, as in Statistics: e.g. Map PCC and Statistic z for seed FC, or Map grad1Vox4 for the first gradient. Open a list to pick from the values found; the line below counts the matching maps.</p><p>Harmonise each kind of map separately (one run of this page per measure). All maps of all sites are needed together.</p></td></tr><tr><td>participants.tsv <span class="tag">advanced</span></td><td><code>participants</code></td><td><code>(empty)</code></td><td><p>The table with participant_id, the site column and the covariates. Empty: participants.tsv of the BIDS dataset the derivatives come from.</p></td></tr><tr><td>Site column</td><td><code>site</code></td><td><code>site</code></td><td><p>The participants.tsv column that names the site or scanner of each subject, e.g. site, scanner or center. Every site needs at least 2 subjects; ComBat works best with 10 or more per site. A study scanned on two scanners at one centre has two sites.</p></td></tr><tr><td>Method</td><td><code>method</code></td><td><code>combat</code></td><td><p>combat (default): ComBat with parametric empirical Bayes (Johnson et al. 2007; Fortin et al. 2017, 2018). Site differences in the mean and variance of every voxel are removed; the estimates borrow strength across voxels, which helps small sites. Same results as neuroCombat.<br>combat_nonparam: empirical Bayes without assuming a distribution for the site effects; slower (prior from up to 5000 other voxels).<br>combat_noeb: location and scale per voxel without shrinkage; for large sites.<br>combat_mean: site means only, variances left as they are.<br>combat_gam: ComBat-GAM (Pomponio et al. 2020): Nonlinear covariates such as age are kept as smooth curves, for wide age ranges.<br>covbat: CovBat (Chen et al. 2022): ComBat, then also the site differences in how voxels co-vary are removed.<br>lm: linear regression; site means removed with the covariates in the model, no empirical Bayes or scaling.</p><p>Small sites (fewer than about 20 subjects each): the variance adjustment of combat, combat_nonparam, combat_noeb, combat_gam and covbat can make later tests of the kept covariates too liberal (Nygaard et al. 2016). In the manual's example (3 sites of 10, simulated age) a GM-age regression found 3 false clusters after combat and none after combat_mean or lm. Prefer combat_mean or lm for small samples; the log warns.</p><p class="choices"><code>combat</code> | <code>combat_nonparam</code> | <code>combat_noeb</code> | <code>combat_mean</code> | <code>combat_gam</code> | <code>covbat</code> | <code>lm</code></p></td></tr><tr><td>Covariates kept</td><td><code>covariates</code></td><td><code>(empty)</code></td><td><p>participants.tsv columns whose effects must survive harmonisation, comma separated, e.g. diagnosis, age, sex. Text columns become categories. Include every variable you will test later: an effect that is not listed and differs between sites is partly removed with the site effect.</p></td></tr><tr><td>Nonlinear covariates</td><td><code>nonlinear</code></td><td><code>(empty)</code></td><td><p>Numeric columns kept as smooth (natural spline) effects instead of straight lines, e.g. age over a lifespan sample. Needed by combat_gam; allowed with every method. Do not list a column in both boxes.</p></td></tr><tr><td>Spline df <span class="tag">advanced</span></td><td><code>spline_df</code></td><td><code>3</code></td><td><p>Degrees of freedom of each nonlinear covariate's spline, 3 by default; more allow wigglier curves.</p></td></tr><tr><td>Reference site <span class="tag">advanced</span></td><td><code>ref_site</code></td><td><code>(empty)</code></td><td><p>A site whose maps are left unchanged; the other sites are mapped onto it (e.g. the largest site, or the one a normative model was built on). Empty (default): all sites are mapped to their common average.</p></td></tr><tr><td>CovBat variance <span class="tag">advanced</span></td><td><code>covbat_var</code></td><td><code>0.95</code></td><td><p>covbat only: share of the residual variance whose principal components are harmonised, 0.95 by default.</p></td></tr><tr><td>Mask</td><td><code>mask</code></td><td><code>gm</code></td><td><p>The voxels harmonised: grey matter (gm, default), whole brain, or a mask file; always only voxels that are non-zero in every map. Voxels outside are 0 in the outputs, so Statistics leaves them out.</p></td></tr><tr><td>Output label</td><td><code>label</code></td><td><code>ComBat</code></td><td><p>Added to the desc label of each map, e.g. desc-PCC -&gt; desc-PCCComBat (default ComBat). Use another label to keep the results of different methods apart (e.g. CovBat). In Statistics, choose Map PCCComBat.</p></td></tr><tr><td>Output folder</td><td><code>output_dir</code></td><td><code>(empty)</code></td><td><p>Where the results go. Empty: the default of the pipeline, next to the input (for the analyses, the derivatives folder itself, so the maps sit beside the runs they come from).</p><p>Set it to keep the results of different settings apart, e.g. D:/study/derivatives/degree_r03. Logs and the config of every run are written to its logs folder.</p></td></tr><tr><td>Work folder <span class="tag">advanced</span></td><td><code>work_dir</code></td><td><code>(empty)</code></td><td><p>Intermediate files, one subfolder per unit. Empty: seecat_work next to the output folder.</p><p>It is deleted after a unit succeeds (unless Keep work files) and kept after a failure, so a rerun does not redo finished steps. A fast local disk helps.</p></td></tr><tr><td>Leave out QC exclusions</td><td><code>qc_exclusions</code></td><td><code>true</code></td><td><p>Ticked (default): runs (and T1w images) marked "exclude" in the derivatives folder's reports/qc_exclusions.tsv are left out, and the log lists them. That list is made by the group QC report after Preprocessing or fMRIPrep denoising, from the rules there (head motion, coverage, too little data); confirm or change each decision on the QC reports page.</p><p>Untick to use every run, e.g. to compare results with and without the excluded data.</p></td></tr><tr><td>Subjects <span class="tag">advanced</span></td><td><code>subjects</code></td><td><code>(empty)</code></td><td><p>Only these subjects, labels without "sub-", comma separated. Empty: all with a matching map.</p></td></tr></tbody></table></div>
+
+<h3 id="s6-10"><span class="num">6.10</span> Statistics</h3>
+<p>Group statistics on per-subject maps: a general linear model at every voxel, contrasts, and correction for multiple comparisons. The model, smoothness estimate and random field theory follow SPM, so the numbers match SPM's results table for the same model.</p>
+<figure><a href="../images/stat_page.png"><img src="../images/stat_page.png" alt="Statistics for the one-sample example: maps chosen by their name fields, the design and the corrections." loading="lazy"></a><figcaption><b>Figure 15.</b> Statistics for the one-sample example: maps chosen by their name fields, the design and the corrections.</figcaption></figure>
+<h4>Designs</h4>
+<table>
+<tr><th>Design</th><th>Question</th><th>Set</th><th>Default contrasts</th></tr>
+<tr><td><code>one_sample</code></td><td>is the mean map different from 0?</td><td>–</td><td><code>pos</code>, <code>neg</code></td></tr>
+<tr><td><code>two_sample</code></td><td>do two groups differ?</td><td>Factor: participants column; Levels</td><td><code>AgtB</code>, <code>BgtA</code></td></tr>
+<tr><td><code>paired</code></td><td>two maps per subject (e.g. ses-1, ses-2)</td><td>Factor: the entity that differs</td><td>both directions</td></tr>
+<tr><td><code>anova1</code></td><td>three or more groups</td><td>Factor, Levels</td><td>F of equal means</td></tr>
+<tr><td><code>anova1_rm</code></td><td>three or more maps per subject</td><td>Factor: entity</td><td>F of equal levels</td></tr>
+<tr><td><code>regression</code></td><td>does the map vary with a score?</td><td>Regressors</td><td><code>&lt;name&gt;pos</code>, <code>&lt;name&gt;neg</code></td></tr>
+<tr><td><code>custom</code></td><td>your own design matrix</td><td>Design TSV, Contrasts</td><td>–</td></tr>
+</table>
+<p>Covariates are mean-centred; text covariates become centred dummy columns. With <b>Variance</b> unequal (default for anova1_rm), non-sphericity is estimated with ReML as in SPM.</p>
+<h4>Corrections</h4>
+<ul>
+<li><b>cluster_fwe</b> (default): clusters of voxels above the cluster-forming p (0.001), kept when their extent has a family-wise error p &lt; alpha by random field theory.</li>
+<li><b>voxel_fwe</b>: voxels with FWE p &lt; alpha (random field theory).</li>
+<li><b>voxel_fdr</b>: voxels with false discovery rate &lt; alpha (Benjamini–Hochberg).</li>
+<li><b>tfce_fwe</b>: threshold-free cluster enhancement (Smith &amp; Nichols 2009; E = 0.5, H = 2, 26-connectivity) with voxel FWE p from permutations (Freedman–Lane: sign flips for one-sample, swaps within subjects for paired designs, row permutations otherwise), as FSL randomise. Parallel workers share the permutations.</li>
+</ul>
+<p>With <b>Two-tailed</b> (default), each T contrast of a pair is tested at alpha/2. Maps excluded by QC are left out, and every map that is dropped (no participants.tsv row, a missing value) is listed in the log.</p>
+<div class="wrap"><table class="params"><thead><tr><th>Option (window)</th><th>Batch field</th><th>Default</th><th>Meaning and advice</th></tr></thead><tbody><tr><td>Analysis name</td><td><code>name</code></td><td><code>(empty)</code></td><td><p>A name for this analysis, letters and digits only, e.g. PCCzSCHZvsCTL. Results go to &lt;output folder&gt;/group/&lt;name&gt;/ and every file starts with it, so different analyses of the same data stay apart. Running again with the same name and settings skips the analysis (tick Overwrite to redo it).</p></td></tr><tr><td>Derivatives folder</td><td><code>input_dir</code></td><td><code>(empty)</code></td><td><p>The SeeCAT derivatives folder that holds the per-subject maps, e.g. D:/study/bids/derivatives/seecat (the output of Seed FC or Degree).</p><p>Once it is set, the Maps fields below list the values found there.</p></td></tr><tr><td>Maps</td><td><code>maps</code></td><td><code>(empty)</code></td><td><p>Which per-subject map enters the analysis, by the parts of its file name. Every subject must have exactly one matching map (two for paired designs, one per level).</p><p>Map (desc): the seed or measure, e.g. PCC (seed FC) or degPosBinR0p2Sm6 (degree).<br>Statistic (stat): z (Fisher z of r, or z-scored degree; the usual choice) or raw.<br>Suffix: connectivity for SeeCAT's maps.<br>Space and Task: needed only when several are present.<br>Other: further entities as key=value, comma separated, e.g. ses=1, run=1.</p><p>Open a list to pick from the values in the derivatives folder, or type a value. Empty fields match anything. The line below the fields counts the matching maps.</p><p>Example: sub-01_task-rest_space-MNI152NLin2009cAsym_desc-PCC_stat-z_connectivity.nii.gz is chosen by Map PCC, Statistic z, Suffix connectivity.</p></td></tr><tr><td>participants.tsv <span class="tag">advanced</span></td><td><code>participants</code></td><td><code>(empty)</code></td><td><p>The table of subject information (group, age, sex, ...) with a participant_id column (sub-01, ...). Empty: participants.tsv of the BIDS dataset the derivatives come from.</p><p>Factor, Regressors and Covariates name its columns. Subjects with an empty or n/a value in a used column are left out and listed in the log.</p></td></tr><tr><td>Design</td><td><code>design</code></td><td><code>one_sample</code></td><td><p>one_sample: is the mean map different from 0? (e.g. the PCC network of all subjects). Contrasts pos and neg.<br>two_sample: do two groups differ? Factor = the participants column of the group; contrasts AgtB and BgtA.<br>paired: two maps per subject (e.g. ses-1 and ses-2, before and after); Factor = the entity that differs (ses, desc, ...).<br>anova1: three or more groups; F contrast of equal means.<br>anova1_rm: three or more maps per subject (repeated measures); F contrast.<br>regression: does the map vary with a score (age, symptoms)? Regressors = the columns; contrasts &lt;name&gt;pos and &lt;name&gt;neg.<br>custom: your own design matrix (Design TSV) and Contrasts.</p><p class="choices"><code>one_sample</code> | <code>two_sample</code> | <code>paired</code> | <code>anova1</code> | <code>anova1_rm</code> | <code>regression</code> | <code>custom</code></p></td></tr><tr><td>Factor</td><td><code>factor</code></td><td><code>(empty)</code></td><td><p>two_sample and anova1: the participants.tsv column that holds the group, e.g. diagnosis.<br>paired and anova1_rm: the file-name entity whose value differs between a subject's maps, e.g. ses (sessions) or desc (two seeds or measures).<br>Not used by the other designs.</p></td></tr><tr><td>Levels</td><td><code>levels</code></td><td><code>(empty)</code></td><td><p>The levels of Factor in the order the contrasts use, comma separated, e.g. CONTROL, SCHZ: AgtB is then CONTROL &gt; SCHZ. Levels not listed are left out, so this also picks two groups out of several. Empty: all levels, in the order found.</p></td></tr><tr><td>Regressors</td><td><code>regressors</code></td><td><code>(empty)</code></td><td><p>regression only: participants.tsv columns of the scores tested, comma separated, e.g. age or PANSS_total, MoCA. They are mean-centred and fitted in one model, so each is tested adjusted for the others.</p></td></tr><tr><td>Covariates</td><td><code>covariates</code></td><td><code>(empty)</code></td><td><p>participants.tsv columns to adjust for (not tested), comma separated, e.g. age, sex, mean_fd. Numbers are mean-centred; text columns (e.g. sex, site) become centred dummy columns. The log warns when a column is strongly collinear with others (VIF &gt; 5). Paired and repeated-measures designs cannot take between-subject covariates.</p></td></tr><tr><td>Design TSV <span class="tag">advanced</span></td><td><code>design_tsv</code></td><td><code>(empty)</code></td><td><p>custom design only: a tab-separated table with a path column (the map of each row, absolute or relative to the table) and one numeric column per design column, e.g.<br>path  A  B  age<br>sub-01_map.nii  1  0  23<br>...<br>Contrasts then have one weight per design column, in this order.</p></td></tr><tr><td>Contrasts <span class="tag">advanced</span></td><td><code>contrasts</code></td><td><code>(empty)</code></td><td><p>One row per contrast: a name (letters and digits), type t or F, and the weights, one per design column (see &lt;name&gt;_design.tsv of a first run for the columns and their order). F weights have one row per line, separated by ";", e.g. [1 -1 0; 0 1 -1].</p><p>Empty: the design's defaults (both directions of each T test, or the F test of equal means).</p></td></tr><tr><td>Variance <span class="tag">advanced</span></td><td><code>variance</code></td><td><code>auto</code></td><td><p>Whether the groups or levels may have different variances (and, for repeated measures, correlated levels), as SPM's non-sphericity.</p><p>auto (default): equal, except unequal for anova1_rm.<br>equal: one variance for all (ordinary least squares).<br>unequal: estimated with ReML over the strongly responding voxels, as SPM does.</p><p class="choices"><code>auto</code> | <code>equal</code> | <code>unequal</code></p></td></tr><tr><td>Mask</td><td><code>mask</code></td><td><code>gm</code></td><td><p>The voxels tested.</p><p>Grey matter (gm, default): SeeCAT's grey-matter mask (SPM TPM GM &gt; 0.2).<br>Whole brain (brain): no extra mask.<br>Mask file: your own NIfTI image in MNI space (voxels &gt; 0), e.g. a region of interest for a small-volume analysis; choose it with the folder button.</p><p>In every case only voxels that are non-zero in every subject's map are kept. A smaller mask means a milder correction.</p></td></tr><tr><td>Correction</td><td><code>inference</code></td><td><code>cluster_fwe</code></td><td><p>How the maps are corrected for multiple comparisons; each ticked method gives its own thresholded map and cluster table (desc-clusterFWE, -voxelFWE, -voxelFDR, -tfceFWE).</p><p>cluster_fwe (default): clusters above the cluster-forming p, kept when their size has FWE p &lt; Alpha (random field theory, as SPM).<br>voxel_fwe: voxels with FWE p &lt; Alpha (random field theory, as SPM); strict.<br>voxel_fdr: voxels with false discovery rate &lt; Alpha (Benjamini-Hochberg).<br>tfce_fwe: threshold-free cluster enhancement with FWE p from permutations (as FSL randomise); no cluster-forming threshold to choose, robust, but slow: see TFCE permutations and Parallel workers.</p><p>Unthresholded T/F, Z, p and effect maps are always written.</p><p class="choices"><code>cluster_fwe</code> | <code>voxel_fwe</code> | <code>voxel_fdr</code> | <code>tfce_fwe</code></p></td></tr><tr><td>Cluster-forming p</td><td><code>cdt_p</code></td><td><code>0.001</code></td><td><p>cluster_fwe only: voxels below this uncorrected p form the clusters. 0.001 (default) is the recommended value; above 0.001 random field theory clusters are too liberal (Eklund et al. 2016), and the log warns.</p></td></tr><tr><td>Alpha</td><td><code>alpha</code></td><td><code>0.05</code></td><td><p>The corrected significance level of every method, e.g. 0.05 (default). With Two-tailed, each T contrast is tested at Alpha/2.</p></td></tr><tr><td>Two-tailed (alpha/2 per T contrast)</td><td><code>two_tailed</code></td><td><code>true</code></td><td><p>The default T contrasts come in pairs (AgtB and BgtA, pos and neg), one per direction. Ticked (default): each is tested at Alpha/2, so the pair together is a two-tailed test at Alpha. Untick only for a direction chosen before looking at the data.</p></td></tr><tr><td>TFCE permutations</td><td><code>tfce.n_perm</code></td><td><code>5000</code></td><td><p>tfce_fwe only: how many permutations (sign flips for one_sample, swaps within subjects for paired designs) build the null distribution. 5000 (default) as FSL randomise; the smallest possible p is 1/permutations. When fewer distinct permutations exist (e.g. 2^n sign flips of n maps), all are used.</p><p>Time grows with the permutations, the contrasts and the mask: several minutes to an hour. Parallel workers (Run) share the permutations. The random seed is fixed, so results repeat exactly.</p></td></tr><tr><td>TFCE extent exponent E <span class="tag">advanced</span></td><td><code>tfce.E</code></td><td><code>0.5</code></td><td><p>TFCE weight of cluster extent, 0.5 (default, Smith &amp; Nichols 2009; as FSL for 3D data).</p></td></tr><tr><td>TFCE height exponent H <span class="tag">advanced</span></td><td><code>tfce.H</code></td><td><code>2</code></td><td><p>TFCE weight of height, 2 (default, Smith &amp; Nichols 2009; as FSL).</p></td></tr><tr><td>Leave out QC exclusions</td><td><code>qc_exclusions</code></td><td><code>true</code></td><td><p>Ticked (default): runs (and T1w images) marked "exclude" in the derivatives folder's reports/qc_exclusions.tsv are left out, and the log lists them. That list is made by the group QC report after Preprocessing or fMRIPrep denoising, from the rules there (head motion, coverage, too little data); confirm or change each decision on the QC reports page.</p><p>Untick to use every run, e.g. to compare results with and without the excluded data.</p></td></tr><tr><td>Subjects <span class="tag">advanced</span></td><td><code>subjects</code></td><td><code>(empty)</code></td><td><p>Only these subjects, labels without "sub-", comma separated. Empty: every subject with a matching map.</p></td></tr></tbody></table></div>
+<h4>Outputs</h4>
+<pre><code>group/&lt;name&gt;/
+  &lt;name&gt;_design.tsv                                    maps and design columns
+  &lt;name&gt;_desc-mask_mask.nii.gz                         voxels tested
+  &lt;name&gt;_contrast-&lt;c&gt;_stat-t_statmap.nii.gz          T (or F) map, with df and smoothness in the sidecar
+  &lt;name&gt;_contrast-&lt;c&gt;_stat-z_statmap.nii.gz          Z of the same p
+  &lt;name&gt;_contrast-&lt;c&gt;_stat-p_statmap.nii.gz          −log10 p
+  &lt;name&gt;_contrast-&lt;c&gt;_stat-effect_statmap.nii.gz     contrast estimate
+  &lt;name&gt;_contrast-&lt;c&gt;_desc-clusterFWE_stat-t_statmap.nii.gz   thresholded map
+  &lt;name&gt;_contrast-&lt;c&gt;_desc-clusterFWE_dseg.nii.gz             surviving clusters, numbered
+  &lt;name&gt;_contrast-&lt;c&gt;_desc-clusterFWE_clusters.tsv            cluster table (SPM style)
+  &lt;name&gt;_contrast-&lt;c&gt;_desc-tfce_stat-tfce_statmap.nii.gz     TFCE values (tfce_fwe)
+  &lt;name&gt;_contrast-&lt;c&gt;_desc-tfceFWE_stat-p_statmap.nii.gz     −log10 FWE p (tfce_fwe)
+  &lt;name&gt;_report.json</code></pre>
+<p>The cluster table has, per cluster, its size, FWE and uncorrected cluster p, and up to three peaks more than 8 mm apart with statistic, Z, peak p and MNI coordinates.</p>
+
+<h3 id="s6-11"><span class="num">6.11</span> Viewer</h3>
+<p>The viewer shows any NIfTI image on an MNI brain: SeeCAT's statistic maps, seed and degree maps, gradients, VBM maps, or a 4D BOLD series.</p>
+<figure><a href="../images/viewer_ortho.png"><img src="../images/viewer_ortho.png" alt="The one-sample PCC result in the viewer: three views, the cursor read-out with the atlas label, and the cluster table." loading="lazy"></a><figcaption><b>Figure 16.</b> The one-sample PCC result in the viewer: three views, the cursor read-out with the atlas label, and the cluster table.</figcaption></figure>
+<ul>
+<li><b>Layouts</b>: Orthogonal (three views and the cursor read-out), Single (one large view and three thumbnails), Mosaic (slices of one orientation).</li>
+<li><b>Underlay</b>: chosen by the map's space (ch2 for IXI549Space, ICBM152 2009c for MNI152NLin2009cAsym), or picked from the menu.</li>
+<li><b>Threshold</b> by value or by p. For SeeCAT statistic maps (and SPM-style maps with df in the header) p thresholds can be corrected (cluster FWE, voxel FWE, voxel FDR) with the same code as Statistics, so the viewer and the pipeline agree. Sign (+, −, ±), minimum cluster size, colour map and opacity.</li>
+<li><b>Clusters</b>: the table of clusters with their peaks and atlas labels (Neuromorphometrics from SPM; AAL and Brodmann when BrainNet Viewer is installed); clicking a row moves the cursor. Export TSV saves it.</li>
+<li><b>Time series</b>: for a 4D series, the cursor voxel's signal with FD and flagged frames; a slider and Play step through the volumes.</li>
+<li><b>Save image</b> writes the current view as PNG; <b>Save map</b> writes the thresholded map as NIfTI; <b>Surface</b> shows the map on the cortex in BrainNet Viewer.</li>
+<li><b>Neuro / Radio</b>: left on the left, or on the right.</li>
+</ul>
+<figure><a href="../images/viewer_mosaic.png"><img src="../images/viewer_mosaic.png" alt="Mosaic view." loading="lazy"></a><figcaption><b>Figure 17.</b> Mosaic view.</figcaption></figure>
+<pre><code>seecat.viewer('group/PCConeSampleHC/PCConeSampleHC_contrast-pos_stat-t_statmap.nii.gz')</code></pre>
+
+<h3 id="s6-12"><span class="num">6.12</span> Shared: denoising, censoring and smoothing</h3>
+<p>These options are the same on Preprocessing and fMRIPrep denoising.</p>
+<div class="wrap"><table class="params"><thead><tr><th>Option (window)</th><th>Batch field</th><th>Default</th><th>Meaning and advice</th></tr></thead><tbody><tr><td>Denoise</td><td><code>denoise.enable</code></td><td><code>true</code></td><td><p>Remove nuisance signal from every voxel: one regression of a polynomial trend and the chosen Regressors, with data and regressors band-passed by the same filter, so the filter does not bring removed signal back. The result is desc-denoised (unsmoothed), the input of Seed FC and Degree.</p></td></tr><tr><td>Regressors</td><td><code>denoise.regressors</code></td><td><code>friston24, wm, csf</code></td><td><p>friston24: the 6 head-motion parameters, their derivatives and squares (Friston 1996).<br>wm, csf: mean signal of the eroded white-matter and CSF masks.<br>gs: global signal (global signal regression). Off by default: it removes widespread neural signal too and creates negative correlations; tick it if your study uses it.<br>acompcor: principal components of WM and CSF (aCompCor; see aCompCor components); use it instead of wm and csf.</p><p>Default friston24 + wm + csf. Any other column of the confounds table can be added in a config file (denoise.regressors).</p><p class="choices"><code>friston24</code> | <code>wm</code> | <code>csf</code> | <code>gs</code> | <code>acompcor</code></p></td></tr><tr><td>aCompCor components <span class="tag">advanced</span></td><td><code>denoise.acompcor_n</code></td><td><code>5</code></td><td><p>acompcor only: components taken per tissue (WM and CSF), 5 by default (Behzadi 2007).</p></td></tr><tr><td>Detrend order <span class="tag">advanced</span></td><td><code>denoise.detrend_order</code></td><td><code>1</code></td><td><p>Order of the polynomial trend removed with the regressors: 0 = mean only, 1 = linear (default), 2 = quadratic, up to 3.</p></td></tr><tr><td>Band-pass (Hz)</td><td><code>denoise.band</code></td><td><code>0.01 0.1</code></td><td><p>Frequencies kept, low to high in Hz. 0.01 to 0.1 (default) is the usual resting-state band. Leave the second box 0 for a high-pass only (e.g. 0.01 to 0), and both empty for no filter (e.g. for ALFF-type measures computed later).</p></td></tr><tr><td>High-motion frames</td><td><code>censor.mode</code></td><td><code>censor</code></td><td><p>What happens to volumes with large head motion (framewise displacement above the FD threshold).</p><p>censor (default): they are filled in from the good volumes before filtering (so the spike is not spread), left out of the regression, and marked in the confounds table; Seed FC and Degree then leave them out. Runs keep their length.<br>interp_keep: the same, but the filled-in volumes are used by later analyses.<br>none: no special handling.</p><p class="choices"><code>censor</code> | <code>interp_keep</code> | <code>none</code></p></td></tr><tr><td>FD threshold (mm)</td><td><code>censor.fd_threshold</code></td><td><code>0.5</code></td><td><p>Framewise displacement (Power et al. 2012) above which a volume counts as high-motion. 0.5 mm (default) is common; 0.2 to 0.3 is stricter (e.g. for children or patient groups, at the cost of more lost volumes).</p></td></tr><tr><td>Frames before <span class="tag">advanced</span></td><td><code>censor.before</code></td><td><code>1</code></td><td><p>Also flag this many volumes before each high-motion volume, 1 by default.</p></td></tr><tr><td>Frames after <span class="tag">advanced</span></td><td><code>censor.after</code></td><td><code>2</code></td><td><p>Also flag this many volumes after each high-motion volume, 2 by default (motion effects outlast the movement).</p></td></tr><tr><td>Interpolation <span class="tag">advanced</span></td><td><code>censor.interp</code></td><td><code>spectral</code></td><td><p>How flagged volumes are filled in before filtering.</p><p>spectral (default): a fit of sinusoids up to the low-pass edge to the good volumes; in tests it changed the good volumes and the seed maps less than spline.<br>spline: cubic spline through the good volumes.</p><p class="choices"><code>spectral</code> | <code>spline</code></p></td></tr><tr><td>Minimum minutes <span class="tag">advanced</span></td><td><code>censor.min_minutes</code></td><td><code>5</code></td><td><p>Runs with less good (unflagged) data than this many minutes, 5 by default, are flagged in the QC report so you can exclude them.</p></td></tr><tr><td>Smooth</td><td><code>smooth.enable</code></td><td><code>true</code></td><td><p>Also write a spatially smoothed copy of the denoised data (desc-denoisedSm&lt;FWHM&gt;). The unsmoothed desc-denoised is always kept: Seed FC and Degree use it by default.</p></td></tr><tr><td>FWHM (mm)</td><td><code>smooth.fwhm</code></td><td><code>6</code></td><td><p>Width of the Gaussian kernel, e.g. 6 (default; about twice the voxel size) or 4. Three numbers give a different FWHM per axis.</p></td></tr></tbody></table></div>
+
+<h3 id="s6-13"><span class="num">6.13</span> Shared: quality control</h3>
+<div class="wrap"><table class="params"><thead><tr><th>Option (window)</th><th>Batch field</th><th>Default</th><th>Meaning and advice</th></tr></thead><tbody><tr><td>Image quality metrics (IQM)</td><td><code>qc.iqm</code></td><td><code>true</code></td><td><p>Compute MRIQC's image quality metrics of the raw T1w and BOLD data while preprocessing (the T1w segmentation, realignment and coregistration are shared, so it adds about half a minute per run). BOLD: tSNR, SNR, ghost-to-signal, EFC, FBER, standardised DVARS, AFNI outlier ratio and quality index, global correlation, FD, smoothness. T1w: CNR, CJV, SNR (tissue and Dietrich), EFC, FBER, bias-field spread, WM-to-max, volume fractions, partial-volume residuals, smoothness, and TIV.</p><p>The values agree with MRIQC's formulas; the masks (head, air, brain) are SeeCAT's own, so absolute values can differ from an MRIQC run. The group report shows their distribution per site and warns about outliers.</p></td></tr><tr><td>Max. translation (mm)</td><td><code>qc.max_translation</code></td><td><code>3</code></td><td><p>A run whose largest absolute translation (any axis, any frame, from realignment) is above this is suggested for exclusion; 3 mm (default) is the common limit, about one voxel.</p></td></tr><tr><td>Max. rotation (degrees)</td><td><code>qc.max_rotation</code></td><td><code>3</code></td><td><p>As Max. translation, for the largest absolute rotation; 3 degrees by default.</p></td></tr><tr><td>Max. mean FD (mm)</td><td><code>qc.max_mean_fd</code></td><td><code>0.5</code></td><td><p>A run whose mean framewise displacement (Power) is above this is suggested for exclusion: 0.5 mm by default; 0.2 to 0.3 mm is stricter (Parkes et al. 2018 use 0.55 lenient, 0.25 stringent). Above 0.25 mm the report always warns.</p></td></tr><tr><td>Min. brain coverage</td><td><code>qc.min_coverage</code></td><td><code>0.9</code></td><td><p>Share of the template brain mask that must lie inside the scan's field of view after normalisation (in every frame); 0.9 by default. Lower means part of the brain (often the cerebellum or the top of the cortex) was not scanned; such runs are suggested for exclusion. The report also shows the coverage of the top and bottom separately.</p></td></tr><tr><td>Min. brain Dice</td><td><code>qc.min_brain_dice</code></td><td><code>0.85</code></td><td><p>Registration check: the Dice overlap of the run's brain mask with the template brain mask after normalisation (1 = identical). Runs below this, 0.85 by default, are suggested for exclusion as failed normalisations; good ones are usually above 0.9.</p><p>The reports also give, for each run: the correlation of the normalised GM, WM and CSF maps with SPM's tissue templates (reg_gm_corr ...), and the Dice of a brain mask taken from the mean EPI's own intensity with the T1w brain (reg_epi_t1_dice, EPI-T1w alignment; about 0.85-0.92 when good). Outliers within a site are warnings.</p></td></tr><tr><td>IQM outlier z <span class="tag">advanced</span></td><td><code>qc.iqm_z</code></td><td><code>3</code></td><td><p>An image quality metric is flagged (a warning, not an exclusion) when its robust z (distance from the median in MADs) within the run's site exceeds this in the bad direction, 3 by default. Sites come from the "site" column of participants.tsv; without it, or with fewer than 5 runs in a site, the whole dataset is the reference.</p></td></tr></tbody></table></div>
+
+<h3 id="s6-14"><span class="num">6.14</span> Shared: selection of runs</h3>
+<p>The pages that process runs choose them by subject, session, task and run. Seed FC, Degree, Gradients, Harmonize and Statistics also leave out what quality control excluded:</p>
+<div class="wrap"><table class="params"><thead><tr><th>Option (window)</th><th>Batch field</th><th>Default</th><th>Meaning and advice</th></tr></thead><tbody><tr><td>Subjects</td><td><code>subjects</code></td><td><code>(empty)</code></td><td><p>Which subjects to process: labels without "sub-", comma separated, e.g. 01, 02, 15. Empty: all subjects found.</p></td></tr><tr><td>Sessions <span class="tag">advanced</span></td><td><code>sessions</code></td><td><code>(empty)</code></td><td><p>Labels without "ses-", comma separated, e.g. 1, 2. Empty: all sessions.</p></td></tr><tr><td>Task</td><td><code>task</code></td><td><code>(empty)</code></td><td><p>The task label of the runs, e.g. rest. Empty: the only task present; if the data hold several tasks, name one.</p></td></tr><tr><td>Runs <span class="tag">advanced</span></td><td><code>runs</code></td><td><code>(empty)</code></td><td><p>Run labels, comma separated, e.g. 1, 2. Empty: all runs.</p></td></tr><tr><td>Leave out QC exclusions</td><td><code>qc_exclusions</code></td><td><code>true</code></td><td><p>Ticked (default): runs (and T1w images) marked "exclude" in the derivatives folder's reports/qc_exclusions.tsv are left out, and the log lists them. That list is made by the group QC report after Preprocessing or fMRIPrep denoising, from the rules there (head motion, coverage, too little data); confirm or change each decision on the QC reports page.</p><p>Untick to use every run, e.g. to compare results with and without the excluded data.</p></td></tr></tbody></table></div>
+
+<h3 id="s6-15"><span class="num">6.15</span> Shared: output and run</h3>
+<div class="wrap"><table class="params"><thead><tr><th>Option (window)</th><th>Batch field</th><th>Default</th><th>Meaning and advice</th></tr></thead><tbody><tr><td>Output folder</td><td><code>output_dir</code></td><td><code>(empty)</code></td><td><p>Where the results go. Empty: the default of the pipeline, next to the input (for the analyses, the derivatives folder itself, so the maps sit beside the runs they come from).</p><p>Set it to keep the results of different settings apart, e.g. D:/study/derivatives/degree_r03. Logs and the config of every run are written to its logs folder.</p></td></tr><tr><td>Work folder <span class="tag">advanced</span></td><td><code>work_dir</code></td><td><code>(empty)</code></td><td><p>Intermediate files, one subfolder per unit. Empty: seecat_work next to the output folder.</p><p>It is deleted after a unit succeeds (unless Keep work files) and kept after a failure, so a rerun does not redo finished steps. A fast local disk helps.</p></td></tr><tr><td>Parallel workers</td><td><code>n_workers</code></td><td><code>0</code></td><td><p>How many units (runs or subjects) are processed at the same time, each by a worker of a parallel pool (Parallel Computing Toolbox).</p><p>0: one after another, no pool (the default).<br>auto: as many workers as fit in memory. SeeCAT estimates the memory one unit needs (from the size of the largest run) plus about 1 GB per worker, and uses at most 85% of the free memory, one worker per core and one per unit; the log shows the estimate and the choice. With too little memory for two workers it runs one after another.<br>A number, e.g. 4: at most that many workers, whatever the memory.</p><p>Without the toolbox SeeCAT runs one after another. A pool that is already open is reused as it is.</p></td></tr><tr><td>Overwrite finished units <span class="tag">advanced</span></td><td><code>overwrite</code></td><td><code>false</code></td><td><p>A unit that already finished with the same settings is skipped. Tick to compute it again anyway. A unit whose settings changed is always redone.</p></td></tr><tr><td>Keep work files <span class="tag">advanced</span></td><td><code>keep_work</code></td><td><code>false</code></td><td><p>Keep the work folder of units that succeeded, e.g. to inspect intermediate images.</p></td></tr></tbody></table></div>
+
+<h2 id="s7"><span class="num">7</span> Worked examples</h2>
+<p>This chapter runs a complete study and reports what SeeCAT produced, with the real numbers. Every figure in this manual comes from these runs. The script that ran them is in section 8.2; the configurations can also be loaded into the window with <b>Load</b>.</p>
+
+<h3 id="s7-1"><span class="num">7.1</span> The example dataset</h3>
+<p>A public test subset of a multi-site depression study: 30 subjects from three sites (CSU, PKU, SCU), five healthy controls (HC) and five patients with major depression (MDD) at each site. Every subject has one T1-weighted image and one resting-state run (TR 2 s). The three per-site folders were merged into one BIDS dataset with a <code>participants.tsv</code>:</p>
+<pre><code>participant_id   site   group   age   sex
+sub-CSUHC0001    CSU    HC      28    M
+sub-CSUHC0002    CSU    HC      34    M
+…</code></pre>
+<div class="warn"><b>Simulated covariates.</b> Age and sex in this table were generated at random for the demonstration. They are fine as covariates, but no real effect of age or sex is in the data: a significant age effect would be a false positive.</div>
+<p>All runs used <code>n_workers = 'auto'</code> on a 32-core workstation with about 200 GB of free memory. The outputs go to <code>manual_run/derivatives/seecat</code>.</p>
+
+<h3 id="s7-2"><span class="num">7.2</span> Example A: seed connectivity of the default-mode network</h3>
+<p>From BIDS to a group map of posterior cingulate (PCC) connectivity, and a comparison of the two groups.</p>
+
+<h4>A1. Check the data</h4>
+<p>On <b>Data check</b>, choose the BIDS folder and press <b>Scan</b>. The table lists 30 runs, one per subject, with their volumes and TR (section 6.2). Nothing is missing, so preprocessing can start.</p>
+
+<h4>A2. Preprocess</h4>
+<p>On <b>Preprocessing</b>: BIDS folder <code>bids2</code>, Output folder <code>manual_run/derivatives/seecat</code>, tick <b>VBM maps</b> (for Example B), Parallel workers <code>auto</code>; all other options at their defaults. Press <b>Run</b>.</p>
+<pre><code>Parallel workers (auto): about 5.5 GB per worker (4.5 GB task + 1 GB worker), 0.5 GB kept by the main MATLAB,
+    206.4 GB free: 30 worker(s) (32 cores, 30 task(s))
+Parallel pool: A pool of 30 workers did not start (…). Started 15 workers instead.
+QC: …/derivatives/seecat/reports/prep_qc.html
+Tissue volumes: …/derivatives/seecat/reports/anat_volumes.tsv
+Done: 30 ok, 0 skipped, 0 failed.</code></pre>
+<p>The memory estimate allowed 30 workers. Windows could not start that many at once, so SeeCAT retried with half and noted it in the log. The 30 runs took about 19 minutes.</p>
+
+<h4>A3. Review quality</h4>
+<p>The group report <code>reports/prep_qc.html</code> (figure in section 6.5) suggests excluding four runs:</p>
+<table>
+<tr><th>Run</th><th>Reason</th><th>Mean FD (mm)</th><th>Largest translation (mm)</th><th>Minutes kept</th></tr>
+<tr><td>sub-CSUHC0004</td><td>translation &gt; 3 mm; too little data after censoring</td><td>0.300</td><td>3.02</td><td>3.9</td></tr>
+<tr><td>sub-CSUHC0005</td><td>translation &gt; 3 mm; too little data after censoring</td><td>0.273</td><td>3.97</td><td>4.4</td></tr>
+<tr><td>sub-CSUMDD0004</td><td>too little data after censoring</td><td>0.237</td><td>1.13</td><td>4.1</td></tr>
+<tr><td>sub-PKUMDD0002</td><td>too little data after censoring</td><td>0.273</td><td>0.68</td><td>4.9</td></tr>
+</table>
+<p>Other runs have warnings but are kept. Examples:</p>
+<ul>
+<li>sub-PKUHC0001: DVARS and AQI outliers, and a low grey-matter correlation with the TPM (0.637, the lowest of the study). Open its run report and look at the carpet plot and registration before deciding.</li>
+<li>sub-PKUMDD0005: mean FD 0.281 mm, above the 0.25 mm warning level, but enough clean data remain.</li>
+<li>sub-SCUHC0001: an FBER outlier. Its run report (figure in section 6.5) shows one movement about 2.5 minutes into the run; the six censored frames around it are shaded.</li>
+</ul>
+<p>The brain mask Dice with the template is 0.956 to 0.984 for all runs, so no registration failed. We keep the suggestions as they are. The QC reports page shows the same list and can change any decision before the next step.</p>
+<p>Every later step reads the exclusion list and logs what it leaves out:</p>
+<pre><code>Left out by QC (reports/qc_exclusions.tsv): sub-CSUHC0004_task-rest, sub-CSUHC0005_task-rest,
+    sub-CSUMDD0004_task-rest, sub-PKUMDD0002_task-rest</code></pre>
+<p>This leaves 26 runs: 13 HC (CSU 3, PKU 5, SCU 5) and 13 MDD (CSU 4, PKU 4, SCU 5).</p>
+
+<h4>A4. Seed FC</h4>
+<p>On <b>Seed FC</b>, add two spheres of 6 mm radius: PCC at (0, −53, 26) and mPFC at (0, 52, −6). The 26 runs took 7 seconds. Each run gets r and Fisher z maps:</p>
+<pre><code>sub-SCUHC0001_task-rest_space-IXI549Space_res-3_desc-PCC_stat-z_connectivity.nii.gz
+sub-SCUHC0001_task-rest_space-IXI549Space_res-3_desc-mPFC_stat-z_connectivity.nii.gz</code></pre>
+
+<h4>A5. Harmonize</h4>
+<p>On <b>Harmonize</b>: Map <code>PCC</code>, Statistic <code>z</code>, Site column <code>site</code>, Method <code>combat</code>, Covariates kept <code>group, sex, age</code>.</p>
+<pre><code>[harmonizeComBat_PCCz] 26 maps, 45150 voxels, 3 sites (CSU: 7, PKU: 9, SCU: 10)
+[harmonizeComBat_PCCz] kept effects: group_MDD, sex_M, age
+[harmonizeComBat_PCCz] voxels with a site effect (p &lt; 0.05): 9.9% before, 0.1% after</code></pre>
+<p>Before harmonisation, 9.9% of grey-matter voxels had a site effect, about twice the 5% expected by chance. After ComBat, 0.1% did. The new maps are named <code>desc-PCCComBat</code>. With sites this small, SeeCAT also logs the small-site warning of section 6.9. Here we keep ComBat for the FC maps; Example B shows when this matters.</p>
+
+<h4>A6. One-sample test in the healthy controls</h4>
+<p>Is PCC connectivity positive in the 13 controls? On <b>Statistics</b>: Name <code>PCConeSampleHC</code>, Map <code>PCCComBat</code>, Statistic <code>z</code>, Design <code>one_sample</code>, Subjects: the 13 HC labels, Correction <code>cluster_fwe</code> and <code>tfce_fwe</code>.</p>
+<pre><code>[PCConeSampleHC] 13 maps, 45150 voxels in the analysis mask
+[PCConeSampleHC] df 12.00; FWHM [6.31 6.48 7.38] mm; resels 2812.9
+[PCConeSampleHC] TFCE: 5000 permutations (flip), 2 contrast(s), 16 worker(s), 93 s
+[PCConeSampleHC] pos, cluster_fwe: height 3.930, 12 cluster(s) / 1705 voxel(s) survive
+[PCConeSampleHC] pos, tfce_fwe: height 2.780, 33 cluster(s) / 3867 voxel(s) survive
+[PCConeSampleHC] neg, cluster_fwe: height 3.930, 6 cluster(s) / 140 voxel(s) survive
+[PCConeSampleHC] neg, tfce_fwe: height 6.340, 4 cluster(s) / 7 voxel(s) survive</code></pre>
+<p>The cluster-forming threshold p &lt; 0.001 is t ≥ 3.93 at 12 degrees of freedom. The largest positive clusters are those of the default-mode network:</p>
+<table>
+<tr><th>Voxels</th><th>Peak t</th><th>Peak Z</th><th>x, y, z (mm)</th><th>Region</th></tr>
+<tr><td>874</td><td>21.38</td><td>6.53</td><td>3, −57, 27</td><td>precuneus / posterior cingulate (the seed)</td></tr>
+<tr><td>206</td><td>10.53</td><td>5.20</td><td>−51, −66, 30</td><td>left angular gyrus</td></tr>
+<tr><td>152</td><td>7.71</td><td>4.55</td><td>6, 51, 24</td><td>medial superior frontal gyrus</td></tr>
+<tr><td>138</td><td>10.71</td><td>5.23</td><td>60, −54, 18</td><td>right angular gyrus</td></tr>
+<tr><td>94</td><td>8.91</td><td>4.85</td><td>24, 30, 54</td><td>right superior frontal gyrus</td></tr>
+</table>
+<p>TFCE finds the same network and extends it (3867 voxels). Its height is the smallest t that survives (2.78), so lower than the cluster-forming threshold. In the cluster file, a row with <code>n/a</code> voxels is a further peak of the cluster above it (e.g. −9, −69, 27 and 3, −63, 39 in the PCC cluster). Open the result in the viewer (figures in section 6.11): at p 0.001 with cluster FWE and both signs, the viewer shows the same 18 clusters (12 positive, 6 negative; 1845 voxels).</p>
+
+<h4>A7. Two-sample test, HC versus MDD</h4>
+<p>Name <code>PCCtwoSample</code>, Design <code>two_sample</code>, Factor <code>group</code>, Levels <code>HC, MDD</code>, Covariates <code>age, sex</code>.</p>
+<pre><code>[PCCtwoSample] 26 maps, 45150 voxels in the analysis mask
+[PCCtwoSample] df 22.00; FWHM [6.09 6.23 7.18] mm; resels 3115.0
+[PCCtwoSample] HCgtMDD, cluster_fwe: height 3.505, 0 cluster(s) / 0 voxel(s) survive
+[PCCtwoSample] MDDgtHC, cluster_fwe: height 3.505, 0 cluster(s) / 0 voxel(s) survive</code></pre>
+<p>No cluster survives in either direction. With 13 subjects per group this is expected and is not evidence that the groups have the same connectivity. The unthresholded t map (<code>…_contrast-HCgtMDD_stat-t_statmap</code>) can still be shown in the viewer, or used to plan a larger study.</p>
+
+<h3 id="s7-3"><span class="num">7.3</span> Example B: grey-matter volume and age (VBM)</h3>
+<p>Because <b>VBM maps</b> was ticked in A2, every T1w already has modulated grey-matter maps in MNI space (1.5 mm), smoothed with 8 mm:</p>
+<pre><code>sub-SCUHC0001_space-IXI549Space_res-1p5_label-GM_desc-modulatedSm8_probseg.nii</code></pre>
+<p>Total intracranial volume per subject is in <code>reports/anat_volumes.tsv</code>. Statistics and Harmonize read it automatically as the column <code>tiv_ml</code>. The QC exclusions are for fMRI runs, so all 30 T1w images are used here.</p>
+
+<h4>B1. Regression on age</h4>
+<p>On <b>Statistics</b>: Name <code>VBMage</code>, Map <code>modulatedSm8</code>, Label <code>GM</code>, Suffix <code>probseg</code>, Design <code>regression</code>, Regressors <code>age</code>, Covariates <code>sex, tiv_ml, site</code>, Mask <code>gm</code>.</p>
+<pre><code>[VBMage] 30 maps, 414177 voxels in the analysis mask
+[VBMage] df 24.00; FWHM [11.43 11.81 11.25] mm; resels 797.0
+[VBMage] agepos, cluster_fwe: height 3.467, 0 cluster(s) / 0 voxel(s) survive
+[VBMage] ageneg, cluster_fwe: height 3.467, 0 cluster(s) / 0 voxel(s) survive</code></pre>
+<p>The site column is text, so it enters the model as two indicator columns. With intercept, age, sex, TIV and site, that leaves 30 − 6 = 24 degrees of freedom. Since the ages are random, no effect is the correct result.</p>
+
+<h4>B2. Why not ComBat here</h4>
+<p>Site differences in VBM are large: in 49.8% of grey-matter voxels before harmonisation (0.2% after ComBat with group, sex, age and TIV kept). It seems natural to harmonise first. We ran the same regression after each choice:</p>
+<table>
+<tr><th>Maps</th><th>Site in the model</th><th>Clusters for age (cluster FWE)</th></tr>
+<tr><td>unharmonised</td><td>as a covariate</td><td>0</td></tr>
+<tr><td>ComBat (<code>combat</code>)</td><td>no</td><td><b>3</b></td></tr>
+<tr><td>ComBat (<code>combat</code>)</td><td>as a covariate</td><td><b>2</b></td></tr>
+<tr><td>location only (<code>combat_mean</code>)</td><td>no</td><td>0</td></tr>
+<tr><td>linear regression (<code>lm</code>)</td><td>no</td><td>0</td></tr>
+</table>
+<p>The age effect is not real, so the ComBat clusters are false positives. ComBat rescales each site's residual variance using only ten subjects per site. That makes the harmonised data look less variable than they are, and tests of the kept covariates become too liberal (Nygaard et al. 2016). Methods that only remove site means do not have this problem. With fewer than about 20 subjects per site:</p>
+<ul>
+<li>use <code>combat_mean</code> or <code>lm</code>, or keep the maps unharmonised with site as a covariate;</li>
+<li>compare any ComBat result with the unharmonised one before reporting it.</li>
+</ul>
+<p>SeeCAT writes this warning in the Harmonize log and report.</p>
+
+<h3 id="s7-4"><span class="num">7.4</span> Example C: degree centrality and gradients</h3>
+
+<h4>C1. Degree</h4>
+<p><b>Degree</b> with its defaults: grey-matter mask, positive correlations above r = 0.2, binary and weighted degree, also as z-scored maps, smoothed with 6 mm.</p>
+<pre><code>Parallel workers (auto): about 3.9 GB per worker (2.9 GB task + 1 GB worker), …: 26 worker(s)
+Done: 26 ok, 0 skipped, 0 failed.</code></pre>
+<p>The 26 runs took about 2 minutes. Each run gets four maps, each as raw values and as z:</p>
+<pre><code>…_desc-degPosBinR0p2_stat-z_connectivity.nii.gz        binary, unsmoothed
+…_desc-degPosWeiR0p2Sm6_stat-z_connectivity.nii.gz     weighted, smoothed: the usual choice for statistics</code></pre>
+<p>Harmonising <code>degPosWeiR0p2Sm6</code> z (with group, sex and age kept) reduced voxels with a site effect from 17.2% to 0.0%. Degree is more site-dependent than seed FC here, probably because it summarises the whole connectivity distribution, which depends on noise and smoothness.</p>
+
+<h4>C2. Gradients</h4>
+<p><b>Gradients</b> with the defaults: Nodes <code>voxels</code> with Node size 4 mm (the unit is named <code>gradientsVox4</code>), 10 components with 3 maps written, Alignment <code>group</code>.</p>
+<pre><code>Parallel workers (auto): about 8.2 GB per worker (7.2 GB task + 1 GB worker), 7.7 GB kept by the main MATLAB,
+    187.4 GB free: 18 worker(s) (32 cores, 26 task(s))
+[gradientsVox4] 26 run(s), 21972 nodes (Vox4); about 7.2 GB of memory per run being computed
+[gradientsVox4] node series done; 19564 of 21972 nodes have data in every run
+[gradientsVox4] gradients of 26 run(s) in 413 s (15 worker(s))
+[gradientsVox4] finished (472.0 s)</code></pre>
+<p>Each run needs a 21972 × 21972 connectivity matrix, so memory, not cores, set the number of workers (18). The reference is the gradient of the group-mean matrix. Each run is aligned to it, a new reference is formed from the mean of the aligned runs, and this repeats until the reference no longer changes.</p>
+<figure><a href="../images/viewer_gradient.png"><img src="../images/viewer_gradient.png" alt="The group reference of gradient 1 (group/gradientsVox4/gradientsVox4_desc-grad1_reference). It runs from visual and sensorimotor cortex (blue) to the default-mode network (red), the principal gradient of Margulies et al. (2016)." loading="lazy"></a><figcaption><b>Figure 18.</b> The group reference of gradient 1 (group/gradientsVox4/gradientsVox4_desc-grad1_reference). It runs from visual and sensorimotor cortex (blue) to the default-mode network (red), the principal gradient of Margulies et al. (2016).</figcaption></figure>
+<p><code>group/gradientsVox4/gradientsVox4_lambdas.tsv</code> gives, per run:</p>
+<ul>
+<li>the eigenvalues;</li>
+<li>the variance explained by gradient 1: 0.18 to 0.31, median 0.24;</li>
+<li>the correlation of the run's aligned gradient 1 with the reference: 0.43 to 0.69, median 0.58.</li>
+</ul>
+<p>A run with a much lower correlation than the others deserves a look at its QC report. The per-run maps (<code>desc-grad1Vox4</code> … <code>grad3Vox4</code>) can be harmonised and tested like any other map.</p>
+
+<h3 id="s7-5"><span class="num">7.5</span> Time for the whole study</h3>
+<table>
+<tr><th>Step</th><th>Units</th><th>Workers</th><th>Time</th></tr>
+<tr><td>Preprocessing (with IQMs and VBM)</td><td>30 runs</td><td>15</td><td>19 min</td></tr>
+<tr><td>Seed FC (2 seeds)</td><td>26 runs</td><td>26</td><td>7 s</td></tr>
+<tr><td>Degree</td><td>26 runs</td><td>26</td><td>2 min</td></tr>
+<tr><td>Gradients (Vox4)</td><td>26 runs</td><td>15</td><td>8 min</td></tr>
+<tr><td>Harmonize (3 measures)</td><td>26–30 maps each</td><td>1</td><td>3–10 s each</td></tr>
+<tr><td>Statistics, one-sample with TFCE (5000 permutations)</td><td>13 maps</td><td>16</td><td>96 s</td></tr>
+<tr><td>Statistics, two-sample / VBM regression</td><td>26 / 30 maps</td><td>1</td><td>2 s / 5 s</td></tr>
+</table>
+
+<h2 id="s8"><span class="num">8</span> Batch scripting</h2>
+<p>Everything in the window is available from MATLAB code. A pipeline is configured by a struct and run by <code>seecat.run</code>; the window's Save button writes the same struct as JSON.</p>
+
+<h3 id="s8-1"><span class="num">8.1</span> Functions</h3>
+<table>
+<tr><th>Function</th><th>Purpose</th></tr>
+<tr><td><code>SeeCAT</code></td><td>open the main window</td></tr>
+<tr><td><code>cfg = seecat.config('prep')</code></td><td>every option of a pipeline at its default (<code>prep</code>, <code>fmriprep</code>, <code>fc</code>, <code>degree</code>, <code>gradient</code>, <code>harmonize</code>, <code>stat</code>)</td></tr>
+<tr><td><code>cfg = seecat.config('file.json')</code></td><td>load a saved configuration; missing options take their defaults</td></tr>
+<tr><td><code>seecat.check_config(cfg)</code></td><td>report every invalid option at once</td></tr>
+<tr><td><code>seecat.save_config(cfg, 'file.json')</code></td><td>save a configuration</td></tr>
+<tr><td><code>S = seecat.run(cfg)</code></td><td>run a pipeline; <code>S</code> is the summary table (one row per unit)</td></tr>
+<tr><td><code>seecat.run('file.json')</code></td><td>run a saved configuration</td></tr>
+<tr><td><code>seecat.bids.scan_dicom(dir)</code>, <code>seecat.bids.from_dicom(dir, bids)</code></td><td>DICOM to BIDS</td></tr>
+<tr><td><code>R = seecat.qc.runs(folder, 'raw')</code></td><td>Data check table</td></tr>
+<tr><td><code>seecat.qc.exclusion_list(folder)</code></td><td>read the QC exclusion list with metrics; <code>(folder, 'set', ids, exclude, notes)</code> changes it</td></tr>
+<tr><td><code>seecat.viewer(file, ...)</code></td><td>open the viewer with maps</td></tr>
+</table>
+
+<h3 id="s8-2"><span class="num">8.2</span> A complete study</h3>
+<p>The scripts of chapter 7, in one file. Each <code>seecat.run</code> call can be run on its own; finished units are skipped when run again.</p>
+<pre><code>bids = 'D:/data/test_seecat/DIDA/bids2';
+out  = 'D:/data/test_seecat/DIDA/manual_run/derivatives/seecat';
+
+% 1. Preprocessing with image quality metrics and VBM maps
+cfg = seecat.config('prep');
+cfg.bids_dir   = bids;
+cfg.output_dir = out;
+cfg.vbm.enable = true;
+cfg.n_workers  = 'auto';
+seecat.run(cfg);
+% ... review reports/prep_qc.html and the QC reports page ...
+
+% 2. Seed FC
+cfg = seecat.config('fc');
+cfg.input_dir = out;
+cfg.seeds = struct('name', {'PCC', 'mPFC'}, 'center', {[0 -53 26], [0 52 -6]}, ...
+                   'radius', {6, 6}, 'file', {'', ''});
+cfg.n_workers = 'auto';
+seecat.run(cfg);
+
+% 3. Degree and gradients
+cfg = seecat.config('degree');   cfg.input_dir = out;   cfg.n_workers = 'auto';   seecat.run(cfg);
+cfg = seecat.config('gradient'); cfg.input_dir = out;   cfg.n_workers = 'auto';   seecat.run(cfg);
+
+% 4. Harmonize the PCC maps across the three sites
+cfg = seecat.config('harmonize');
+cfg.input_dir  = out;
+cfg.maps       = struct('desc', 'PCC', 'stat', 'z');
+cfg.site       = 'site';
+cfg.covariates = {'group', 'sex', 'age'};
+seecat.run(cfg);                                  % writes desc-PCCComBat maps
+
+% 5. One-sample t test in the HC group, with TFCE
+P  = seecat.io.read_tsv(fullfile(bids, 'participants.tsv'));
+hc = erase(P.participant_id(strcmp(P.group, 'HC')), 'sub-')';
+cfg = seecat.config('stat');
+cfg.name      = 'PCConeSampleHC';
+cfg.input_dir = out;
+cfg.maps      = struct('desc', 'PCCComBat', 'stat', 'z');
+cfg.design    = 'one_sample';
+cfg.subjects  = hc;
+cfg.inference = {'cluster_fwe', 'tfce_fwe'};
+cfg.n_workers = 'auto';
+seecat.run(cfg);
+
+% 6. VBM: grey matter and age, unharmonised maps with site as a covariate
+cfg = seecat.config('stat');
+cfg.name       = 'VBMage';
+cfg.input_dir  = out;
+cfg.maps       = struct('desc', 'modulatedSm8', 'label', 'GM', 'suffix', 'probseg');
+cfg.design     = 'regression';
+cfg.regressors = {'age'};
+cfg.covariates = {'sex', 'tiv_ml', 'site'};
+cfg.mask       = 'gm';
+seecat.run(cfg);
+
+seecat.viewer(fullfile(out, 'group', 'PCConeSampleHC', 'PCConeSampleHC_contrast-pos_stat-t_statmap.nii.gz'));</code></pre>
+
+<h3 id="s8-3"><span class="num">8.3</span> Configuration files</h3>
+<p>A configuration file is the struct as JSON. Only the options you change need to be in it; the others take their defaults. Numbers with Inf are written as text (<code>"[0 75 Inf]"</code>) and read back as numbers.</p>
+<pre><code>{
+  "pipeline": "stat",
+  "name": "PCCtwoSample",
+  "input_dir": "D:/data/test_seecat/DIDA/manual_run/derivatives/seecat",
+  "maps": {"desc": "PCCComBat", "stat": "z"},
+  "design": "two_sample",
+  "factor": "group",
+  "levels": ["HC", "MDD"],
+  "covariates": ["age", "sex"]
+}</code></pre>
+<p>Run several configurations in sequence:</p>
+<pre><code>for f = {'prep.json', 'fc.json', 'harmonize.json', 'stat.json'}
+    seecat.run(fullfile('D:/study/configs', f{1}));
+end</code></pre>
+
+<h3 id="s8-4"><span class="num">8.4</span> Running on a server</h3>
+<p>Without a display, start MATLAB with <code>-batch</code>:</p>
+<pre><code>matlab -batch "addpath('/opt/spm'); addpath('/opt/SeeCAT/SeeCAT'); seecat.run('/data/configs/prep.json')"</code></pre>
+<p>Logs are written as the run goes (<code>&lt;output&gt;/logs</code>), so progress can be followed with <code>tail -f</code>.</p>
+
+<h2 id="s9"><span class="num">9</span> Output reference</h2>
+
+<h3 id="s9-1"><span class="num">9.1</span> The derivatives folder</h3>
+<pre><code>derivatives/seecat/
+  dataset_description.json                 names the source dataset (SourceDatasets)
+  sub-&lt;label&gt;/[ses-&lt;label&gt;/]
+    anat/                                  T1w outputs (Preprocessing)
+    func/                                  run outputs and per-run maps (all pipelines)
+    sub-&lt;label&gt;_…_desc-qc_report.html      run reports, qc_metrics.json, figures/
+  group/
+    &lt;name&gt;/                                Statistics
+    harmonize&lt;label&gt;_&lt;maps&gt;/                      Harmonize: maps.tsv, report.json
+    gradients&lt;nodes&gt;/                      Gradients: reference maps, lambdas.tsv
+  reports/
+    prep_qc.html, prep_qc.tsv              group QC (or fmriprep_qc.*)
+    qc_exclusions.tsv                      the exclusion list
+    anat_volumes.tsv                       GM, WM, CSF, TIV per T1w
+    &lt;pipeline&gt;_&lt;time&gt;_summary.tsv          one per run of a pipeline
+  logs/
+    &lt;pipeline&gt;_&lt;time&gt;.log, _config.json    main log and the configuration used
+    &lt;pipeline&gt;_&lt;time&gt;/&lt;unit&gt;.log           one log per unit
+    done/                                  finished units and their settings (for skipping)
+    outputs/                               files written by each unit
+seecat_work/                               work files (next to the output folder)</code></pre>
+
+<h3 id="s9-2"><span class="num">9.2</span> File names</h3>
+<table>
+<tr><th>File</th><th>Written by</th><th>Content</th></tr>
+<tr><td><code>*_desc-preproc_bold</code></td><td>Preprocessing</td><td>normalised BOLD, not denoised</td></tr>
+<tr><td><code>*_desc-denoised_bold</code></td><td>Preprocessing, fMRIPrep denoising</td><td>denoised, band-passed, unsmoothed</td></tr>
+<tr><td><code>*_desc-denoisedSm&lt;fwhm&gt;_bold</code></td><td>same</td><td>denoised and smoothed</td></tr>
+<tr><td><code>*_desc-brain_mask</code></td><td>same</td><td>brain mask in output space</td></tr>
+<tr><td><code>*_desc-confounds_timeseries.tsv</code></td><td>same</td><td>confounds; the <code>censor</code> column marks frames left out of later analyses</td></tr>
+<tr><td><code>*_label-GM_probseg</code></td><td>Preprocessing</td><td>native tissue map; sidecar holds the tissue volumes and TIV</td></tr>
+<tr><td><code>*_space-IXI549Space_res-1p5_label-GM_desc-modulated[Sm8]_probseg</code></td><td>Preprocessing (VBM)</td><td>normalised, modulated GM (and WM, CSF)</td></tr>
+<tr><td><code>*_desc-&lt;seed&gt;_stat-r|z_connectivity</code></td><td>Seed FC</td><td>seed correlation, Fisher z</td></tr>
+<tr><td><code>*_desc-deg…_stat-raw|z_connectivity</code></td><td>Degree</td><td>degree or strength</td></tr>
+<tr><td><code>*_desc-grad&lt;k&gt;&lt;nodes&gt;_connectivity</code></td><td>Gradients</td><td>aligned gradient k of the run</td></tr>
+<tr><td><code>*_desc-&lt;desc&gt;ComBat_*</code></td><td>Harmonize</td><td>the harmonised map</td></tr>
+<tr><td><code>group/&lt;name&gt;/…_statmap</code></td><td>Statistics</td><td>statistic maps (t, F, z, p, effect, TFCE)</td></tr>
+</table>
+
+<h3 id="s9-3"><span class="num">9.3</span> Confounds table</h3>
+<table>
+<tr><th>Columns</th><th>Content</th></tr>
+<tr><td><code>trans_x … rot_z</code>, <code>*_derivative1</code>, <code>*_power2</code>, <code>*_derivative1_power2</code></td><td>Friston 24 motion regressors (rotations in radians)</td></tr>
+<tr><td><code>framewise_displacement</code></td><td>Power FD (mm; head radius 50 mm)</td></tr>
+<tr><td><code>global_signal</code>, <code>white_matter</code>, <code>csf</code></td><td>mean signals of the brain, WM and CSF masks</td></tr>
+<tr><td><code>c_comp_cor_XX</code>, <code>w_comp_cor_XX</code></td><td>aCompCor components of CSF and WM</td></tr>
+<tr><td><code>motion_outlier_XX</code></td><td>one column per flagged frame (1 at that frame)</td></tr>
+<tr><td><code>censor</code></td><td>1 = frame left out by Seed FC, Degree and Gradients</td></tr>
+</table>
+
+<h3 id="s9-4"><span class="num">9.4</span> JSON sidecars</h3>
+<p>Each image's sidecar describes how it was made. Common fields: <code>Sources</code> (the files it came from, as BIDS URIs), <code>Software</code>, and step-specific fields, for example <code>FramesUsed</code>, <code>FramesTotal</code> and <code>Seed</code> (Seed FC); <code>Threshold</code>, <code>Sign</code>, <code>Measure</code> (Degree); <code>Lambdas</code>, <code>VarianceExplained</code>, <code>Alignment</code> (Gradients); <code>Harmonization</code>, <code>Site</code>, <code>KeptEffects</code> (Harmonize); <code>DegreesOfFreedom</code>, <code>FWHMmm</code>, <code>Resels</code>, <code>Contrast</code>, <code>Inference</code> (Statistics).</p>
+
+<h2 id="s10"><span class="num">10</span> Performance and common questions</h2>
+
+<h3 id="s10-1"><span class="num">10.1</span> Time and memory</h3>
+<table>
+<tr><th>Step</th><th>Per run (typical)</th><th>Memory</th></tr>
+<tr><td>Preprocessing, 3 mm, 200 volumes</td><td>4–6 minutes (segmentation about 2)</td><td>2–5 GB; with IQMs of a large T1w (e.g. 512×512×156) more</td></tr>
+<tr><td>Seed FC</td><td>seconds</td><td>&lt; 1 GB</td></tr>
+<tr><td>Degree, 3 mm grey matter</td><td>seconds to a minute</td><td>about 3 GB</td></tr>
+<tr><td>Gradients</td><td>see the table in 6.8</td><td>grows with the square of the node count</td></tr>
+<tr><td>Harmonize</td><td>seconds for the whole study</td><td>maps × voxels</td></tr>
+<tr><td>Statistics, TFCE</td><td>about 0.2 s per permutation and contrast (52 000 voxels)</td><td>maps × voxels per worker</td></tr>
+</table>
+<p>With <code>n_workers = auto</code>, SeeCAT chooses the number of workers from these estimates and the free memory; the log shows the choice.</p>
+
+<h3 id="s10-2"><span class="num">10.2</span> Common questions</h3>
+<h4>A subject failed. Do I have to run everything again?</h4>
+<p>No. Run the same configuration again: finished subjects are skipped and the failed one resumes at the step where it stopped. The unit's log (<code>logs/&lt;pipeline&gt;_&lt;time&gt;/&lt;unit&gt;.log</code>) gives the reason.</p>
+<h4>I changed an option. What is recomputed?</h4>
+<p>Every unit whose result depends on it. Changing only Parallel workers, Overwrite or Keep work files recomputes nothing.</p>
+<h4>Seed FC says "no desc-denoised bold" or finds no runs.</h4>
+<p>Check that the derivatives folder is the output of Preprocessing or fMRIPrep denoising and that Denoise was on. If the folder holds runs in more than one space, set Space; with several tasks, set Task. If every run is excluded by QC, check the QC reports page.</p>
+<h4>Statistics finds several maps per subject.</h4>
+<p>The map fields must pick exactly one map per subject (two for paired designs). Add Space, Task or Other (e.g. <code>run=1</code>) until the line below the fields counts one map per subject.</p>
+<h4>Where are age, sex and group taken from?</h4>
+<p>From participants.tsv of the BIDS dataset (see 3.7). Values that are empty or <code>n/a</code> drop that subject from the analysis that uses the column, and the log lists it.</p>
+<h4>Should I smooth before Seed FC?</h4>
+<p>The default input is the unsmoothed <code>desc-denoised</code>; use <code>denoisedSm6</code> to follow studies that correlate smoothed data. Degree and Gradients should use unsmoothed data; Degree smooths its maps afterwards.</p>
+<h4>Why harmonize, and when not?</h4>
+<p>Harmonize when maps from several sites or scanners enter one analysis and the sites have enough subjects (ComBat works best with 10 or more per site). Keep every effect you will test among the covariates. With a single site, skip it.</p>
+<h4>How do I report the quality control?</h4>
+<p>The group report gives the rules, the runs excluded and why; <code>reports/qc_exclusions.tsv</code> and <code>prep_qc.tsv</code> hold the numbers. Report the exclusion rules, how many runs were excluded per group and site, and mean FD per group.</p>
+<h4>The window does not respond during a run.</h4>
+<p>It should: runs happen in a separate MATLAB process. If MATLAB itself is busy (e.g. a long command in the command window), the window waits for it.</p>
+
+<h2 id="s11"><span class="num">11</span> References</h2>
+<ul>
+<li>Ashburner J, Friston KJ (2005). Unified segmentation. NeuroImage 26:839–851.</li>
+<li>Behzadi Y, Restom K, Liau J, Liu TT (2007). A component based noise correction method (CompCor) for BOLD and perfusion based fMRI. NeuroImage 37:90–101.</li>
+<li>Buckner RL et al. (2009). Cortical hubs revealed by intrinsic functional connectivity. J Neurosci 29:1860–1873.</li>
+<li>Chen AA et al. (2022). Mitigating site effects in covariance for machine learning in neuroimaging data (CovBat). Hum Brain Mapp 43:1179–1195.</li>
+<li>Coifman RR, Lafon S (2006). Diffusion maps. Appl Comput Harmon Anal 21:5–30.</li>
+<li>Eklund A, Nichols TE, Knutsson H (2016). Cluster failure. PNAS 113:7900–7905.</li>
+<li>Esteban O et al. (2017). MRIQC: advancing the automatic prediction of image quality in MRI from unseen sites. PLoS ONE 12:e0184661.</li>
+<li>Esteban O et al. (2019). fMRIPrep: a robust preprocessing pipeline for functional MRI. Nat Methods 16:111–116.</li>
+<li>Fortin JP et al. (2017). Harmonization of multi-site diffusion tensor imaging data. NeuroImage 161:149–170.</li>
+<li>Fortin JP et al. (2018). Harmonization of cortical thickness measurements across scanners and sites. NeuroImage 167:104–120.</li>
+<li>Freedman D, Lane D (1983). A nonstochastic interpretation of reported significance levels. J Bus Econ Stat 1:292–298.</li>
+<li>Friston KJ et al. (1996). Movement-related effects in fMRI time-series. Magn Reson Med 35:346–355.</li>
+<li>Gorgolewski KJ et al. (2016). The brain imaging data structure. Sci Data 3:160044.</li>
+<li>Hallquist MN, Hwang K, Luna B (2013). The nuisance of nuisance regression. NeuroImage 82:208–225.</li>
+<li>Johnson WE, Li C, Rabinovic A (2007). Adjusting batch effects in microarray expression data using empirical Bayes methods. Biostatistics 8:118–127.</li>
+<li>Li X, Morgan PS, Ashburner J, Smith J, Rorden C (2016). The first step for neuroimaging data analysis: DICOM to NIfTI conversion (dcm2niix). J Neurosci Methods 264:47–56.</li>
+<li>Lindquist MA, Geuter S, Wager TD, Caffo BS (2019). Modular preprocessing pipelines can reintroduce artifacts into fMRI data. Hum Brain Mapp 40:2358–2376.</li>
+<li>Margulies DS et al. (2016). Situating the default-mode network along a principal gradient of macroscale cortical organization. PNAS 113:12574–12579.</li>
+<li>Nichols TE (2013). Notes on creating a standardized version of DVARS. arXiv:1704.01469.</li>
+<li>Nygaard V, Rødland EA, Hovig E (2016). Methods that remove batch effects while retaining group differences may lead to exaggerated confidence in downstream analyses. Biostatistics 17:29–39.</li>
+<li>Parkes L, Fulcher B, Yücel M, Fornito A (2018). An evaluation of the efficacy, reliability, and sensitivity of motion correction strategies for resting-state functional MRI. NeuroImage 171:415–436.</li>
+<li>Pomponio R et al. (2020). Harmonization of large MRI datasets for the analysis of brain imaging patterns throughout the lifespan (ComBat-GAM). NeuroImage 208:116450.</li>
+<li>Power JD et al. (2012). Spurious but systematic correlations in functional connectivity MRI networks arise from subject motion. NeuroImage 59:2142–2154.</li>
+<li>Power JD et al. (2014). Methods to detect, characterize, and remove motion artifact in resting state fMRI. NeuroImage 84:320–341.</li>
+<li>Power JD (2017). A simple but useful way to assess fMRI scan qualities. NeuroImage 154:150–158.</li>
+<li>Smith SM, Nichols TE (2009). Threshold-free cluster enhancement. NeuroImage 44:83–98.</li>
+<li>Vos de Wael R et al. (2020). BrainSpace: a toolbox for the analysis of macroscale gradients in neuroimaging and connectomics datasets. Commun Biol 3:103.</li>
+<li>Worsley KJ et al. (1996). A unified statistical approach for determining significant signals in images of cerebral activation. Hum Brain Mapp 4:58–73.</li>
+<li>Xia M, Wang J, He Y (2013). BrainNet Viewer: a network visualization tool for human brain connectomics. PLoS ONE 8:e68910.</li>
+<li>Zuo XN et al. (2012). Network centrality in the human functional connectome. Cereb Cortex 22:1862–1875.</li>
+</ul>
+
+<h2 id="s12"><span class="num">12</span> Appendix</h2>
+<h3 id="s12-1"><span class="num">12.1</span> Index of options</h3>
+<p>Every option of every pipeline, by batch field. The tables in chapter 6 explain each one.</p>
+<div class="wrap"><table><thead><tr><th>Batch field</th><th>Option</th><th>Pages</th></tr></thead><tbody><tr><td><code>align</code></td><td>Alignment</td><td>Gradients</td></tr><tr><td><code>alpha</code></td><td>Diffusion alpha</td><td>Gradients, Statistics</td></tr><tr><td><code>atlas</code></td><td>Atlas</td><td>Gradients</td></tr><tr><td><code>bids_dir</code></td><td>BIDS folder</td><td>Preprocessing</td></tr><tr><td><code>cdt_p</code></td><td>Cluster-forming p</td><td>Statistics</td></tr><tr><td><code>censor.after</code></td><td>Frames after</td><td>Preprocessing, fMRIPrep</td></tr><tr><td><code>censor.before</code></td><td>Frames before</td><td>Preprocessing, fMRIPrep</td></tr><tr><td><code>censor.fd_threshold</code></td><td>FD threshold (mm)</td><td>Preprocessing, fMRIPrep</td></tr><tr><td><code>censor.interp</code></td><td>Interpolation</td><td>Preprocessing, fMRIPrep</td></tr><tr><td><code>censor.min_minutes</code></td><td>Minimum minutes</td><td>Preprocessing, fMRIPrep</td></tr><tr><td><code>censor.mode</code></td><td>High-motion frames</td><td>Preprocessing, fMRIPrep</td></tr><tr><td><code>contrasts</code></td><td>Contrasts</td><td>Statistics</td></tr><tr><td><code>covariates</code></td><td>Covariates kept</td><td>Harmonize, Statistics</td></tr><tr><td><code>covbat_var</code></td><td>CovBat variance</td><td>Harmonize</td></tr><tr><td><code>denoise.acompcor_n</code></td><td>aCompCor components</td><td>Preprocessing, fMRIPrep</td></tr><tr><td><code>denoise.band</code></td><td>Band-pass (Hz)</td><td>Preprocessing, fMRIPrep</td></tr><tr><td><code>denoise.detrend_order</code></td><td>Detrend order</td><td>Preprocessing, fMRIPrep</td></tr><tr><td><code>denoise.enable</code></td><td>Denoise</td><td>Preprocessing, fMRIPrep</td></tr><tr><td><code>denoise.regressors</code></td><td>Regressors</td><td>Preprocessing, fMRIPrep</td></tr><tr><td><code>design</code></td><td>Design</td><td>Statistics</td></tr><tr><td><code>design_tsv</code></td><td>Design TSV</td><td>Statistics</td></tr><tr><td><code>distance_edges</code></td><td>Distance bins (mm)</td><td>Degree</td></tr><tr><td><code>dummy_scans</code></td><td>Dummy scans</td><td>Preprocessing, fMRIPrep</td></tr><tr><td><code>exclude_local_mm</code></td><td>Exclude within (mm)</td><td>Degree</td></tr><tr><td><code>factor</code></td><td>Factor</td><td>Statistics</td></tr><tr><td><code>fmriprep_dir</code></td><td>fMRIPrep folder</td><td>fMRIPrep</td></tr><tr><td><code>inference</code></td><td>Correction</td><td>Statistics</td></tr><tr><td><code>input</code></td><td>Input series</td><td>Seed FC, Degree, Gradients</td></tr><tr><td><code>input_dir</code></td><td>Derivatives folder</td><td>Seed FC, Degree, Gradients, Harmonize, Statistics</td></tr><tr><td><code>keep_work</code></td><td>Keep work files</td><td>Preprocessing, fMRIPrep, Seed FC, Degree, Gradients, Harmonize, Statistics</td></tr><tr><td><code>kernel</code></td><td>Affinity</td><td>Gradients</td></tr><tr><td><code>label</code></td><td>Output label</td><td>Harmonize</td></tr><tr><td><code>levels</code></td><td>Levels</td><td>Statistics</td></tr><tr><td><code>maps</code></td><td>Maps</td><td>Harmonize, Statistics</td></tr><tr><td><code>mask</code></td><td>Mask</td><td>Degree, Gradients, Harmonize, Statistics</td></tr><tr><td><code>masks.csf_threshold</code></td><td>CSF probability</td><td>Preprocessing</td></tr><tr><td><code>masks.erode_mm</code></td><td>Erosion (mm)</td><td>Preprocessing</td></tr><tr><td><code>masks.wm_threshold</code></td><td>WM probability</td><td>Preprocessing</td></tr><tr><td><code>method</code></td><td>Method</td><td>Harmonize</td></tr><tr><td><code>n_components</code></td><td>Components</td><td>Gradients</td></tr><tr><td><code>n_maps</code></td><td>Maps written</td><td>Gradients</td></tr><tr><td><code>n_workers</code></td><td>Parallel workers</td><td>Preprocessing, fMRIPrep, Seed FC, Degree, Gradients, Statistics</td></tr><tr><td><code>name</code></td><td>Analysis name</td><td>Statistics</td></tr><tr><td><code>node_size</code></td><td>Node size (mm)</td><td>Gradients</td></tr><tr><td><code>nodes</code></td><td>Nodes</td><td>Gradients</td></tr><tr><td><code>nonlinear</code></td><td>Nonlinear covariates</td><td>Harmonize</td></tr><tr><td><code>normalise.bounding_box</code></td><td>Bounding box</td><td>Preprocessing</td></tr><tr><td><code>normalise.enable</code></td><td>Normalise</td><td>Preprocessing</td></tr><tr><td><code>normalise.method</code></td><td>Normalisation</td><td>Preprocessing</td></tr><tr><td><code>normalise.voxel_size</code></td><td>Voxel size (mm)</td><td>Preprocessing</td></tr><tr><td><code>output_dir</code></td><td>Output folder</td><td>Preprocessing, fMRIPrep, Seed FC, Degree, Gradients, Harmonize, Statistics</td></tr><tr><td><code>overwrite</code></td><td>Overwrite finished units</td><td>Preprocessing, fMRIPrep, Seed FC, Degree, Gradients, Harmonize, Statistics</td></tr><tr><td><code>participants</code></td><td>participants.tsv</td><td>Harmonize, Statistics</td></tr><tr><td><code>qc.iqm</code></td><td>Image quality metrics (IQM)</td><td>Preprocessing</td></tr><tr><td><code>qc.iqm_z</code></td><td>IQM outlier z</td><td>Preprocessing, fMRIPrep</td></tr><tr><td><code>qc.max_mean_fd</code></td><td>Max. mean FD (mm)</td><td>Preprocessing, fMRIPrep</td></tr><tr><td><code>qc.max_rotation</code></td><td>Max. rotation (degrees)</td><td>Preprocessing, fMRIPrep</td></tr><tr><td><code>qc.max_translation</code></td><td>Max. translation (mm)</td><td>Preprocessing, fMRIPrep</td></tr><tr><td><code>qc.min_brain_dice</code></td><td>Min. brain Dice</td><td>Preprocessing, fMRIPrep</td></tr><tr><td><code>qc.min_coverage</code></td><td>Min. brain coverage</td><td>Preprocessing, fMRIPrep</td></tr><tr><td><code>qc_exclusions</code></td><td>Leave out QC exclusions</td><td>Seed FC, Degree, Gradients, Harmonize, Statistics</td></tr><tr><td><code>realign.enable</code></td><td>Realign</td><td>Preprocessing</td></tr><tr><td><code>realign.register_to_mean</code></td><td>Register to mean</td><td>Preprocessing</td></tr><tr><td><code>ref_site</code></td><td>Reference site</td><td>Harmonize</td></tr><tr><td><code>regressors</code></td><td>Regressors</td><td>Statistics</td></tr><tr><td><code>res</code></td><td>Resolution label</td><td>fMRIPrep</td></tr><tr><td><code>runs</code></td><td>Runs</td><td>Preprocessing, fMRIPrep, Seed FC, Degree, Gradients</td></tr><tr><td><code>seeds</code></td><td>Seeds</td><td>Seed FC</td></tr><tr><td><code>sessions</code></td><td>Sessions</td><td>Preprocessing, fMRIPrep, Seed FC, Degree, Gradients</td></tr><tr><td><code>sign</code></td><td>Correlations</td><td>Degree</td></tr><tr><td><code>site</code></td><td>Site column</td><td>Harmonize</td></tr><tr><td><code>slice_timing.enable</code></td><td>Slice timing</td><td>Preprocessing</td></tr><tr><td><code>slice_timing.ref_time</code></td><td>Reference time</td><td>Preprocessing</td></tr><tr><td><code>slice_timing.slice_times</code></td><td>Slice times (s)</td><td>Preprocessing</td></tr><tr><td><code>smooth.enable</code></td><td>Smooth</td><td>Preprocessing, fMRIPrep</td></tr><tr><td><code>smooth.fwhm</code></td><td>FWHM (mm)</td><td>Preprocessing, fMRIPrep</td></tr><tr><td><code>smooth_fwhm</code></td><td>Smooth maps</td><td>Degree</td></tr><tr><td><code>space</code></td><td>Space</td><td>fMRIPrep, Seed FC, Degree, Gradients</td></tr><tr><td><code>sparsity</code></td><td>Sparsity</td><td>Gradients</td></tr><tr><td><code>spline_df</code></td><td>Spline df</td><td>Harmonize</td></tr><tr><td><code>subjects</code></td><td>Subjects</td><td>Preprocessing, fMRIPrep, Seed FC, Degree, Gradients, Harmonize, Statistics</td></tr><tr><td><code>task</code></td><td>Task</td><td>Preprocessing, fMRIPrep, Seed FC, Degree, Gradients</td></tr><tr><td><code>tfce.E</code></td><td>TFCE extent exponent E</td><td>Statistics</td></tr><tr><td><code>tfce.H</code></td><td>TFCE height exponent H</td><td>Statistics</td></tr><tr><td><code>tfce.n_perm</code></td><td>TFCE permutations</td><td>Statistics</td></tr><tr><td><code>threshold</code></td><td>r threshold</td><td>Degree</td></tr><tr><td><code>two_tailed</code></td><td>Two-tailed (alpha/2 per T contrast)</td><td>Statistics</td></tr><tr><td><code>variance</code></td><td>Variance</td><td>Statistics</td></tr><tr><td><code>vbm.enable</code></td><td>VBM maps</td><td>Preprocessing</td></tr><tr><td><code>vbm.fwhm</code></td><td>VBM smoothing (mm)</td><td>Preprocessing</td></tr><tr><td><code>vbm.modulated</code></td><td>Modulated</td><td>Preprocessing</td></tr><tr><td><code>weight</code></td><td>Measures</td><td>Degree</td></tr><tr><td><code>work_dir</code></td><td>Work folder</td><td>Preprocessing, fMRIPrep, Seed FC, Degree, Gradients, Harmonize, Statistics</td></tr><tr><td><code>zscore</code></td><td>Also z-scored maps</td><td>Degree</td></tr></tbody></table></div>
+<h3 id="s12-2"><span class="num">12.2</span> Coming from SeeCAT 1.x</h3>
+<table>
+<tr><th>1.x</th><th>2.0</th></tr>
+<tr><td>DPABI-style folders (<code>FunRaw</code>, <code>FunImgARW…</code>)</td><td>a BIDS dataset; DICOM to BIDS converts DICOM folders</td></tr>
+<tr><td>preprocessing through DPABI functions</td><td>Preprocessing with SPM only; outputs in <code>derivatives/seecat</code></td></tr>
+<tr><td>VoxDeg</td><td>Degree (same definition: thresholded correlations, binary and weighted)</td></tr>
+<tr><td>FuncConnect</td><td>Seed FC (spheres and masks, r and Fisher z)</td></tr>
+<tr><td>Stat with DPABI's GRF/AlphaSim</td><td>Statistics with SPM's random field theory, FDR or TFCE</td></tr>
+<tr><td>DPABI viewer</td><td>SeeCAT's own viewer, BrainNet Viewer for surfaces</td></tr>
+<tr><td>settings in the GUI only</td><td>every setting is a JSON configuration that runs from scripts</td></tr>
+</table>
+
+</main>
+</body>
+</html>

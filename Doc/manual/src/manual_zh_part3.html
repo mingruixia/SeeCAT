@@ -1,0 +1,159 @@
+<h2>实例</h2>
+<p>本章完整运行一个研究，并用真实结果说明 SeeCAT 的输出。本手册的所有截图都来自这些运行。运行用的脚本见第 8.2 节；各配置也可以在界面中用 <b>Load</b> 载入。</p>
+
+<h3>示例数据</h3>
+<p>一个多中心抑郁症研究的公开测试子集：来自三个中心（CSU、PKU、SCU）的 30 名被试，每个中心 5 名健康对照（HC）和 5 名重性抑郁障碍患者（MDD）。每名被试有一幅 T1 加权像和一次静息态扫描（TR 2 s）。三个中心的文件夹已合并为一个 BIDS 数据集，并附有 <code>participants.tsv</code>：</p>
+<pre><code>participant_id   site   group   age   sex
+sub-CSUHC0001    CSU    HC      28    M
+sub-CSUHC0002    CSU    HC      34    M
+…</code></pre>
+<div class="warn"><b>模拟的协变量。</b>表中的年龄和性别是为演示随机生成的。它们可以作为协变量使用，但数据中不存在真实的年龄或性别效应：若出现显著的年龄效应，就是假阳性。</div>
+<p>所有步骤都使用 <code>n_workers = 'auto'</code>，在一台 32 核、约 200 GB 可用内存的工作站上运行。输出写入 <code>manual_run/derivatives/seecat</code>。</p>
+
+<h3>实例 A：默认网络的种子点功能连接</h3>
+<p>从 BIDS 数据得到后扣带回（PCC）连接的组水平图，并比较两组。</p>
+
+<h4>A1. 检查数据</h4>
+<p>在 <b>Data check</b> 页选择 BIDS 文件夹并按 <b>Scan</b>。表中列出 30 个 run，每名被试一个，并给出各自的帧数和 TR（第 6.2 节）。没有缺失，可以开始预处理。</p>
+
+<h4>A2. 预处理</h4>
+<p>在 <b>Preprocessing</b> 页：BIDS folder 设为 <code>bids2</code>，Output folder 设为 <code>manual_run/derivatives/seecat</code>，勾选 <b>VBM maps</b>（供实例 B 使用），Parallel workers 设为 <code>auto</code>；其余选项保持默认。按 <b>Run</b>。</p>
+<pre><code>Parallel workers (auto): about 5.5 GB per worker (4.5 GB task + 1 GB worker), 0.5 GB kept by the main MATLAB,
+    206.4 GB free: 30 worker(s) (32 cores, 30 task(s))
+Parallel pool: A pool of 30 workers did not start (…). Started 15 workers instead.
+QC: …/derivatives/seecat/reports/prep_qc.html
+Tissue volumes: …/derivatives/seecat/reports/anat_volumes.tsv
+Done: 30 ok, 0 skipped, 0 failed.</code></pre>
+<p>按内存估算可以用 30 个 worker。Windows 无法一次启动这么多，SeeCAT 于是减半重试，并在日志中注明。30 个 run 共用时约 19 分钟。</p>
+
+<h4>A3. 检查质量</h4>
+<p>组报告 <code>reports/prep_qc.html</code>（图见第 6.5 节）建议剔除 4 个 run：</p>
+<table>
+<tr><th>Run</th><th>原因</th><th>平均 FD（mm）</th><th>最大平动（mm）</th><th>保留分钟数</th></tr>
+<tr><td>sub-CSUHC0004</td><td>平动 &gt; 3 mm；删帧后数据太少</td><td>0.300</td><td>3.02</td><td>3.9</td></tr>
+<tr><td>sub-CSUHC0005</td><td>平动 &gt; 3 mm；删帧后数据太少</td><td>0.273</td><td>3.97</td><td>4.4</td></tr>
+<tr><td>sub-CSUMDD0004</td><td>删帧后数据太少</td><td>0.237</td><td>1.13</td><td>4.1</td></tr>
+<tr><td>sub-PKUMDD0002</td><td>删帧后数据太少</td><td>0.273</td><td>0.68</td><td>4.9</td></tr>
+</table>
+<p>另有一些 run 有警告，但予以保留。例如：</p>
+<ul>
+<li>sub-PKUHC0001：DVARS 和 AQI 离群，与 TPM 的灰质相关偏低（0.637，全研究最低）。决定前请打开它的 run 报告，查看 carpet 图和配准。</li>
+<li>sub-PKUMDD0005：平均 FD 0.281 mm，超过 0.25 mm 的警告线，但保留的干净数据足够。</li>
+<li>sub-SCUHC0001：FBER 离群。它的 run 报告（图见第 6.5 节）显示扫描约 2.5 分钟处有一次头动，其附近被删除的 6 帧以阴影标出。</li>
+</ul>
+<p>所有 run 的脑 mask 与模板的 Dice 在 0.956–0.984 之间，没有配准失败。这里保持建议不变。QC reports 页显示同一列表，可在下一步之前修改任一决定。</p>
+<p>之后的每一步都会读取剔除列表，并在日志中写明略去了哪些 run：</p>
+<pre><code>Left out by QC (reports/qc_exclusions.tsv): sub-CSUHC0004_task-rest, sub-CSUHC0005_task-rest,
+    sub-CSUMDD0004_task-rest, sub-PKUMDD0002_task-rest</code></pre>
+<p>剩下 26 个 run：HC 13 人（CSU 3、PKU 5、SCU 5），MDD 13 人（CSU 4、PKU 4、SCU 5）。</p>
+
+<h4>A4. Seed FC</h4>
+<p>在 <b>Seed FC</b> 页添加两个半径 6 mm 的球：PCC 位于 (0, −53, 26)，mPFC 位于 (0, 52, −6)。26 个 run 用时 7 秒。每个 run 得到 r 图和 Fisher z 图：</p>
+<pre><code>sub-SCUHC0001_task-rest_space-IXI549Space_res-3_desc-PCC_stat-z_connectivity.nii.gz
+sub-SCUHC0001_task-rest_space-IXI549Space_res-3_desc-mPFC_stat-z_connectivity.nii.gz</code></pre>
+
+<h4>A5. 多中心校正</h4>
+<p>在 <b>Harmonize</b> 页：Map 为 <code>PCC</code>，Statistic 为 <code>z</code>，Site column 为 <code>site</code>，Method 为 <code>combat</code>，Covariates kept 为 <code>group, sex, age</code>。</p>
+<pre><code>[harmonizeComBat_PCCz] 26 maps, 45150 voxels, 3 sites (CSU: 7, PKU: 9, SCU: 10)
+[harmonizeComBat_PCCz] kept effects: group_MDD, sex_M, age
+[harmonizeComBat_PCCz] voxels with a site effect (p &lt; 0.05): 9.9% before, 0.1% after</code></pre>
+<p>校正前，9.9% 的灰质体素存在中心效应，约为随机预期 5% 的两倍；ComBat 之后为 0.1%。新的图命名为 <code>desc-PCCComBat</code>。中心这么小时，SeeCAT 还会在日志中给出第 6.9 节所述的小样本警告。这里功能连接图仍使用 ComBat；实例 B 说明何时这一点会产生影响。</p>
+
+<h4>A6. 健康对照组的单样本检验</h4>
+<p>13 名对照的 PCC 连接是否大于 0？在 <b>Statistics</b> 页：Name 为 <code>PCConeSampleHC</code>，Map 为 <code>PCCComBat</code>，Statistic 为 <code>z</code>，Design 为 <code>one_sample</code>，Subjects 填 13 名 HC 的标签，Correction 选 <code>cluster_fwe</code> 和 <code>tfce_fwe</code>。</p>
+<pre><code>[PCConeSampleHC] 13 maps, 45150 voxels in the analysis mask
+[PCConeSampleHC] df 12.00; FWHM [6.31 6.48 7.38] mm; resels 2812.9
+[PCConeSampleHC] TFCE: 5000 permutations (flip), 2 contrast(s), 16 worker(s), 93 s
+[PCConeSampleHC] pos, cluster_fwe: height 3.930, 12 cluster(s) / 1705 voxel(s) survive
+[PCConeSampleHC] pos, tfce_fwe: height 2.780, 33 cluster(s) / 3867 voxel(s) survive
+[PCConeSampleHC] neg, cluster_fwe: height 3.930, 6 cluster(s) / 140 voxel(s) survive
+[PCConeSampleHC] neg, tfce_fwe: height 6.340, 4 cluster(s) / 7 voxel(s) survive</code></pre>
+<p>自由度为 12 时，成簇阈值 p &lt; 0.001 对应 t ≥ 3.93。最大的几个正簇正是默认网络：</p>
+<table>
+<tr><th>体素数</th><th>峰值 t</th><th>峰值 Z</th><th>x, y, z（mm）</th><th>脑区</th></tr>
+<tr><td>874</td><td>21.38</td><td>6.53</td><td>3, −57, 27</td><td>楔前叶 / 后扣带回（种子点）</td></tr>
+<tr><td>206</td><td>10.53</td><td>5.20</td><td>−51, −66, 30</td><td>左侧角回</td></tr>
+<tr><td>152</td><td>7.71</td><td>4.55</td><td>6, 51, 24</td><td>内侧额上回</td></tr>
+<tr><td>138</td><td>10.71</td><td>5.23</td><td>60, −54, 18</td><td>右侧角回</td></tr>
+<tr><td>94</td><td>8.91</td><td>4.85</td><td>24, 30, 54</td><td>右侧额上回</td></tr>
+</table>
+<p>TFCE 找到同一网络，范围更大（3867 个体素）。它的 height 是存活的最小 t 值（2.78），因此低于成簇阈值。在簇文件中，体素数为 <code>n/a</code> 的行是上一行所在簇的其他峰值（如 PCC 簇中的 −9, −69, 27 和 3, −63, 39）。在查看器中打开结果（图见第 6.11 节）：设为 p 0.001、cluster FWE、双侧时，查看器显示同样的 18 个簇（12 个正、6 个负；1845 个体素）。</p>
+
+<h4>A7. 两样本检验：HC 对比 MDD</h4>
+<p>Name 为 <code>PCCtwoSample</code>，Design 为 <code>two_sample</code>，Factor 为 <code>group</code>，Levels 为 <code>HC, MDD</code>，Covariates 为 <code>age, sex</code>。</p>
+<pre><code>[PCCtwoSample] 26 maps, 45150 voxels in the analysis mask
+[PCCtwoSample] df 22.00; FWHM [6.09 6.23 7.18] mm; resels 3115.0
+[PCCtwoSample] HCgtMDD, cluster_fwe: height 3.505, 0 cluster(s) / 0 voxel(s) survive
+[PCCtwoSample] MDDgtHC, cluster_fwe: height 3.505, 0 cluster(s) / 0 voxel(s) survive</code></pre>
+<p>两个方向都没有存活的簇。每组 13 人，这在意料之中，并不说明两组的连接相同。未阈值化的 t 图（<code>…_contrast-HCgtMDD_stat-t_statmap</code>）仍可在查看器中显示，或用于规划更大样本的研究。</p>
+
+<h3>实例 B：灰质体积与年龄（VBM）</h3>
+<p>由于 A2 中勾选了 <b>VBM maps</b>，每幅 T1 已有 MNI 空间（1.5 mm）、经 8 mm 平滑的调制灰质图：</p>
+<pre><code>sub-SCUHC0001_space-IXI549Space_res-1p5_label-GM_desc-modulatedSm8_probseg.nii</code></pre>
+<p>每名被试的颅内总体积在 <code>reports/anat_volumes.tsv</code> 中。Statistics 和 Harmonize 会自动把它读作 <code>tiv_ml</code> 列。QC 剔除针对的是 fMRI run，因此这里使用全部 30 幅 T1。</p>
+
+<h4>B1. 对年龄的回归</h4>
+<p>在 <b>Statistics</b> 页：Name 为 <code>VBMage</code>，Map 为 <code>modulatedSm8</code>，Label 为 <code>GM</code>，Suffix 为 <code>probseg</code>，Design 为 <code>regression</code>，Regressors 为 <code>age</code>，Covariates 为 <code>sex, tiv_ml, site</code>，Mask 为 <code>gm</code>。</p>
+<pre><code>[VBMage] 30 maps, 414177 voxels in the analysis mask
+[VBMage] df 24.00; FWHM [11.43 11.81 11.25] mm; resels 797.0
+[VBMage] agepos, cluster_fwe: height 3.467, 0 cluster(s) / 0 voxel(s) survive
+[VBMage] ageneg, cluster_fwe: height 3.467, 0 cluster(s) / 0 voxel(s) survive</code></pre>
+<p>site 列是文本，因此以两个指示变量进入模型。截距、年龄、性别、TIV 和中心共 6 列，剩下 30 − 6 = 24 个自由度。年龄是随机生成的，没有效应才是正确结果。</p>
+
+<h4>B2. 这里为什么不用 ComBat</h4>
+<p>VBM 的中心差异很大：校正前 49.8% 的灰质体素存在中心效应（保留组别、性别、年龄和 TIV 的 ComBat 之后为 0.2%）。先做校正看起来很自然。我们在每种处理之后都做了同样的回归：</p>
+<table>
+<tr><th>所用的图</th><th>模型中的中心</th><th>年龄效应的簇数（cluster FWE）</th></tr>
+<tr><td>未校正</td><td>作为协变量</td><td>0</td></tr>
+<tr><td>ComBat（<code>combat</code>）</td><td>无</td><td><b>3</b></td></tr>
+<tr><td>ComBat（<code>combat</code>）</td><td>作为协变量</td><td><b>2</b></td></tr>
+<tr><td>只校正均值（<code>combat_mean</code>）</td><td>无</td><td>0</td></tr>
+<tr><td>线性回归（<code>lm</code>）</td><td>无</td><td>0</td></tr>
+</table>
+<p>年龄效应并不存在，所以 ComBat 后出现的簇是假阳性。ComBat 仅用每个中心的 10 名被试来重新缩放该中心的残差方差。这使校正后的数据看起来比实际变异更小，对保留协变量的检验因而偏于宽松（Nygaard et al. 2016）。只去除中心均值的方法没有这个问题。每个中心少于约 20 人时：</p>
+<ul>
+<li>使用 <code>combat_mean</code> 或 <code>lm</code>，或不做校正而把中心作为协变量；</li>
+<li>报告任何 ComBat 结果前，先与未校正的结果对照。</li>
+</ul>
+<p>SeeCAT 会在 Harmonize 的日志和报告中给出这一警告。</p>
+
+<h3>实例 C：度中心性与梯度</h3>
+
+<h4>C1. Degree</h4>
+<p><b>Degree</b> 使用默认设置：灰质 mask，r &gt; 0.2 的正相关，二值和加权度中心性，同时输出 z 分数图，6 mm 平滑。</p>
+<pre><code>Parallel workers (auto): about 3.9 GB per worker (2.9 GB task + 1 GB worker), …: 26 worker(s)
+Done: 26 ok, 0 skipped, 0 failed.</code></pre>
+<p>26 个 run 用时约 2 分钟。每个 run 得到四种图，每种都有原始值和 z 分数两个版本：</p>
+<pre><code>…_desc-degPosBinR0p2_stat-z_connectivity.nii.gz        二值，未平滑
+…_desc-degPosWeiR0p2Sm6_stat-z_connectivity.nii.gz     加权，平滑：统计时的常用选择</code></pre>
+<p>对 <code>degPosWeiR0p2Sm6</code> z 做校正（保留组别、性别和年龄）后，存在中心效应的体素从 17.2% 降到 0.0%。这里度中心性比种子点连接更依赖中心，可能是因为它概括了整个连接分布，而后者受噪声和平滑度的影响。</p>
+
+<h4>C2. Gradients</h4>
+<p><b>Gradients</b> 使用默认设置：Nodes 为 <code>voxels</code>，Node size 为 4 mm（单元因此名为 <code>gradientsVox4</code>），10 个成分、输出 3 张图，Alignment 为 <code>group</code>。</p>
+<pre><code>Parallel workers (auto): about 8.2 GB per worker (7.2 GB task + 1 GB worker), 7.7 GB kept by the main MATLAB,
+    187.4 GB free: 18 worker(s) (32 cores, 26 task(s))
+[gradientsVox4] 26 run(s), 21972 nodes (Vox4); about 7.2 GB of memory per run being computed
+[gradientsVox4] node series done; 19564 of 21972 nodes have data in every run
+[gradientsVox4] gradients of 26 run(s) in 413 s (15 worker(s))
+[gradientsVox4] finished (472.0 s)</code></pre>
+<p>每个 run 都需要一个 21972 × 21972 的连接矩阵，因此 worker 数（18）由内存而非核数决定。参考梯度是组平均矩阵的梯度。每个 run 先对齐到参考，再用对齐后各 run 的平均作为新参考，如此迭代，直到参考不再变化。</p>
+{{IMG viewer_gradient.png | 梯度 1 的组参考（group/gradientsVox4/gradientsVox4_desc-grad1_reference）。它从视觉和感觉运动皮层（蓝）延伸到默认网络（红），即 Margulies et al.（2016）的主梯度。}}
+<p><code>group/gradientsVox4/gradientsVox4_lambdas.tsv</code> 按 run 给出：</p>
+<ul>
+<li>特征值；</li>
+<li>梯度 1 解释的方差：0.18–0.31，中位数 0.24；</li>
+<li>对齐后的梯度 1 与参考的相关：0.43–0.69，中位数 0.58。</li>
+</ul>
+<p>若某个 run 的相关明显低于其他 run，值得查看它的 QC 报告。各 run 的图（<code>desc-grad1Vox4</code> … <code>grad3Vox4</code>）可以像其他图一样做校正和统计。</p>
+
+<h3>整个研究的用时</h3>
+<table>
+<tr><th>步骤</th><th>单元</th><th>Worker 数</th><th>用时</th></tr>
+<tr><td>预处理（含 IQM 和 VBM）</td><td>30 个 run</td><td>15</td><td>19 分钟</td></tr>
+<tr><td>Seed FC（2 个种子点）</td><td>26 个 run</td><td>26</td><td>7 秒</td></tr>
+<tr><td>Degree</td><td>26 个 run</td><td>26</td><td>2 分钟</td></tr>
+<tr><td>Gradients（Vox4）</td><td>26 个 run</td><td>15</td><td>8 分钟</td></tr>
+<tr><td>Harmonize（3 种指标）</td><td>每种 26–30 张图</td><td>1</td><td>每种 3–10 秒</td></tr>
+<tr><td>Statistics，单样本加 TFCE（5000 次置换）</td><td>13 张图</td><td>16</td><td>96 秒</td></tr>
+<tr><td>Statistics，两样本 / VBM 回归</td><td>26 / 30 张图</td><td>1</td><td>2 秒 / 5 秒</td></tr>
+</table>

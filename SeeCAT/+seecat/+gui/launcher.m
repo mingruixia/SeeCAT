@@ -302,7 +302,7 @@ show();
             meta = '';
         end
         helpTitle.Text = t;
-        helpText.Value = strsplit(txt, newline);
+        helpText.Value = strsplit(txt, newline, 'CollapseDelimiters', false);   % keep blank lines between paragraphs
         scroll(helpText, 'top');
         helpMeta.Text = meta;
     end

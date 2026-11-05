@@ -38,6 +38,15 @@ if ~isempty(names)
 end
 
 before = siteEffect(Y, sid, mod);
+note = '';
+small = min(accumarray(sid, 1));
+if small < 20 && ~any(strcmp(cfg.method, {'combat_mean', 'lm'}))
+    note = sprintf(['The smallest site has %d maps. With small sites, ComBat''s per-site variance ' ...
+        'adjustment can make later tests of the kept covariates too liberal (Nygaard et al. 2016, ' ...
+        'Biostatistics 17:29-39); consider combat_mean or lm, or adding site as a covariate in ' ...
+        'Statistics and checking the result without harmonisation.'], small);
+    log('WARNING: %s', note);
+end
 opt = struct('ref', []);
 if ~isempty(cfg.ref_site)
     opt.ref = cfg.ref_site;
@@ -91,11 +100,11 @@ for i = 1:n
     meta.Sources = {strrep(maps.path{i}, '\', '/')};
     seecat.util.publish_output(f, rel, meta, pub);
 end
-out = fullfile('group', ['harmonize' cfg.label]);
+out = fullfile('group', unit.id);
 T = maps(:, intersect({'path', 'sub', cfg.site}, maps.Properties.VariableNames, 'stable'));
 tsv = fullfile(unit.work_dir, 'maps.tsv');
 seecat.io.write_tsv(T, tsv);
-seecat.util.publish_output(tsv, fullfile(out, ['harmonize' cfg.label '_maps.tsv']), [], pub);
+seecat.util.publish_output(tsv, fullfile(out, [unit.id '_maps.tsv']), [], pub);
 report = meta0;
 report.n_maps = n;
 report.n_voxels = nnz(mask);
@@ -103,9 +112,10 @@ report.dropped = unit.dropped;
 report.site_effect_before = before;
 report.site_effect_after = after;
 report.covbat = info;
+report.note = note;
 rj = fullfile(unit.work_dir, 'report.json');
 seecat.util.write_json(rj, report);
-seecat.util.publish_output(rj, fullfile(out, ['harmonize' cfg.label '_report.json']), [], pub);
+seecat.util.publish_output(rj, fullfile(out, [unit.id '_report.json']), [], pub);
 result = struct('n_maps', n, 'n_sites', numel(sites), 'n_voxels', nnz(mask), ...
     'site_effect_before', before, 'site_effect_after', after);
 end

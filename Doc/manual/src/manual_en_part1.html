@@ -1,0 +1,182 @@
+<p class="lead">SeeCAT (Seed-based Connectivity Analysis Toolbox) is a MATLAB toolbox for resting-state functional MRI. It takes a study from DICOM files or a BIDS dataset through preprocessing, quality control, connectivity measures and multi-site harmonisation to group statistics and figures, in one window or from scripts. This manual describes version 2.0: what each part does, how it does it, every option, the files it reads and writes, and worked examples on real data.</p>
+
+<h2>Introduction</h2>
+
+<h3>What SeeCAT does</h3>
+<p>SeeCAT covers the whole path of a resting-state study:</p>
+<ul>
+<li><b>DICOM to BIDS</b>: converts DICOM folders in any common layout into a BIDS dataset with dcm2niix (bundled), finding subjects and sessions by itself.</li>
+<li><b>Data check</b>: lists every BOLD run with its volumes, TR and head motion.</li>
+<li><b>Preprocessing</b>: dummy-scan removal, slice timing, realignment, coregistration, unified segmentation, normalisation to MNI space, nuisance regression with band-pass filtering, handling of high-motion frames, smoothing; MRIQC image quality metrics, an HTML quality report per run and per study, and optional VBM maps.</li>
+<li><b>fMRIPrep denoising</b>: the same denoising, censoring and smoothing applied to fMRIPrep outputs.</li>
+<li><b>Quality control</b>: rules suggest which runs to exclude (motion, coverage, registration), image quality outliers are flagged per site, and a table lets you confirm each decision. Later steps leave excluded runs out.</li>
+<li><b>Seed FC</b>: seed-based functional connectivity from spheres or masks.</li>
+<li><b>Degree</b>: voxel-wise degree centrality and strength.</li>
+<li><b>Gradients</b>: connectivity gradients by diffusion map embedding, aligned across runs.</li>
+<li><b>Harmonize</b>: removes site and scanner effects from per-subject maps with ComBat and related models.</li>
+<li><b>Statistics</b>: group GLM (one- and two-sample t tests, paired tests, one-way and repeated-measures ANOVA, regression, custom designs) with covariates, random field theory and FDR correction as in SPM, or TFCE with permutations.</li>
+<li><b>Viewer</b>: slices, thresholds, cluster tables with atlas labels, mosaics, time series and surfaces.</li>
+</ul>
+<p>Everything the window does is a configuration (a MATLAB struct, saved as JSON) passed to <code>seecat.run</code>, so every analysis can be repeated from a script.</p>
+
+<h3>What is new in 2.0</h3>
+<ul>
+<li>A rewrite: SeeCAT needs only SPM. It no longer uses DPABI or the <code>FunImgARW…</code> folder layout of 1.x.</li>
+<li>Inputs are BIDS datasets and outputs follow BIDS-derivatives naming, so results can be read by other tools and other tools' results (fMRIPrep) can be read by SeeCAT.</li>
+<li>New: DICOM conversion, fMRIPrep input, MRIQC-style quality metrics, quality-control exclusions, connectivity gradients, multi-site harmonisation, TFCE, VBM maps, parallel processing that sizes itself to the computer's memory, and a new viewer.</li>
+<li>Steps resume after an interruption, and finished work with unchanged settings is skipped.</li>
+</ul>
+
+<h3>Licence and citation</h3>
+<p>SeeCAT is free software under the GNU General Public License, version 3 or later. It is developed by Mingrui Xia and colleagues at Beijing Normal University and distributed on GitHub and NITRC. When you publish results, please cite SeeCAT and the methods behind the steps you used (SPM, and the papers listed in <a href="#s11">References</a>).</p>
+
+<h2>Installation and start</h2>
+
+<h3>Requirements</h3>
+<table>
+<tr><th>Item</th><th>Needed</th><th>Notes</th></tr>
+<tr><td>MATLAB</td><td>R2025a or later</td><td>Windows, macOS or Linux. No other MathWorks toolbox is required.</td></tr>
+<tr><td>SPM</td><td>SPM25, or SPM12 r7771 or later</td><td>On the MATLAB path. Used for slice timing, realignment, coregistration, segmentation, normalisation, smoothing and random field theory.</td></tr>
+<tr><td>Parallel Computing Toolbox</td><td>optional</td><td>Processes runs at the same time; without it SeeCAT runs them one after another.</td></tr>
+<tr><td>BrainNet Viewer 2.0</td><td>optional</td><td>Surface figures from the viewer.</td></tr>
+<tr><td>dcm2niix</td><td>bundled</td><td>Windows, macOS and Linux builds are in the release.</td></tr>
+<tr><td>Memory</td><td>8 GB or more</td><td>Degree and Gradients at fine resolution need more; see <a href="#s10">Performance</a>.</td></tr>
+</table>
+
+<h3>Install</h3>
+<ol>
+<li>Download <code>SeeCAT-2.0.zip</code> from GitHub or NITRC and unzip it.</li>
+<li>In MATLAB:
+<pre><code>addpath('path/to/spm');
+addpath('path/to/SeeCAT-2.0/SeeCAT');
+savepath   % optional: keep the paths for later sessions</code></pre></li>
+<li>Open the main window:
+<pre><code>SeeCAT</code></pre></li>
+</ol>
+<div class="note"><b>macOS.</b> If dcm2niix is blocked the first time, allow it in System Settings → Privacy &amp; Security, or run <code>xattr -dr com.apple.quarantine SeeCAT-2.0/external</code>.</div>
+<div class="note"><b>Linux.</b> The bundled dcm2niix needs glibc 2.29 or later (Ubuntu 20.04+, Debian 11+, RHEL/Rocky 9+). On older systems install dcm2niix (e.g. <code>pip install dcm2niix</code>) and put it on the PATH or set the environment variable <code>SEECAT_DCM2NIIX</code> to its path.</div>
+
+<h3>What is in the release</h3>
+<pre><code>SeeCAT-2.0/
+  SeeCAT/              the toolbox: add this folder to the path
+    SeeCAT.m           opens the main window
+    +seecat/           all functions (seecat.config, seecat.run, seecat.viewer, ...)
+    templates/         brain, GM, WM, CSF masks and underlays (IXI549Space, MNI 2009c)
+    resources/         icons and the window's web parts
+  external/dcm2niix/   dcm2niix for win, mac, lnx
+  Doc/manual/          this manual (HTML and PDF)
+  README.md, LICENSE, CHANGELOG.md</code></pre>
+
+<h3>Two ways to work</h3>
+<p><b>The window</b> (<code>SeeCAT</code>) has a page per step. Each page builds a configuration; Run starts it in a separate MATLAB process so the window stays responsive, and Save writes the configuration as a JSON file.</p>
+<p><b>Scripts</b> use the same configurations:</p>
+<pre><code>cfg = seecat.config('prep');                 % every option at its default
+cfg.bids_dir  = 'D:/study/bids';
+cfg.subjects  = {'01', '02'};                 % empty = all
+cfg.n_workers = 'auto';
+seecat.run(cfg);                             % writes D:/study/bids/derivatives/seecat
+
+seecat.run('my_prep.json');                  % a configuration saved from the window</code></pre>
+<p>Chapter 8 lists the batch functions and complete scripts.</p>
+
+<h2>Concepts</h2>
+
+<h3>BIDS and BIDS-derivatives</h3>
+<p>SeeCAT reads raw data organised in the <a href="https://bids.neuroimaging.io">Brain Imaging Data Structure</a> and writes its results as BIDS-derivatives. A raw dataset looks like this:</p>
+<pre><code>bids/
+  dataset_description.json
+  participants.tsv                  participant_id, and columns such as group, age, sex, site
+  sub-01/
+    anat/sub-01_T1w.nii.gz (+ .json)
+    func/sub-01_task-rest_bold.nii.gz
+         sub-01_task-rest_bold.json  RepetitionTime, SliceTiming, ...</code></pre>
+<p>File names are made of <b>entities</b>, key-value pairs separated by underscores, and end with a <b>suffix</b> (<code>bold</code>, <code>T1w</code>, <code>mask</code>, <code>connectivity</code>, ...). SeeCAT's outputs keep the entities of their source and add their own:</p>
+<table>
+<tr><th>Entity</th><th>Meaning</th><th>Example</th></tr>
+<tr><td><code>sub</code>, <code>ses</code>, <code>task</code>, <code>acq</code>, <code>run</code></td><td>subject, session, task, acquisition, run of the source</td><td><code>sub-01_ses-1_task-rest_run-2</code></td></tr>
+<tr><td><code>space</code>, <code>res</code></td><td>template space and resolution label</td><td><code>space-IXI549Space_res-3</code></td></tr>
+<tr><td><code>desc</code></td><td>which variant of the data</td><td><code>desc-preproc</code>, <code>desc-denoised</code>, <code>desc-denoisedSm6</code>, <code>desc-PCC</code></td></tr>
+<tr><td><code>stat</code></td><td>which statistic a map holds</td><td><code>stat-r</code>, <code>stat-z</code>, <code>stat-t</code>, <code>stat-p</code></td></tr>
+<tr><td><code>label</code></td><td>tissue of a probability map</td><td><code>label-GM_probseg</code></td></tr>
+</table>
+<p>Every image comes with a JSON sidecar that records how it was made (sources, settings, frames used).</p>
+
+<h3>Spaces and templates</h3>
+<p>SeeCAT's own preprocessing normalises to SPM's template space, <code>IXI549Space</code> (the space of SPM's tissue probability maps, close to MNI152). Outputs are written at the chosen voxel size (3 mm by default) over SPM's bounding box <code>[-90 -126 -72; 90 90 108]</code>. fMRIPrep outputs stay in their space, usually <code>MNI152NLin2009cAsym</code>. The <code>templates</code> folder holds brain, GM, WM and CSF masks at 2 and 3 mm, made from SPM's TPMs, and underlays for the viewer (ch2, ch2better, ICBM152 2009c).</p>
+
+<h3>Units, resuming and skipping</h3>
+<p>Each pipeline splits its work into <b>units</b>: one BOLD run for Preprocessing, fMRIPrep denoising, Seed FC and Degree; one unit for a group step (Gradients, Harmonize, Statistics). When a unit finishes, SeeCAT records its settings. Running again:</p>
+<ul>
+<li>skips a unit that finished with the same settings (Overwrite runs it again);</li>
+<li>runs a unit again when its settings changed, after deleting the files it wrote before;</li>
+<li>resumes a unit that failed at the step where it stopped, from its work folder;</li>
+<li>never leaves a failed unit's partial outputs among the derivatives.</li>
+</ul>
+<p>A failed unit does not stop the others; the summary table and the logs say what failed and why.</p>
+
+<h3>Logs, configurations and summaries</h3>
+<p>Every run writes, under <code>&lt;output&gt;/logs</code>: the configuration as JSON (<code>&lt;pipeline&gt;_&lt;time&gt;_config.json</code>), a main log, one log per unit, and a list of every file each unit wrote. <code>&lt;output&gt;/reports/&lt;pipeline&gt;_&lt;time&gt;_summary.tsv</code> has one row per unit: status, time, message and the unit's key results (frames kept, mean FD, ...).</p>
+
+<h3>Parallel processing and memory</h3>
+<p>The <b>Parallel workers</b> option of each page sets how many units run at the same time:</p>
+<ul>
+<li><code>0</code>: one after another (default);</li>
+<li>a number: at most that many workers;</li>
+<li><code>auto</code>: as many as fit in memory. SeeCAT estimates the memory one unit needs (from the size of the largest run, the brain mask, the node count of Gradients, the maps of Statistics), adds about 1 GB per worker, keeps what the main MATLAB needs, and uses at most 85 % of the free memory, one worker per core and one per unit. The log states the estimate and the choice.</li>
+</ul>
+<p>Each worker is given its share of the computer's cores as threads (e.g. 5 workers on 32 cores get 6 threads each), so matrix work keeps its speed. For Gradients and TFCE, which are one unit, the workers share the runs or the permutations of that unit. If a pool fails to start, SeeCAT tries once more with half the workers and only then runs one after another, and the log says why.</p>
+
+<h3>Quality-control exclusions</h3>
+<p>After Preprocessing or fMRIPrep denoising, the group report writes <code>reports/qc_exclusions.tsv</code>, a list of every run (and T1w image) with a decision: keep or exclude. Rules suggest exclusions; on the <b>QC reports</b> page you confirm or change them. Seed FC, Degree, Gradients, Harmonize and Statistics then leave excluded runs out (their option <b>Leave out QC exclusions</b>, on by default) and list them in the log. Chapter 6.5 describes the rules.</p>
+
+<h3>participants.tsv</h3>
+<p>Group information comes from <code>participants.tsv</code> of the BIDS dataset: the group of each subject, age, sex, site, scores. Statistics and Harmonize read it next to the derivatives, two folders up (<code>bids/derivatives/seecat</code> → <code>bids</code>), or from the dataset named in the derivatives' <code>dataset_description.json</code>; a different file can be chosen. Columns with numbers are used as numbers, text columns as categories. Tissue volumes from Preprocessing (<code>gm_ml</code>, <code>wm_ml</code>, <code>csf_ml</code>, <code>tiv_ml</code>, in <code>reports/anat_volumes.tsv</code>) can be used as if they were columns of participants.tsv.</p>
+
+<h2>The main window</h2>
+{{IMG main_window.png | The main window on the Preprocessing page. Left: the pages. Centre: the options in cards, with tabs that jump to each card. Right: the description of the option in use, and the Run panel. Bottom: the log and summary drawer.}}
+
+<h3>Layout</h3>
+<ul>
+<li><b>Pages</b> (left) in three groups: PREPARE (DICOM to BIDS, Preprocessing, fMRIPrep denoising), ANALYSE (Seed FC, Degree, Gradients, Harmonize, Statistics) and RESULTS (Viewer, Data check, QC reports). Manual opens this document, About shows the version.</li>
+<li><b>Options</b> (centre), in cards such as Input, Preprocessing, Denoising. The tabs above jump to a card. <b>Show advanced options</b> adds the options most studies keep at their defaults.</li>
+<li><b>Description</b> (right): click the <b>i</b> icon of an option, or edit it, to read what it does, with examples, its default and its batch field name. Hovering over an option shows a short tooltip.</li>
+<li><b>Run panel</b> (right, bottom): Run, Stop, the progress of the units, and the state (Ready, Running, Finished, Failed).</li>
+<li><b>Drawer</b> (bottom): the Log and the Summary table of the last run; the arrow opens and closes it.</li>
+<li><b>Load</b> and <b>Save</b> (top right): read or write the page's configuration as JSON. A configuration saved here runs unchanged with <code>seecat.run</code>.</li>
+</ul>
+{{IMG help_panel.png | The description column: what the option does, examples, the default, and the batch field (here Parallel workers).}}
+
+<h3>Running</h3>
+<p>Run checks every option first and lists all problems at once (an empty required folder, a value out of range). The pipeline then runs in a separate MATLAB process: the window stays usable, the log streams into the drawer, and Stop ends the process (units that finished keep their outputs; the unit that was interrupted resumes next time). When the run ends, the Summary tab of the drawer shows the run's table (one row per unit, as in <code>reports/&lt;pipeline&gt;_&lt;time&gt;_summary.tsv</code>); each unit's own log is in <code>logs/&lt;pipeline&gt;_&lt;time&gt;/</code>.</p>
+{{IMG run_finished.png | After a run: the summary table with one row per unit and the Run panel reporting the result.}}
+
+<h3>Kinds of fields</h3>
+<table>
+<tr><th>Field</th><th>How to fill it</th></tr>
+<tr><td>Folder, file</td><td>Type a path or use the folder button.</td></tr>
+<tr><td>Number</td><td>One number, or several separated by spaces (e.g. <code>6 6 8</code>). Some accept a word: <code>auto</code>.</td></tr>
+<tr><td>Range</td><td>Two numbers (e.g. band-pass <code>0.01</code> to <code>0.1</code>); both empty switch the step off.</td></tr>
+<tr><td>Labels</td><td>A comma-separated list, e.g. subjects <code>01, 02, 15</code>.</td></tr>
+<tr><td>Ticks and menus</td><td>On/off options and choices.</td></tr>
+<tr><td>Mask</td><td>Grey matter, Whole brain, or Mask file with a file button.</td></tr>
+<tr><td>Number with On</td><td>A value that can be switched off, e.g. smoothing of degree maps.</td></tr>
+<tr><td>Maps</td><td>Fixed fields (Map, Statistic, Suffix, Space, Task, Other) that choose per-subject maps by their file names; the lists offer the values found in the folder and a line counts the matching maps.</td></tr>
+<tr><td>Tables</td><td>Seeds (Seed FC) and contrasts (Statistics), with buttons to add and remove rows.</td></tr>
+</table>
+
+<h2>Workflow</h2>
+<div class="flow"><span>DICOM</span><i>→</i><span>DICOM to BIDS</span><i>→</i><span>BIDS dataset</span><i>→</i><span>Data check</span><i>→</i><span>Preprocessing</span><i>→</i><span>QC reports</span><i>→</i><span>Seed FC / Degree / Gradients</span><i>→</i><span>Harmonize (multi-site)</span><i>→</i><span>Statistics</span><i>→</i><span>Viewer</span></div>
+<p>fMRIPrep users start at <b>fMRIPrep denoising</b> instead of Preprocessing; everything after it is the same. The table shows what each step reads and writes:</p>
+<table>
+<tr><th>Step</th><th>Reads</th><th>Writes</th></tr>
+<tr><td>DICOM to BIDS</td><td>DICOM folders</td><td>BIDS dataset: <code>sub-*/anat</code>, <code>sub-*/func</code>, participants.tsv</td></tr>
+<tr><td>Data check</td><td>BIDS dataset or derivatives</td><td>nothing (a table on screen)</td></tr>
+<tr><td>Preprocessing</td><td>BIDS dataset</td><td><code>derivatives/seecat</code>: preprocessed, denoised and smoothed BOLD, masks, confounds, T1w tissue maps, VBM maps, QC reports, exclusion list</td></tr>
+<tr><td>fMRIPrep denoising</td><td><code>derivatives/fmriprep</code></td><td><code>derivatives/seecat</code>, as above without the anatomical outputs</td></tr>
+<tr><td>QC reports</td><td><code>reports/qc_exclusions.tsv</code></td><td>the same list with your decisions</td></tr>
+<tr><td>Seed FC, Degree, Gradients</td><td>denoised BOLD in <code>derivatives/seecat</code></td><td>per-run maps next to the runs; Gradients also <code>group/gradients…</code></td></tr>
+<tr><td>Harmonize</td><td>per-subject maps, participants.tsv</td><td>harmonised maps next to them (<code>desc-…ComBat</code>)</td></tr>
+<tr><td>Statistics</td><td>per-subject maps, participants.tsv</td><td><code>group/&lt;name&gt;/</code>: statistic maps, thresholded maps, cluster tables</td></tr>
+<tr><td>Viewer</td><td>any NIfTI</td><td>figures, thresholded maps</td></tr>
+</table>
+<p>By default every step writes into the same <code>derivatives/seecat</code> folder, so each next step finds its input there: set the derivatives folder once and leave Output folder empty.</p>
