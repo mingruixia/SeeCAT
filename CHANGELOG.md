@@ -3,6 +3,11 @@
 ## Unreleased: 2.0 development
 
 ### Added
+- **Main window on MATLAB's screen.** With several screens, SeeCAT opens
+  centred on the screen that shows the MATLAB desktop
+  (seecat.gui.matlab_screen: the Java desktop before R2025a; on Windows the
+  desktop window's process; else the screen under the pointer), and smaller
+  than 1280×820 if that screen is small.
 - **Release without tests.** The release zip no longer contains `tests/`
   (unit tests, fixtures, test-data scripts); they stay in the repository.
 - **PDF manual layout.** A cover, a contents page with page numbers (a

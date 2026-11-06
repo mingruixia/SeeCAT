@@ -78,6 +78,14 @@ tc.verifyEqual(seecat.gui.format(m, 'maps'), 'desc=PCC, stat=z, suffix=connectiv
 tc.verifyError(@() seecat.gui.parse('abc', 'number', 6), 'SeeCAT:gui');
 end
 
+function testMatlabScreenIsAMonitor(tc)
+% The main window opens on one of the screens, quickly.
+tic;
+r = seecat.gui.matlab_screen();
+tc.verifyLessThan(toc, 2);
+tc.verifyTrue(ismember(r, get(groot, 'MonitorPositions'), 'rows'));
+end
+
 function p = leaves(s, prefix)
 p = {};
 for f = fieldnames(s)'
