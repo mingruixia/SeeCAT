@@ -9,8 +9,10 @@ results = runtests('tests/unit');
 Needs SPM on the path, or `SEECAT_SPM` set to the SPM folder. Most tests
 use synthetic data. Exceptions: the DICOM tests (`test_dicom.m`) need
 dcm2niix and the public dcm_qa data (see Test data below); without them they
-are skipped (reported as incomplete), not passed. `test_audit.m` holds the
-regression tests of the 2026-11-05 review.
+are skipped (reported as incomplete), not passed. `test_audit.m` and
+`test_review2.m` hold the regression tests of the 2026-11-05 and 2026-11-06
+reviews (input protection, files named in the config, unit ids, empty
+masks, unit locks).
 
 Window tests (need a desktop session): `tests/gui/page_switch.m` (every page
 from every other) and `tests/gui/page_drafts.m` (settings survive page

@@ -54,9 +54,9 @@ sub-SCUHC0001_task-rest_space-IXI549Space_res-3_desc-mPFC_stat-z_connectivity.ni
 
 <h4>A5. Harmonize</h4>
 <p>On <b>Harmonize</b>: Map <code>PCC</code>, Statistic <code>z</code>, Site column <code>site</code>, Method <code>combat</code>, Covariates kept <code>group, sex, age</code>.</p>
-<pre><code>[harmonizeComBat_PCCz] 26 maps, 45150 voxels, 3 sites (CSU: 7, PKU: 9, SCU: 10)
-[harmonizeComBat_PCCz] kept effects: group_MDD, sex_M, age
-[harmonizeComBat_PCCz] voxels with a site effect (p &lt; 0.05): 9.9% before, 0.1% after</code></pre>
+<pre><code>[harmonizeComBat_PCCz_3821b739] 26 maps, 45150 voxels, 3 sites (CSU: 7, PKU: 9, SCU: 10)
+[harmonizeComBat_PCCz_3821b739] kept effects: group_MDD, sex_M, age
+[harmonizeComBat_PCCz_3821b739] voxels with a site effect (p &lt; 0.05): 9.9% before, 0.1% after</code></pre>
 <p>Before harmonisation, 9.9% of grey-matter voxels had a site effect, about twice the 5% expected by chance. After ComBat, 0.1% did. The new maps are named <code>desc-PCCComBat</code>. With sites this small, SeeCAT also logs the small-site warning of section 6.9. Here we keep ComBat for the FC maps; Example B shows when this matters.</p>
 
 <h4>A6. One-sample test in the healthy controls</h4>

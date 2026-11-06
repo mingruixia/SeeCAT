@@ -6,7 +6,9 @@ function [units, cfg] = plan(cfg)
 % of cfg.design_tsv for the custom design), joins them with participants.tsv
 % and drops subjects that lack a map, a level (within designs) or a value
 % in a used column; they are listed in unit.dropped. output_dir defaults to
-% input_dir; outputs go to <output_dir>/group/<name>/.
+% input_dir; outputs go to <output_dir>/group/<name>/. unit.image_files{k}
+% lists, per map, the image of image covariate k (found here, so that the
+% files are part of the unit: editing one makes seecat.run redo the unit).
 
 if isempty(cfg.name)
     error('SeeCAT:stat', 'Set "name" (letters and digits): the analysis folder group/<name>/.');
@@ -29,7 +31,28 @@ end
 if height(maps) < 3
     error('SeeCAT:stat', 'Only %d map(s) left for the analysis.', height(maps));
 end
-units = struct('id', cfg.name, 'maps', maps, 'dropped', {dropped});
+files = cell(numel(cfg.image_covariates), 1);
+for k = 1:numel(cfg.image_covariates)
+    files{k} = imageFiles(cfg.image_covariates{k}, maps, cfg);
+end
+units = struct('id', cfg.name, 'maps', maps, 'dropped', {dropped}, 'image_files', {files});
+end
+
+function files = imageFiles(sel, maps, cfg)
+% The image of an image covariate (a map selector) for every map's subject
+L = seecat.bids.layout(cfg.input_dir);
+files = cell(height(maps), 1);
+for i = 1:height(maps)
+    args = {'ext', {'.nii', '.nii.gz'}, 'sub', maps.sub{i}};
+    for f = fieldnames(sel)'
+        args = [args, f, {sel.(f{1})}]; %#ok<AGROW>
+    end
+    F = seecat.bids.query(L, args{:});
+    if numel(F) ~= 1
+        error('SeeCAT:stat', 'Image covariate: %d matches for sub-%s (need exactly 1).', numel(F), maps.sub{i});
+    end
+    files{i} = F.path;
+end
 end
 
 function [maps, dropped] = bidsMaps(cfg, L, within)

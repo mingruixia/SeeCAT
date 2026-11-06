@@ -16,5 +16,7 @@ external/dcm2niix/*/
 build/
 Doc/screenshots/
 
-# PDF manuals: built by Doc/manual/src/build.py --pdf and added by the release script
+# PDF manuals: built by Doc/manual/src/build.py --pdf and added by the release script,
+# with the stamp that ties them to the committed manual sources
 Doc/manual/*.pdf
+Doc/manual/pdf_build.json

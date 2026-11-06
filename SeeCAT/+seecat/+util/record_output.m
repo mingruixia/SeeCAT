@@ -5,12 +5,18 @@ function record_output(manifest, output_dir, file)
 % Call it just before writing FILE (an absolute path under OUTPUT_DIR), so
 % a partly written file is listed too. seecat.run deletes every listed file
 % when the unit runs again or fails, so a failed unit never leaves
-% derivatives behind, from this run or an earlier one.
+% derivatives behind, from this run or an earlier one. FILE may not be one
+% of the unit's inputs (seecat.util.protected_inputs): writing over an
+% input is refused before anything is written or listed.
 
-root = char(java.io.File(output_dir).getCanonicalPath());
-f = char(java.io.File(file).getCanonicalPath());
+root = seecat.util.canonical_path(output_dir);
+[f, k] = seecat.util.canonical_path(file);
 if ~startsWith(lower(f), lower([root filesep]))
     error('SeeCAT:output', 'Output %s is not under the output folder %s.', file, output_dir);
+end
+if ismember(k, seecat.util.protected_inputs())
+    error('SeeCAT:output', ['Output %s is one of this unit''s input files; it was left as it is. ' ...
+        'Choose another output folder.'], f);
 end
 d = fileparts(manifest);
 if ~exist(d, 'dir')

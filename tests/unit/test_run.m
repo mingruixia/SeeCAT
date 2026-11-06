@@ -127,9 +127,8 @@ end
 function testChangedStepCodeRunsAgain(tc)
 d = tempname;
 mkdir(d);
-c = onCleanup(@() rmdir(d, 's'));
 addpath(d);
-p = onCleanup(@() rmpath(d));
+c = onCleanup(@() leave(d));            % path first, then the folder
 writeStep(d, 1);
 ctx = struct('work_dir', fullfile(d, 'work'), 'files', struct());
 ctx = seecat.util.run_step(ctx, 'tmpstep', @tmp_step_fn, struct());
@@ -139,6 +138,12 @@ tc.verifyEqual(ctx2.value, 1);                       % skipped: same code
 writeStep(d, 2);                                     % the step's code changes
 ctx3 = seecat.util.run_step(rmfield(ctx, 'value'), 'tmpstep', @tmp_step_fn, struct());
 tc.verifyEqual(ctx3.value, 2);
+end
+
+function leave(d)
+rmpath(d);
+clear tmp_step_fn
+rmdir(d, 's');
 end
 
 function writeStep(d, v)

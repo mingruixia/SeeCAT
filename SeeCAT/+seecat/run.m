@@ -17,12 +17,21 @@ function summary = run(cfg)
 %      has one (dataset-level outputs, e.g. the group QC page).
 %
 % A unit that finished before is skipped (unless cfg.overwrite is true)
-% when all three hold: the same options (all fields except n_workers,
+% when all four hold: the same options (all fields except n_workers,
 % overwrite and keep_work), the same inputs (seecat.util.input_fingerprint:
-% the planned unit, e.g. its selected maps and participant values, and the
-% size and date of every input file) and every output of its manifest still
-% present. Otherwise it runs again and the log says why. Its working folder is deleted on success unless cfg.keep_work is
-% true; after a failure it is kept, so finished steps are not redone.
+% the planned unit, e.g. its selected maps and participant values, and
+% every file named in the unit or the config, such as seed images, masks
+% and image covariates, by contents up to 64 MB, else by size and date), the
+% same SeeCAT code (seecat.util.code_fingerprint) and every output of its
+% manifest still present. Otherwise it runs again and the log says why.
+% Its working folder is deleted on success unless cfg.keep_work is true;
+% after a failure it is kept, so finished steps are not redone.
+%
+% Inputs are protected: the output folder may not be the BIDS or fMRIPrep
+% folder, and a unit may not write over (or have deleted) any of its input
+% files. A unit is locked while it runs (logs/locks/): a second SeeCAT
+% working on the same unit of the same output folder at the same time
+% fails that unit instead of mixing or deleting the first one's files.
 %
 % Each unit gets unit.manifest (logs/outputs/<pipeline>_<unit>.txt); the
 % pipeline lists every derivative there with seecat.util.record_output
@@ -47,6 +56,7 @@ if ~isempty(dup)                                  % they would share logs, work 
         strjoin(dup, ', '));
 end
 
+checkFolders(cfg);
 logDir = fullfile(cfg.output_dir, 'logs');
 if ~exist(logDir, 'dir')
     mkdir(logDir);
@@ -72,6 +82,7 @@ if isfield(cfg, 'qc_excluded') && ~isempty(cfg.qc_excluded)
 end
 hashCfg = rmfield(cfg, intersect(fieldnames(cfg), {'n_workers', 'overwrite', 'keep_work', 'qc_excluded'}));
 cfgHash = seecat.util.hash(hashCfg);
+codeHash = seecat.util.code_fingerprint();
 n = numel(units);
 status = cell(n, 1);
 message = cell(n, 1);
@@ -82,7 +93,7 @@ if n == 1
     outer = 0;          % one unit (group statistics): the pool is left to the unit, e.g. TFCE permutations
 end
 parfor (i = 1:n, outer)
-    [status{i}, message{i}, seconds(i), results{i}] = runUnit(units(i), cfg, cfgHash, logDir, runId);
+    [status{i}, message{i}, seconds(i), results{i}] = runUnit(units(i), cfg, cfgHash, codeHash, logDir, runId);
 end
 
 summary = table({units.id}', status, seconds, message, 'VariableNames', {'unit', 'status', 'seconds', 'message'});
@@ -107,17 +118,30 @@ log('Done: %d ok, %d skipped, %d failed. Logs in %s', nnz(strcmp(status, 'ok')),
     nnz(strcmp(status, 'skipped')), nnz(strcmp(status, 'failed')), logDir);
 end
 
-function [status, message, seconds, result] = runUnit(unit, cfg, cfgHash, logDir, runId)
+function [status, message, seconds, result] = runUnit(unit, cfg, cfgHash, codeHash, logDir, runId)
 p = cfg.pipeline;
 marker = fullfile(logDir, 'done', [p '_' unit.id '.json']);
-inHash = seecat.util.input_fingerprint(unit);
 unitLog = fullfile(logDir, runId, [unit.id '.log']);
 log = @(varargin) seecat.util.log_msg(unitLog, ['[' unit.id '] ' varargin{1}], varargin{2:end});
+planned = unit;
 unit.work_dir = fullfile(cfg.work_dir, p, unit.id);
 unit.manifest = fullfile(logDir, 'outputs', [p '_' unit.id '.txt']);
 message = '';
 seconds = 0;
 result = struct();
+
+lockDir = fullfile(logDir, 'locks', [p '_' unit.id]);
+[lock, holder] = seecat.util.unit_lock(lockDir, runId); %#ok<ASGLU> released when cleared
+if isempty(lock)
+    status = 'failed';
+    message = sprintf(['Another SeeCAT run (%s) is working on this unit in the same output ' ...
+        'folder; wait for it to finish, or delete %s if it is no longer running.'], holder, lockDir);
+    log('%s', message);
+    return
+end
+[inHash, inFiles] = seecat.util.input_fingerprint(planned, cfg);   % not its manifest or work folder
+seecat.util.protected_inputs(inFiles);
+unprotect = onCleanup(@() seecat.util.protected_inputs({})); %#ok<NASGU>
 
 if ~cfg.overwrite && exist(marker, 'file')
     m = jsondecode(fileread(marker));
@@ -126,6 +150,8 @@ if ~cfg.overwrite && exist(marker, 'file')
         why = 'the options changed';
     elseif ~isfield(m, 'input_hash') || ~strcmp(m.input_hash, inHash)
         why = 'the inputs changed (files, selected maps or participant values)';
+    elseif ~isfield(m, 'code_hash') || ~strcmp(m.code_hash, codeHash)
+        why = 'SeeCAT''s code changed';
     else
         missing = missingOutputs(unit.manifest, cfg.output_dir);
         if ~isempty(missing)
@@ -160,7 +186,7 @@ try
     status = 'ok';
     seconds = toc(t);
     m = struct('unit', unit.id, 'pipeline', p, 'config_hash', cfgHash, 'input_hash', inHash, ...
-        'seecat_version', seecat.version(), ...
+        'code_hash', codeHash, 'seecat_version', seecat.version(), ...
         'finished', char(datetime('now', 'Format', 'yyyy-MM-dd HH:mm:ss')), ...
         'seconds', seconds, 'result', result);
     seecat.util.write_json(marker, m);
@@ -214,20 +240,38 @@ end
 end
 
 function n = clearOutputs(manifest, outDir)
-% Delete the files listed in a unit's output manifest, then the manifest
+% Delete the files listed in a unit's output manifest, then the manifest;
+% never one of the unit's inputs (seecat.util.protected_inputs)
 n = 0;
 if ~exist(manifest, 'file')
     return
 end
+keep = seecat.util.protected_inputs();
 files = strsplit(strtrim(fileread(manifest)), newline);
 for i = 1:numel(files)
     f = fullfile(outDir, strtrim(files{i}));
-    if ~isempty(strtrim(files{i})) && exist(f, 'file') == 2
+    if ~isempty(strtrim(files{i})) && exist(f, 'file') == 2 && ~ismember(fileKey(f), keep)
         delete(f);
         n = n + 1;
     end
 end
 delete(manifest);
+end
+
+function k = fileKey(f)
+[~, k] = seecat.util.canonical_path(f);
+end
+
+function checkFolders(cfg)
+% The output folder may not be the raw BIDS or the fMRIPrep folder: its
+% derivatives could then take the names of input files
+[~, out] = seecat.util.canonical_path(cfg.output_dir);
+for f = {'bids_dir', 'fmriprep_dir'}
+    if isfield(cfg, f{1}) && ~isempty(cfg.(f{1})) && strcmp(fileKey(cfg.(f{1})), out)
+        error('SeeCAT:config', ['The output folder is the %s (%s); choose another one, e.g. ' ...
+            'derivatives/seecat (the default when it is empty).'], strrep(f{1}, '_dir', ' folder'), cfg.(f{1}));
+    end
+end
 end
 
 function T = resultColumns(results)

@@ -8,7 +8,10 @@ numbers, running headers and page numbers. It is made in two passes: the
 first PDF gives each heading's page (pdftotext, from poppler; Git for
 Windows ships it), the second prints them in the contents. On Windows, run
 it from PowerShell or cmd: a headless browser started from Git Bash may
-write no PDF.
+write no PDF. Afterwards Doc/manual/pdf_build.json records the git trees of
+the manual's sources and images at HEAD, whether they had uncommitted
+changes, and each PDF's SHA-256: tools/make_release.m takes the PDFs only
+when they were built from the committed sources of the commit it packs.
 
 Sources (this folder):
     manual_en.html, manual_zh.html  chapter text; <h2>/<h3> make the table of contents
@@ -18,6 +21,7 @@ Placeholders in the chapter text:
     {{PARAMS pipeline sections}}     a parameter table, e.g. {{PARAMS prep Input|Preprocessing}}
     {{IMG file.png | caption}}       a figure from ../images
 """
+import hashlib
 import html
 import json
 import os
@@ -278,12 +282,35 @@ def render(exe, page, out):
         raise SystemExit('The browser wrote no PDF: ' + out)
 
 
+def git(*args):
+    return subprocess.run(['git', '-C', MAN] + list(args), check=True, capture_output=True,
+                          text=True).stdout.strip()
+
+
+def stamp():
+    """Doc/manual/pdf_build.json: which committed sources the PDFs were built from."""
+    s = {'commit': git('rev-parse', 'HEAD'),
+         'src_tree': git('rev-parse', 'HEAD:Doc/manual/src'),
+         'images_tree': git('rev-parse', 'HEAD:Doc/manual/images'),
+         'dirty': bool(git('status', '--porcelain', '--', 'src', 'images')),
+         'pdfs': {}}
+    for name in ('SeeCAT_Manual_EN.pdf', 'SeeCAT_Manual_ZH.pdf'):
+        f = os.path.join(MAN, name)
+        if os.path.exists(f):
+            s['pdfs'][name] = hashlib.sha256(open(f, 'rb').read()).hexdigest()
+    json.dump(s, open(os.path.join(MAN, 'pdf_build.json'), 'w'), indent=2)
+    if s['dirty']:
+        print('Note: the manual sources have uncommitted changes; the release script will refuse these PDFs.')
+
+
 if __name__ == '__main__':
     for lang in ('en', 'zh'):
         if any(f.startswith('manual_%s_part' % lang) for f in os.listdir(HERE)):
             src, toc = build(lang)
             if '--pdf' in sys.argv:
                 pdf(lang, src, toc)
+    if '--pdf' in sys.argv:
+        stamp()
     open(os.path.join(MAN, 'index.html'), 'w', encoding='utf-8').write(
         '<!doctype html><html><head><meta charset="utf-8"><title>SeeCAT Manual</title>'
         '<meta name="viewport" content="width=device-width,initial-scale=1">'

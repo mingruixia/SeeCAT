@@ -59,6 +59,10 @@ switch cfg.nodes
         [~, base] = fileparts(regexprep(cfg.atlas, '\.gz$', ''));
         base = regexprep(base, '[^a-zA-Z0-9]', '');
         N.tag = ['Atlas' base(1:min(end, 20))];
+        if numel(base) > 20                  % two long names with one beginning stay apart
+            h = seecat.util.hash(base);
+            N.tag = [N.tag h(1:6)];
+        end
     otherwise
         error('SeeCAT:gradient', 'Unknown nodes "%s".', cfg.nodes);
 end

@@ -91,8 +91,9 @@ share one style; all text is English; the main window carries a logo.
   voxel, value, p, atlas label, cluster); colour bar with the shown range
   and the threshold; side cards Layers, Threshold, Go to (with Peak); the
   cluster table docked at the bottom.
-- R2020b limits met on the way (the minimum is R2025a since 2026-11-03; the
-  layout built around them stays): panel border colours cannot be set (cards
+- R2020b limits met on the way (history: the code was later developed and
+  tested on R2025a only, and older releases are untested, not refused; the
+  layout built around these limits stays): panel border colours cannot be set (cards
   are a 1 px padded grid instead); numeric `scroll` works on panels, not on
   grid layouts (the form is a fixed-height panel inside a scrollable panel);
   the uihtml browser has no flex `gap`; read-only text areas are greyed;
@@ -218,7 +219,7 @@ files and the unused underlays (`ch2bet`, 2009c face mask) in `templates/`. `tes
 
 | # | question | recommendation | alternative |
 |---|---|---|---|
-| G1 | UI toolkit | `uifigure` + `uigridlayout` (resizes cleanly, the current MATLAB UI; available since R2018b; SeeCAT needs R2025a) | classic `figure` + `uicontrol` (the earlier plan; manual layout, older look) |
+| G1 | UI toolkit | `uifigure` + `uigridlayout` (resizes cleanly, the current MATLAB UI; available since R2018b; SeeCAT is developed and tested on R2025a, older releases are untested) | classic `figure` + `uicontrol` (the earlier plan; manual layout, older look) |
 | G2 | forms | generated from `seecat.<p>.gui()` descriptions | one hand-written panel per pipeline |
 | G3 | running from the GUI (implemented as a separate `matlab -batch` process rather than `parfeval`: inside a pool worker, seecat.run's own parfor would run serially; the separate process opens its own pool, works without the Parallel Computing Toolbox, and Stop ends it) | in a background process (`parfeval` on a process pool) when the Parallel Computing Toolbox is present, so the window stays responsive and Stop works; otherwise in the foreground with the log updating | always in the foreground |
 | G4 | atlases | installed sources only (SPM Neuromorphometrics, BrainNet 2.0 AAL/Brodmann, user atlases); remove the bundled ones | download Schaefer/AAL3 etc. at first use |

@@ -16,15 +16,22 @@ end
 hdr = V(1);
 hdr.n = [1 1];
 n = height(maps);
-mask = analysisMask(cfg.mask, hdr) & all(Y ~= 0 & isfinite(Y), 4);
+mask = analysisMask(cfg.mask, hdr);
+nMask = nnz(mask);
+mask = mask & all(Y ~= 0 & isfinite(Y), 4);
+nData = nnz(mask);
 Y = reshape(Y, [], n)';
 
 % image covariates: one image per map, centred voxel-wise
 q = numel(cfg.image_covariates);
 Cs = cell(q, 1);
 for k = 1:q
-    Cs{k} = reshape(imageCovariate(cfg.image_covariates{k}, maps, cfg, hdr), [], n)';
+    Cs{k} = reshape(seecat.io.read_nii(unit.image_files{k}, 'Ref', hdr, 'Interp', 1), [], n)';
     mask(:) = mask(:) & all(Cs{k} ~= 0 & isfinite(Cs{k}), 1)';
+end
+imgNote = '';
+if q > 0
+    imgNote = sprintf(', %d after the image covariates', nnz(mask));
 end
 Ximg = zeros(n, nnz(mask), q);
 for k = 1:q
@@ -33,6 +40,11 @@ for k = 1:q
 end
 Y = double(Y(:, mask(:)));
 log('%d maps, %d voxels in the analysis mask', n, nnz(mask));
+if ~any(mask(:))
+    error('SeeCAT:stat', ['The analysis mask is empty: %s gives %d voxels on the maps'' grid ' ...
+        '(%s), %d of them non-zero in every map%s. Check the mask (same space as the maps) ' ...
+        'and the maps.'], maskName(cfg.mask), nMask, mat2str(hdr.dim(1:3)), nData, imgNote);
+end
 
 if strcmp(cfg.design, 'custom')
     num = varfun(@isnumeric, maps, 'OutputFormat', 'uniform');
@@ -260,21 +272,15 @@ switch spec
 end
 end
 
-function C = imageCovariate(sel, maps, cfg, hdr)
-L = seecat.bids.layout(cfg.input_dir);
-files = cell(height(maps), 1);
-for i = 1:height(maps)
-    args = {'ext', {'.nii', '.nii.gz'}, 'sub', maps.sub{i}};
-    for f = fieldnames(sel)'
-        args = [args, f, {sel.(f{1})}]; %#ok<AGROW>
-    end
-    F = seecat.bids.query(L, args{:});
-    if numel(F) ~= 1
-        error('SeeCAT:stat', 'Image covariate: %d matches for sub-%s (need exactly 1).', numel(F), maps.sub{i});
-    end
-    files{i} = F.path;
+function s = maskName(spec)
+switch spec
+    case 'gm'
+        s = 'the grey-matter mask (gm)';
+    case 'brain'
+        s = 'the whole image (brain)';
+    otherwise
+        s = spec;
 end
-C = seecat.io.read_nii(files, 'Ref', hdr, 'Interp', 1);
 end
 
 function v = onMask(x, mask)

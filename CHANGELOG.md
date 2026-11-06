@@ -3,6 +3,46 @@
 ## Unreleased: 2.0 development
 
 ### Added
+- **Fixes from the 2026-11-06 review** (regression tests in
+  tests/unit/test_review2.m):
+  - *An output folder that is the input folder deleted input files.* With
+    output_dir = fmriprep_dir, publishing the brain mask copied a file onto
+    itself, failed, and the failure clean-up deleted the input mask. The
+    output folder may no longer be the BIDS or fMRIPrep folder (relative
+    paths, trailing separators and links included); refused before anything
+    is written. Every unit's input files are protected
+    (seecat.util.protected_inputs): recording one of them as an output is an
+    error before it is written, and clearing a unit's outputs never deletes
+    one.
+  - *Edited seed, mask or covariate images were not noticed.* Resume now
+    fingerprints every file named in the config too (seeds, ROIs, masks,
+    atlases, the participants table), and Statistics finds the image
+    covariates' files when it plans, so they are part of the unit. Files up
+    to 64 MB are compared by contents (MD5), larger ones by size and date.
+    The SeeCAT code that computes results and the bundled templates are
+    fingerprinted as well (seecat.util.code_fingerprint): after an update,
+    finished units are computed again.
+  - *Harmonize ids of long map selections collided*, so harmonising a second
+    measure deleted the first one's maps. The unit id is now a readable part
+    and 8 characters of a hash of the whole selection (field names and
+    values, in any order), e.g. `harmonizeComBat_PCCz_3821b739`; the report
+    folder is named after it. Long atlas names in Gradients get a hash too.
+  - *An empty analysis mask* in Statistics stopped inside the GLM with an
+    index error; it now stops with the voxel counts at each stage (mask,
+    non-zero in every map, after the image covariates).
+  - *Two runs on the same unit at once* could clear each other's outputs.
+    A unit is locked while it runs (logs/locks/, created atomically, with
+    the run, host and process); another session's unit fails with a message
+    naming it, and a lock left by a MATLAB that is gone is taken over.
+  - *The release could carry PDFs of another state of the manual.*
+    build.py --pdf writes Doc/manual/pdf_build.json (the git trees of the
+    manual's sources and images, uncommitted changes, each PDF's SHA-256);
+    make_release takes the PDFs only when they match HEAD, and BUILD.txt
+    records the full commit, the manual's tree and the PDFs' SHA-256.
+  - Doc/design/gui.md no longer calls R2025a the minimum; test_run removes
+    its temporary folder from the path before deleting it (no path
+    warning); the manual's FAQ says what makes a unit run again and how
+    inputs are protected.
 - **Main window on MATLAB's screen.** With several screens, SeeCAT opens
   centred on the screen that shows the MATLAB desktop
   (seecat.gui.matlab_screen: the Java desktop before R2025a; on Windows the

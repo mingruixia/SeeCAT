@@ -3,8 +3,17 @@ function write_description(output_dir, source_dir)
 %   seecat.bids.write_description(output_dir, bids_dir)
 %
 % Written once; an existing file is left alone so that several pipelines
-% can share one derivatives folder.
+% can share one derivatives folder. An output folder that is the source
+% folder (raw BIDS or fMRIPrep) is refused before anything is written.
 
+if nargin > 1 && ~isempty(source_dir)
+    [~, a] = seecat.util.canonical_path(output_dir);
+    [~, b] = seecat.util.canonical_path(source_dir);
+    if strcmp(a, b)
+        error('SeeCAT:config', ['The output folder is the input folder (%s); choose another one, ' ...
+            'e.g. derivatives/seecat (the default when it is empty).'], source_dir);
+    end
+end
 f = fullfile(output_dir, 'dataset_description.json');
 if exist(f, 'file')
     return

@@ -108,7 +108,8 @@ tc.verifyTrue(exist(f, 'file') == 2);
 j = jsondecode(fileread(strrep(f, '.nii.gz', '.json')));
 tc.verifyEqual(j.Harmonization, 'combat_gam');
 tc.verifyEqual(j.Site, 'S1');
-tc.verifyTrue(exist(fullfile(in, 'group', 'harmonizeComBat_PCCz', 'harmonizeComBat_PCCz_report.json'), 'file') == 2);
+R = dir(fullfile(in, 'group', 'harmonizeComBat_PCCz_*', 'harmonizeComBat_PCCz_*_report.json'));
+tc.verifyNumElements(R, 1);
 % a second measure is its own unit: the first one's maps stay
 cfg.maps = struct('desc', 'B', 'stat', 'z');
 S2 = quiet(@() seecat.run(cfg));

@@ -147,7 +147,7 @@ group/gradientsVox4/gradientsVox4_lambdas.tsv     每个 run 的特征值、解�
 <tr><td><code>covbat</code></td><td>ComBat 之后再去除体素间协方差的中心差异（Chen et al. 2022）</td><td>各中心的网络结构不同时</td></tr>
 <tr><td><code>lm</code></td><td>线性回归：在含协变量的模型中去除中心均值</td><td>简单的参照方法</td></tr>
 </table>
-<p>各种 ComBat 的结果与 neuroCombat 一致。可以指定一个<b>参考中心</b>保持不变，其他中心向它校正。之后要检验的效应都必须列在要保留的协变量中；否则，在其中心间分布不同的部分，会和中心效应一起被去掉。日志和 <code>group/harmonize&lt;label&gt;_&lt;maps&gt;/…_report.json</code> 给出校正前后存在中心效应（F 检验 p &lt; 0.05，控制保留的效应）的体素比例。</p>
+<p>各种 ComBat 的结果与 neuroCombat 一致。可以指定一个<b>参考中心</b>保持不变，其他中心向它校正。之后要检验的效应都必须列在要保留的协变量中；否则，在其中心间分布不同的部分，会和中心效应一起被去掉。日志和 <code>group/harmonize&lt;label&gt;_&lt;maps&gt;_&lt;hash&gt;/…_report.json</code>（hash 用于区分不同的图选择）给出校正前后存在中心效应（F 检验 p &lt; 0.05，控制保留的效应）的体素比例。</p>
 <div class="warn"><b>中心样本较小时。</b><code>combat</code>、<code>combat_nonparam</code>、<code>combat_noeb</code>、<code>combat_gam</code> 和 <code>covbat</code> 的尺度（方差）校正会用每个中心自己的标准差去除该中心的残差。每个中心人数少时，这些估计噪声很大，校正后的数据看起来比实际变异更小，后续对保留协变量的检验因而偏于宽松（Nygaard et al. 2016）。在实例 B 中（3 个中心各 10 人，年龄为模拟值），对 ComBat 校正后的 VBM 图做灰质–年龄回归，得到 3 个实际并不存在的簇；用 <code>combat_mean</code>、<code>lm</code>，或不做校正而把中心作为协变量，都没有簇。每个中心少于约 20 人时，SeeCAT 会在日志和报告中给出警告。此时建议使用 <code>combat_mean</code> 或 <code>lm</code>，或不做校正、在 Statistics 中把中心列作为协变量；报告结果前请与未校正的结果对照。</div>
 {{PARAMS harmonize Input|Model|Output}}
 

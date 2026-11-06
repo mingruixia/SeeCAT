@@ -54,9 +54,9 @@ sub-SCUHC0001_task-rest_space-IXI549Space_res-3_desc-mPFC_stat-z_connectivity.ni
 
 <h4>A5. 多中心校正</h4>
 <p>在 <b>Harmonize</b> 页：Map 为 <code>PCC</code>，Statistic 为 <code>z</code>，Site column 为 <code>site</code>，Method 为 <code>combat</code>，Covariates kept 为 <code>group, sex, age</code>。</p>
-<pre><code>[harmonizeComBat_PCCz] 26 maps, 45150 voxels, 3 sites (CSU: 7, PKU: 9, SCU: 10)
-[harmonizeComBat_PCCz] kept effects: group_MDD, sex_M, age
-[harmonizeComBat_PCCz] voxels with a site effect (p &lt; 0.05): 9.9% before, 0.1% after</code></pre>
+<pre><code>[harmonizeComBat_PCCz_3821b739] 26 maps, 45150 voxels, 3 sites (CSU: 7, PKU: 9, SCU: 10)
+[harmonizeComBat_PCCz_3821b739] kept effects: group_MDD, sex_M, age
+[harmonizeComBat_PCCz_3821b739] voxels with a site effect (p &lt; 0.05): 9.9% before, 0.1% after</code></pre>
 <p>校正前，9.9% 的灰质体素存在中心效应，约为随机预期 5% 的两倍；ComBat 之后为 0.1%。新的图命名为 <code>desc-PCCComBat</code>。中心这么小时，SeeCAT 还会在日志中给出第 6.9 节所述的小样本警告。这里功能连接图仍使用 ComBat；实例 B 说明何时这一点会产生影响。</p>
 
 <h4>A6. 健康对照组的单样本检验</h4>

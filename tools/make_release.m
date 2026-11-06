@@ -9,7 +9,11 @@ function zipFile = make_release(varargin)
 % external/dcm2niix/<win|mac|lnx>/. Each dcm2niix zip is taken from CACHE
 % when it is there, otherwise downloaded from the dcm2niix GitHub release,
 % and is refused unless its size and SHA-256 match the values below.
-% SHA256SUMS.txt is written next to the zip.
+% SHA256SUMS.txt is written next to the zip. The PDF manuals (not in git)
+% are taken only when Doc/manual/pdf_build.json shows they were built from
+% the manual sources and images of HEAD with no uncommitted changes, and
+% their SHA-256 still match. BUILD.txt records the full commit, the
+% manual's source tree and every PDF's SHA-256.
 %
 % Options:
 %   'out'        output folder (default: <repo>/build)
@@ -71,12 +75,10 @@ for drop = {'tools', 'tests', '.gitignore', '.gitattributes', 'Doc/description.d
 end
 
 % the PDF manuals: built by Doc/manual/src/build.py --pdf, not kept in git
-for f = {'SeeCAT_Manual_EN.pdf', 'SeeCAT_Manual_ZH.pdf'}
-    src = fullfile(repo, 'Doc', 'manual', f{1});
-    if ~exist(src, 'file')
-        error('release:manual', 'Missing %s: run python Doc/manual/src/build.py --pdf first.', src);
-    end
-    copyfile(src, fullfile(stage, 'Doc', 'manual', f{1}));
+pdfs = {'SeeCAT_Manual_EN.pdf', 'SeeCAT_Manual_ZH.pdf'};
+pdfSha = checkManual(repo, pdfs);
+for i = 1:numel(pdfs)
+    copyfile(fullfile(repo, 'Doc', 'manual', pdfs{i}), fullfile(stage, 'Doc', 'manual', pdfs{i}));
 end
 
 % version stamp
@@ -84,8 +86,12 @@ vf = fullfile(stage, 'SeeCAT', '+seecat', 'version.m');
 txt = fileread(vf);
 txt = regexprep(txt, 'v = ''[^'']*'';', sprintf('v = ''%s'';', ver), 'once');
 writeText(vf, txt);
-writeText(fullfile(stage, 'BUILD.txt'), sprintf('SeeCAT %s\ncommit %s\nbuilt %s\ndcm2niix %s (%s)\n', ...
-    ver, commit, datestr(now, 'yyyy-mm-dd HH:MM'), tag, strjoin(o.platforms, ', ')));
+full = strtrim(git(repo, 'rev-parse HEAD'));
+srcTree = strtrim(git(repo, 'rev-parse HEAD:Doc/manual/src'));
+pdfLines = strjoin(cellfun(@(f, h) sprintf('%s  %s', h, f), pdfs, pdfSha, 'UniformOutput', false), newline);
+writeText(fullfile(stage, 'BUILD.txt'), sprintf(['SeeCAT %s\ncommit %s\nbuilt %s\ndcm2niix %s (%s)\n' ...
+    'manual sources (git tree) %s\nPDF manuals (SHA-256), built from those sources:\n%s\n'], ...
+    ver, full, datestr(now, 'yyyy-mm-dd HH:MM'), tag, strjoin(o.platforms, ', '), srcTree, pdfLines));
 
 % dcm2niix
 for k = 1:numel(o.platforms)
@@ -120,6 +126,29 @@ clear restore
 writeText(fullfile(o.out, 'SHA256SUMS.txt'), sprintf('%s  %s\n', sha256(zipFile), [name '.zip']));
 info = dir(zipFile);
 fprintf('%s (%.1f MB) from %s\n', zipFile, info.bytes / 2^20, commit);
+end
+
+function sha = checkManual(repo, pdfs)
+% The PDFs were built from HEAD's committed manual sources and are unchanged since
+f = fullfile(repo, 'Doc', 'manual', 'pdf_build.json');
+again = 'run python Doc/manual/src/build.py --pdf (from PowerShell) after committing the manual';
+if ~exist(f, 'file')
+    error('release:manual', 'No %s: %s.', f, again);
+end
+s = jsondecode(fileread(f));
+if s.dirty || ~strcmp(s.src_tree, strtrim(git(repo, 'rev-parse HEAD:Doc/manual/src'))) || ...
+        ~strcmp(s.images_tree, strtrim(git(repo, 'rev-parse HEAD:Doc/manual/images')))
+    error('release:manual', 'The PDF manuals were not built from the manual of HEAD: %s.', again);
+end
+sha = cell(size(pdfs));
+for i = 1:numel(pdfs)
+    p = fullfile(repo, 'Doc', 'manual', pdfs{i});
+    key = matlab.lang.makeValidName(pdfs{i});
+    if ~exist(p, 'file') || ~isfield(s.pdfs, key) || ~strcmp(sha256(p), s.pdfs.(key))
+        error('release:manual', '%s is missing or changed since it was built: %s.', p, again);
+    end
+    sha{i} = s.pdfs.(key);
+end
 end
 
 function [commit, dirty] = gitState(repo)
