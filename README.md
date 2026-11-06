@@ -1,6 +1,6 @@
 # SeeCAT
 
-SeeCAT (Seed-based Connectivity Analysis Toolbox) is a MATLAB toolbox for
+SeeCAT is a MATLAB toolbox for brain functional connectivity analysis of
 resting-state fMRI: preprocessing, denoising, seed-based functional
 connectivity, voxel-wise degree centrality, connectivity gradients,
 multi-site harmonisation, group statistics and viewing,

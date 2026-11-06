@@ -34,7 +34,7 @@ ZH = json.load(open(os.path.join(HERE, 'params_zh.json'), encoding='utf-8'))
 VERSION = '2.0'
 
 COVER = {
-    'en': dict(kind='User Manual', subtitle='Seed-based Connectivity Analysis Toolbox',
+    'en': dict(kind='User Manual', subtitle='Brain Functional Connectivity Analysis Toolbox',
                blurb='Resting-state fMRI from DICOM or BIDS to group statistics: preprocessing, quality control, '
                      'seed connectivity, degree, gradients, multi-site harmonisation and statistics.',
                version='Version 2.0 \u00b7 November 2026', who='Mingrui Xia',
@@ -42,7 +42,7 @@ COVER = {
                    'Beijing Key Laboratory of Brain Imaging and Connectomics<br>'
                    'IDG/McGovern Institute for Brain Research<br>Beijing Normal University, Beijing, China',
                about='About this manual', runhead='SeeCAT 2.0 \u00b7 User Manual'),
-    'zh': dict(kind='使用手册', subtitle='种子点连接分析工具箱 Seed-based Connectivity Analysis Toolbox',
+    'zh': dict(kind='使用手册', subtitle='脑功能连接分析工具箱',
                blurb='静息态功能磁共振从 DICOM 或 BIDS 数据到组水平统计的完整流程：预处理、质量控制、种子点连接、'
                      '度中心性、连接梯度、多中心校正与统计分析。',
                version='版本 2.0 \u00b7 2026 年 11 月', who='夏明睿',
@@ -207,7 +207,7 @@ def print_html(lang, src, toc, pages):
              '<div class="hero"></div>'
              '<div class="sub"><b>%s</b>%s</div>'
              '<div class="meta"><div class="who">%s</div>%s<br><br>%s</div></section>'
-             % ('Seed-based Connectivity Analysis Toolbox', c['kind'], c['version'], c['blurb'], c['who'], c['aff'],
+             % (c['subtitle'], c['kind'], c['version'], c['blurb'], c['who'], c['aff'],
                 'GPL-3.0-or-later \u00b7 www.nitrc.org/projects/seecat' if lang == 'en'
                 else 'GPL-3.0-or-later 自由软件 \u00b7 www.nitrc.org/projects/seecat'))
     front = ('<section class="front"><h1>%s</h1><div class="lead">%s</div>'
