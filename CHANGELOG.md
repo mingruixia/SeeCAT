@@ -36,6 +36,11 @@
   age at the scan from them. The report in code/seecat shows the subject's
   folder as `sub-<label>`.
 - `'link', true` (scripts): hard links instead of copies for .nii.gz images.
+- **Preprocessing and fMRIPrep denoising show the dataset.** Once the BIDS
+  (or fMRIPrep) folder is set, the line below it lists the subjects,
+  sessions and tasks of its BOLD runs with the number of runs per task, and
+  the empty Subjects and Task fields show what they will take
+  (`seecat.bids.summary`).
 - Tests: tests/unit/test_nifti.m on synthetic exports
   (tests/data/make_nifti_demo.m); test_dicom covers auto naming and dry runs.
 
@@ -43,6 +48,10 @@
 - from_dicom names BOLD-like series that no rule names (`'auto', false`
   restores the old behaviour) and its table has a `source` column.
 - The BIDS folder of a NIfTI import must lie outside the source folder.
+- Preprocessing and fMRIPrep denoising: an empty Task processes every task
+  (it used to be an error when the data held several), and Task takes several
+  labels (`rest, nback` in the window, `{'rest', 'nback'}` in a config). The
+  analysis pages still take one task.
 
 ## 2.0.0 (2026-11-06)
 

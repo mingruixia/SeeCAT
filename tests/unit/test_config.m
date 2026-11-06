@@ -43,12 +43,23 @@ function testJsonRoundTrip(tc)
 cfg = seecat.config('prep');
 cfg.bids_dir = tc.TestData.tmp;
 cfg.subjects = {'10159'};                     % one-element list
+cfg.task = {'rest', 'nback'};                 % several tasks (the form's Task field)
 cfg.denoise.band = [];
 cfg.smooth.fwhm = [6 6 8];
 f = fullfile(tc.TestData.tmp, 'sub', 'cfg.json');
 seecat.save_config(cfg, f);
 back = seecat.config(f);
 tc.verifyEqual(back, cfg);
+seecat.check_config(back);
+cfg.task = {'rest'};                          % one task as a list
+seecat.save_config(cfg, f);
+back = seecat.config(f);
+tc.verifyEqual(seecat.bids.task_list(back.task), {'rest'});
+seecat.check_config(back);
+cfg.task = {};                                % the form's empty Task
+seecat.save_config(cfg, f);
+back = seecat.config(f);
+tc.verifyEmpty(seecat.bids.task_list(back.task));
 seecat.check_config(back);
 end
 

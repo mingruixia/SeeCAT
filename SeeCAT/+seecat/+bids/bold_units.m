@@ -2,8 +2,9 @@ function U = bold_units(L, cfg)
 % BOLD_UNITS  BOLD runs to process, each with its T1w and metadata.
 %   U = seecat.bids.bold_units(L, cfg)
 %
-% CFG supplies the selection: subjects, sessions, task, runs (empty = all;
-% an empty task is allowed only when the dataset has one task).
+% CFG supplies the selection: subjects, sessions, task, runs (empty = all).
+% task is one label, several ({'rest', 'nback'} or 'rest, nback'), or empty
+% for every task.
 %
 % U is a struct array, one element per BOLD run:
 %   id    BIDS name stem without suffix, e.g. 'sub-01_task-rest_run-1'
@@ -14,7 +15,7 @@ function U = bold_units(L, cfg)
 %   meta  merged sidecar metadata
 %   tr    RepetitionTime in seconds
 %
-% Every problem (unknown subject, ambiguous task, missing RepetitionTime)
+% Every problem (unknown subject or task, missing RepetitionTime)
 % is collected and raised as one SeeCAT:bids error.
 
 isImage = {'.nii', '.nii.gz'};
@@ -27,15 +28,11 @@ end
 
 allBold = seecat.bids.query(L, 'suffix', 'bold', 'ext', isImage);
 tasks = unique(arrayfun(@(f) taskOf(f), allBold, 'UniformOutput', false));
-task = cfg.task;
-if isempty(task)
-    if numel(tasks) > 1
-        msgs{end+1} = sprintf('The dataset has several tasks (%s); set "task".', strjoin(tasks, ', '));
-    elseif isscalar(tasks)
-        task = tasks{1};
-    end
-elseif ~ismember(task, tasks)
-    msgs{end+1} = sprintf('Task "%s" not found. Tasks: %s.', task, strjoin(tasks, ', '));
+task = seecat.bids.task_list(cfg.task);          % empty: every task
+missing = setdiff(task, tasks);
+if ~isempty(missing)
+    msgs{end+1} = sprintf('Task %s not found. Tasks: %s.', strjoin(strcat('"', missing, '"'), ', '), ...
+        strjoin(tasks(~cellfun(@isempty, tasks)), ', '));
 end
 if ~isempty(msgs)
     raise(msgs);

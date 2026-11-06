@@ -14,6 +14,9 @@ s = strtrim(char(s));
 switch widget
     case 'labels'
         v = splitList(s);
+        if isempty(v) && nargin > 2 && ischar(old)
+            v = '';                               % e.g. task: a label, a list, or '' for all
+        end
         return
     case 'maps'
         v = struct();

@@ -216,6 +216,7 @@ group/gradientsVox4/gradientsVox4_lambdas.tsv     每个 run 的特征值、解�
 <h3>共用选项：run 的选择</h3>
 <p>处理 run 的页面都可以按被试、session、任务和 run 选择数据。Seed FC、Degree、Gradients、Harmonize 和 Statistics 还会排除质量控制剔除的数据：</p>
 {{PARAMS fc Selection}}
+<p>在 Preprocessing 和 fMRIPrep denoising 页中，Task 可以填写多个任务（<code>rest, nback</code>；脚本中为 <code>{'rest', 'nback'}</code>），留空则处理所有任务。填好输入文件夹后，其下方一行显示其中 BOLD run 的被试、session 和任务，例如 <i>Found: 10 subjects (11061, 11062, 11066, ..., 50052, 50056); tasks: rest (10 runs)</i>；留空的 Subjects 和 Task 输入框也会提示将处理哪些被试和任务。</p>
 
 <h3>共用选项：输出与运行</h3>
 {{PARAMS prep Output|Run}}

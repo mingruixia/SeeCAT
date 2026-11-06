@@ -359,6 +359,7 @@ group/gradientsVox4/gradientsVox4_lambdas.tsv     eigenvalues of every run, vari
 <h3>Shared: selection of runs</h3>
 <p>The pages that process runs choose them by subject, session, task and run. Seed FC, Degree, Gradients, Harmonize and Statistics also leave out what quality control excluded:</p>
 {{PARAMS fc Selection}}
+<p>On Preprocessing and fMRIPrep denoising, Task takes several labels (<code>rest, nback</code>; <code>{'rest', 'nback'}</code> in scripts), and an empty Task processes every task. Once the input folder is set, the line below it shows the subjects, sessions and tasks of its BOLD runs, for example <i>Found: 10 subjects (11061, 11062, 11066, ..., 50052, 50056); tasks: rest (10 runs)</i>, and the empty Subjects and Task fields show what they will take.</p>
 
 <h3>Shared: output and run</h3>
 {{PARAMS prep Output|Run}}

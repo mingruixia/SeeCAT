@@ -75,6 +75,35 @@ cfg.space = 'T1w';
 tc.verifyError(@() seecat.fmriprep.plan(cfg), 'SeeCAT:bids');
 end
 
+function testTaskSelection(tc)
+% empty: every task; several tasks by name; one per run whatever the spaces
+fp = tc.TestData.fp;
+d = fullfile(fp, 'sub-01', 'func');
+for f = dir(fullfile(d, 'sub-01_task-rest_*'))'
+    copyfile(fullfile(d, f.name), fullfile(d, strrep(f.name, 'task-rest', 'task-nback')));
+end
+copyfile(fullfile(d, 'sub-01_task-rest_space-MNI152NLin2009cAsym_desc-preproc_bold.nii.gz'), ...
+    fullfile(d, 'sub-01_task-rest_space-T1w_desc-preproc_bold.nii.gz'));
+cfg = baseCfg(tc);
+u = seecat.fmriprep.plan(cfg);
+tc.verifyEqual(sort({u.id}), {'sub-01_task-nback', 'sub-01_task-rest', 'sub-02_task-rest'});
+cfg.task = 'nback';
+u = seecat.fmriprep.plan(cfg);
+tc.verifyEqual({u.id}, {'sub-01_task-nback'});
+cfg.task = {'rest', 'nback'};
+tc.verifyLength(seecat.fmriprep.plan(cfg), 3);
+cfg.task = 'motor';
+try
+    seecat.fmriprep.plan(cfg);
+    tc.verifyFail('no error for an unknown task');
+catch err
+    tc.verifySubstring(err.message, 'Task "motor" not found. Tasks: nback, rest.');
+end
+S = seecat.bids.summary(fp, 'fmriprep');
+tc.verifyEqual(S.tasks, {'nback', 'rest'});
+tc.verifyEqual(S.runs, [1 2]);                    % the T1w-space copy is the same run
+end
+
 function testOldACompCorNeedsExplicitColumns(tc)
 cfg = baseCfg(tc);
 cfg.subjects = {'01'};

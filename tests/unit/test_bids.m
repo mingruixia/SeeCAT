@@ -66,10 +66,38 @@ U = seecat.bids.bold_units(L, cfg);
 tc.verifyEqual({U.sub}, {'02'});
 end
 
-function testBoldUnitsErrors(tc)
+function testBoldUnitsTaskSelection(tc)
+% empty: every task; several labels as a list or comma separated
 L = tc.TestData.L;
 msg = errorMessage(@() seecat.bids.bold_units(L, selection('')));
-tc.verifySubstring(msg, 'several tasks (nback, rest)');
+tc.verifySubstring(msg, 'sub-01_ses-1_task-nback_bold.nii.gz: RepetitionTime missing');   % nback is taken too
+tc.verifyFalse(contains(msg, 'several tasks'));
+for t = {'rest, nback', {'rest', 'nback'}}
+    msg = errorMessage(@() seecat.bids.bold_units(L, selection(t{1})));
+    tc.verifySubstring(msg, 'task-nback_bold.nii.gz: RepetitionTime missing');
+end
+U = seecat.bids.bold_units(L, selection({'rest'}));
+tc.verifyLength(U, 4);
+msg = errorMessage(@() seecat.bids.bold_units(L, selection('rest, motor')));
+tc.verifySubstring(msg, 'Task "motor" not found. Tasks: nback, rest.');
+tc.verifyEqual(seecat.bids.task_list(' rest ,nback,, rest'), {'rest', 'nback'});
+tc.verifyEqual(seecat.bids.task_list(''), {});
+end
+
+function testSummary(tc)
+S = seecat.bids.summary(tc.TestData.L);
+tc.verifyEqual(S.subjects, {'01', '02'});
+tc.verifyEqual(S.sessions, {'1', '2'});
+tc.verifyEqual(S.tasks, {'nback', 'rest'});
+tc.verifyEqual(S.runs, [1 4]);
+tc.verifyEqual(S.nsub, [1 2]);
+tc.verifyEqual(S.text, '2 subjects (01, 02); sessions: 1, 2; tasks: nback (1 run), rest (4 runs)');
+S = seecat.bids.summary(tc.TestData.root, 'fmriprep');                 % no desc-preproc runs here
+tc.verifySubstring(S.text, 'no desc-preproc BOLD runs found');
+end
+
+function testBoldUnitsErrors(tc)
+L = tc.TestData.L;
 cfg = selection('nback');
 cfg.subjects = {'01', '07'};
 msg = errorMessage(@() seecat.bids.bold_units(L, cfg));
@@ -82,7 +110,7 @@ end
 %% Helpers -------------------------------------------------------------------
 
 function cfg = selection(task)
-cfg = struct('subjects', {{}}, 'sessions', {{}}, 'task', task, 'runs', {{}});
+cfg = struct('subjects', {{}}, 'sessions', {{}}, 'task', {task}, 'runs', {{}});
 end
 
 function makeDataset(d)

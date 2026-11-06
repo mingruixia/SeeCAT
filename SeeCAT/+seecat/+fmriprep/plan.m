@@ -30,14 +30,14 @@ if isempty(B)
     raise({sprintf('No *_space-%s_desc-preproc_bold images in %s for this selection.', cfg.space, L.root)});
 end
 tasks = unique(arrayfun(@(f) ent(f, 'task'), B, 'UniformOutput', false));
-task = cfg.task;
-if isempty(task) && numel(tasks) > 1
-    raise({sprintf('The outputs have several tasks (%s); set "task".', strjoin(tasks, ', '))});
-elseif ~isempty(task)
-    B = B(strcmp(arrayfun(@(f) ent(f, 'task'), B, 'UniformOutput', false), task));
-    if isempty(B)
-        raise({sprintf('Task "%s" not found. Tasks: %s.', task, strjoin(tasks, ', '))});
+task = seecat.bids.task_list(cfg.task);          % empty: every task
+if ~isempty(task)
+    missing = setdiff(task, tasks);
+    if ~isempty(missing)
+        raise({sprintf('Task %s not found. Tasks: %s.', strjoin(strcat('"', missing, '"'), ', '), ...
+            strjoin(tasks(~cellfun(@isempty, tasks)), ', '))});
     end
+    B = B(ismember(arrayfun(@(f) ent(f, 'task'), B, 'UniformOutput', false), task));
 end
 res = arrayfun(@(f) ent(f, 'res'), B, 'UniformOutput', false);
 if ~isempty(cfg.res)

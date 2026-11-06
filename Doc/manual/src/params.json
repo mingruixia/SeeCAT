@@ -7,7 +7,7 @@
       "advanced": false,
       "widget": "folder",
       "default": "",
-      "help": "The raw BIDS dataset, e.g. D:/study/bids, with sub-<label>/anat/*_T1w.nii.gz and sub-<label>/func/*_bold.nii.gz plus their JSON sidecars (Import to BIDS writes this).\n\nResults go to <BIDS folder>/derivatives/seecat unless Output folder is set. Use Data check first to see the runs, TR and head motion.",
+      "help": "The raw BIDS dataset, e.g. D:/study/bids, with sub-<label>/anat/*_T1w.nii.gz and sub-<label>/func/*_bold.nii.gz plus their JSON sidecars (Import to BIDS writes this).\n\nResults go to <BIDS folder>/derivatives/seecat unless Output folder is set. Use Data check first to see the runs, TR and head motion.\n\nOnce the folder is set, the subjects, sessions and tasks of its BOLD runs are shown below it.",
       "choices": []
     },
     {
@@ -414,7 +414,7 @@
       "advanced": false,
       "widget": "labels",
       "default": "",
-      "help": "Which subjects to process: labels without \"sub-\", comma separated, e.g. 01, 02, 15. Empty: all subjects found.",
+      "help": "Which subjects to process: labels without \"sub-\", comma separated, e.g. 01, 02, 15. Empty: all subjects found.\n\nThe subjects found are shown under the input folder once it is set.",
       "choices": []
     },
     {
@@ -432,9 +432,9 @@
       "label": "Task",
       "section": "Selection",
       "advanced": false,
-      "widget": "text",
+      "widget": "labels",
       "default": "",
-      "help": "The task label of the runs, e.g. rest. Empty: the only task present; if the data hold several tasks, name one.",
+      "help": "Which tasks to process: task labels, comma separated, e.g. rest or rest, nback. Empty: every task in the dataset.\n\nThe tasks found are shown under the input folder once it is set.",
       "choices": []
     },
     {
@@ -486,7 +486,7 @@
       "advanced": false,
       "widget": "folder",
       "default": "",
-      "help": "The output folder of fMRIPrep, e.g. D:/study/bids/derivatives/fmriprep. SeeCAT reads, for each BOLD run, *_space-<space>_desc-preproc_bold.nii.gz, its brain mask and the confounds table; fMRIPrep's own steps are not repeated.\n\nResults go to derivatives/seecat next to it unless Output folder is set, with the same names as the Preprocessing page, so Seed FC, Degree and Statistics work the same way.",
+      "help": "The output folder of fMRIPrep, e.g. D:/study/bids/derivatives/fmriprep. SeeCAT reads, for each BOLD run, *_space-<space>_desc-preproc_bold.nii.gz, its brain mask and the confounds table; fMRIPrep's own steps are not repeated.\n\nResults go to derivatives/seecat next to it unless Output folder is set, with the same names as the Preprocessing page, so Seed FC, Degree and Statistics work the same way.\n\nOnce the folder is set, the subjects, sessions and tasks of its runs are shown below it.",
       "choices": []
     },
     {
@@ -749,7 +749,7 @@
       "advanced": false,
       "widget": "labels",
       "default": "",
-      "help": "Which subjects to process: labels without \"sub-\", comma separated, e.g. 01, 02, 15. Empty: all subjects found.",
+      "help": "Which subjects to process: labels without \"sub-\", comma separated, e.g. 01, 02, 15. Empty: all subjects found.\n\nThe subjects found are shown under the input folder once it is set.",
       "choices": []
     },
     {
@@ -767,9 +767,9 @@
       "label": "Task",
       "section": "Selection",
       "advanced": false,
-      "widget": "text",
+      "widget": "labels",
       "default": "",
-      "help": "The task label of the runs, e.g. rest. Empty: the only task present; if the data hold several tasks, name one.",
+      "help": "Which tasks to process: task labels, comma separated, e.g. rest or rest, nback. Empty: every task in the dataset.\n\nThe tasks found are shown under the input folder once it is set.",
       "choices": []
     },
     {

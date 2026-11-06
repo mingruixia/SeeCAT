@@ -50,8 +50,10 @@ for f = fieldnames(in)'
             val = {};                                  % JSON [] for an empty list
         elseif iscell(d) && ischar(val)
             val = {val};
-        elseif iscell(d) && iscell(val)
-            val = val(:)';
+        elseif (iscell(d) || ischar(d)) && iscell(val)
+            val = val(:)';                             % e.g. task: one label or a list
+        elseif ischar(d) && isnumeric(val) && isempty(val)
+            val = '';                                  % JSON [] (an empty list) for text
         elseif islogical(d) && isnumeric(val) && isscalar(val) && any(val == [0 1])
             val = logical(val);
         elseif isnumeric(d) && isnumeric(val) && isvector(val) && isrow(d)

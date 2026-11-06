@@ -64,6 +64,20 @@ if ~isempty(iMaps) && ~isempty(iIn)
     in.ValueChangedFcn = @(s, e) both(old, @() countMaps(m, in, true), s, e);
     countMaps(m, in, false);
 end
+for iDir = find(arrayfun(@(x) isfield(x, 'scan') && ~isempty(x.scan), F))
+    % the input folder shows what it holds; Subjects and Task show it as their placeholder
+    d = ctl{iDir};
+    sel = struct('subjects', [], 'task', []);
+    for key = fieldnames(sel)'
+        k = find(strcmp({F.path}, key{1}), 1);
+        if ~isempty(k) && isa(ctl{k}, 'matlab.ui.control.EditField')
+            sel.(key{1}) = ctl{k};
+        end
+    end
+    old = d.ValueChangedFcn;
+    d.ValueChangedFcn = @(s, e) both(old, @() showDataset(d, F(iDir).scan, sel, true), s, e);
+    showDataset(d, F(iDir).scan, sel, false);
+end
 total = pad(2) + pad(4) + sum(heights) + g.RowSpacing * (numel(heights) - 1);
 parent.AutoResizeChildren = 'off';               % otherwise SizeChangedFcn never runs
 parent.SizeChangedFcn = @(~, ~) fit();
@@ -113,6 +127,11 @@ switch f.widget
         h = 110;
     case 'maps'
         h = 4 * 26 + 3 * 4;
+    case 'folder'
+        h = seecat.gui.theme().row;
+        if isfield(f, 'scan') && ~isempty(f.scan)
+            h = h + 36;                           % two lines of what the folder holds
+        end
     otherwise
         h = seecat.gui.theme().row;
 end
@@ -195,9 +214,19 @@ switch f.widget
         c = {cb, ed};
     case {'folder', 'file'}
         holder = row(cg, {'1x', 30}, T);
+        if isfield(f, 'scan') && ~isempty(f.scan)
+            holder.RowHeight = {T.row, '1x'};
+            holder.RowSpacing = 4;
+        end
         c = uieditfield(holder, 'text', 'Value', char(v), edit{:});
         uibutton(holder, 'Text', '', 'Icon', seecat.gui.icon('folder'), 'BackgroundColor', T.panel, ...
             'Tooltip', 'Browse', 'ButtonPushedFcn', @(~, ~) browse(c, f.widget));
+        if isfield(f, 'scan') && ~isempty(f.scan)
+            c.UserData = uilabel(holder, 'Text', '', 'FontColor', T.muted, 'FontSize', T.size.small, ...
+                'WordWrap', 'on', 'VerticalAlignment', 'top');
+            c.UserData.Layout.Row = 2;
+            c.UserData.Layout.Column = [1 2];
+        end
     case 'seeds'
         holder = uigridlayout(cg, [2 1], 'RowHeight', {26, '1x'}, 'Padding', [0 0 0 0], ...
             'RowSpacing', 4, 'BackgroundColor', T.panel);
@@ -360,6 +389,66 @@ end
 function both(f1, f2, s, e)
 f1(s, e);
 f2();
+end
+
+function showDataset(dirField, kind, sel, fresh)
+% The subjects, sessions and tasks of the folder's BOLD runs, below the field
+lab = dirField.UserData;
+S = datasetSummary(strtrim(dirField.Value), kind, fresh);
+if isempty(S)
+    lab.Text = '';
+    hint = struct('subjects', '', 'task', '');
+elseif ischar(S)
+    lab.Text = S;
+    hint = struct('subjects', '', 'task', '');
+else
+    lab.Text = ['Found: ' S.text];
+    hint.subjects = sprintf('empty: all %d (%s)', numel(S.subjects), shortList(S.subjects));
+    hint.task = '';
+    if ~isempty(S.tasks)
+        hint.task = sprintf('empty: all (%s)', strjoin(S.tasks, ', '));
+    end
+end
+lab.Tooltip = lab.Text;
+for key = fieldnames(sel)'
+    if ~isempty(sel.(key{1})) && isvalid(sel.(key{1}))
+        sel.(key{1}).Placeholder = hint.(key{1});
+    end
+end
+end
+
+function S = datasetSummary(d, kind, fresh)
+% seecat.bids.summary of folder D (cached per folder); '' when D is empty,
+% or a message when it cannot be read
+persistent cacheKey cacheS
+S = '';
+if isempty(d)
+    S = [];
+    return
+end
+if ~exist(d, 'dir')
+    S = 'Folder not found.';
+    return
+end
+key = [kind '|' d];
+if isequal(cacheKey, key) && ~fresh
+    S = cacheS;
+    return
+end
+try
+    S = seecat.bids.summary(d, kind);
+catch err
+    S = ['Could not read the folder: ' err.message];
+end
+cacheKey = key;
+cacheS = S;
+end
+
+function s = shortList(c)
+if numel(c) > 6
+    c = [c(1:3), {'...'}, c(end-1:end)];
+end
+s = strjoin(c, ', ');
 end
 
 function F = mapFiles(dirField, fresh)
