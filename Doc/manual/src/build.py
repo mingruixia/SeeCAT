@@ -41,14 +41,14 @@ COVER = {
                aff='National Key Laboratory of Cognitive Neuroscience and Learning<br>'
                    'Beijing Key Laboratory of Brain Imaging and Connectomics<br>'
                    'IDG/McGovern Institute for Brain Research<br>Beijing Normal University, Beijing, China',
-               herocap='Principal connectivity gradient of the worked example (chapter 7)', about='About this manual', runhead='SeeCAT 2.0 \u00b7 User Manual'),
+               about='About this manual', runhead='SeeCAT 2.0 \u00b7 User Manual'),
     'zh': dict(kind='使用手册', subtitle='种子点连接分析工具箱 Seed-based Connectivity Analysis Toolbox',
                blurb='静息态功能磁共振从 DICOM 或 BIDS 数据到组水平统计的完整流程：预处理、质量控制、种子点连接、'
                      '度中心性、连接梯度、多中心校正与统计分析。',
                version='版本 2.0 \u00b7 2026 年 11 月', who='夏明睿',
                aff='认知神经科学与学习国家重点实验室<br>脑成像与连接组学北京市重点实验室<br>'
                    '北京师范大学 IDG/麦戈文脑科学研究院<br>北京师范大学，中国北京',
-               herocap='实例中的主连接梯度（第 7 章）', about='关于本手册', runhead='SeeCAT 2.0 \u00b7 使用手册'),
+               about='关于本手册', runhead='SeeCAT 2.0 \u00b7 使用手册'),
 }
 
 UI = {
@@ -204,10 +204,10 @@ def print_html(lang, src, toc, pages):
              '<div class="logo"><img src="../images/logo.png" alt=""></div>'
              '<div class="brand">SeeCAT<span>%s</span></div>'
              '<div class="title">%s</div>'
-             '<div class="hero"></div><div class="herocap">%s</div>'
+             '<div class="hero"></div>'
              '<div class="sub"><b>%s</b>%s</div>'
              '<div class="meta"><div class="who">%s</div>%s<br><br>%s</div></section>'
-             % ('Seed-based Connectivity Analysis Toolbox', c['kind'], c['herocap'], c['version'], c['blurb'], c['who'], c['aff'],
+             % ('Seed-based Connectivity Analysis Toolbox', c['kind'], c['version'], c['blurb'], c['who'], c['aff'],
                 'GPL-3.0-or-later \u00b7 www.nitrc.org/projects/seecat' if lang == 'en'
                 else 'GPL-3.0-or-later 自由软件 \u00b7 www.nitrc.org/projects/seecat'))
     front = ('<section class="front"><h1>%s</h1><div class="lead">%s</div>'
