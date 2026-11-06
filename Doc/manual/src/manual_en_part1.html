@@ -5,7 +5,7 @@
 <h3>What SeeCAT does</h3>
 <p>SeeCAT covers the whole path of a resting-state study:</p>
 <ul>
-<li><b>DICOM to BIDS</b>: converts DICOM folders in any common layout into a BIDS dataset with dcm2niix (bundled), finding subjects and sessions by itself.</li>
+<li><b>Import to BIDS</b>: puts DICOM folders (converted with the bundled dcm2niix) or NIfTI images (scanner and platform exports with sidecars, or older .nii/.img data) in any common layout into a BIDS dataset. It finds subjects and sessions, names task runs, field maps and single-band references, and shows every name for correction before writing.</li>
 <li><b>Data check</b>: lists every BOLD run with its volumes, TR and head motion.</li>
 <li><b>Preprocessing</b>: dummy-scan removal, slice timing, realignment, coregistration, unified segmentation, normalisation to MNI space, nuisance regression with band-pass filtering, handling of high-motion frames, smoothing; MRIQC image quality metrics, an HTML quality report per run and per study, and optional VBM maps.</li>
 <li><b>fMRIPrep denoising</b>: the same denoising, censoring and smoothing applied to fMRIPrep outputs.</li>
@@ -137,7 +137,7 @@ seecat.run('my_prep.json');                  % a configuration saved from the wi
 
 <h3>Layout</h3>
 <ul>
-<li><b>Pages</b> (left) in three groups: PREPARE (DICOM to BIDS, Preprocessing, fMRIPrep denoising), ANALYSE (Seed FC, Degree, Gradients, Harmonize, Statistics) and RESULTS (Viewer, Data check, QC reports). Manual opens this document, About shows the version.</li>
+<li><b>Pages</b> (left) in three groups: PREPARE (Import to BIDS, Preprocessing, fMRIPrep denoising), ANALYSE (Seed FC, Degree, Gradients, Harmonize, Statistics) and RESULTS (Viewer, Data check, QC reports). Manual opens this document, About shows the version.</li>
 <li><b>Options</b> (centre), in cards such as Input, Preprocessing, Denoising. The tabs above jump to a card. <b>Show advanced options</b> adds the options most studies keep at their defaults.</li>
 <li><b>Description</b> (right): click the <b>i</b> icon of an option, or edit it, to read what it does, with examples, its default and its batch field name. Hovering over an option shows a short tooltip.</li>
 <li><b>Run panel</b> (right, bottom): Run, Stop, the progress of the units, and the state (Ready, Running, Finished, Failed).</li>
@@ -165,11 +165,11 @@ seecat.run('my_prep.json');                  % a configuration saved from the wi
 </table>
 
 <h2>Workflow</h2>
-<div class="flow"><span>DICOM</span><i>→</i><span>DICOM to BIDS</span><i>→</i><span>BIDS dataset</span><i>→</i><span>Data check</span><i>→</i><span>Preprocessing</span><i>→</i><span>QC reports</span><i>→</i><span>Seed FC / Degree / Gradients</span><i>→</i><span>Harmonize (multi-site)</span><i>→</i><span>Statistics</span><i>→</i><span>Viewer</span></div>
+<div class="flow"><span>DICOM / NIfTI</span><i>→</i><span>Import to BIDS</span><i>→</i><span>BIDS dataset</span><i>→</i><span>Data check</span><i>→</i><span>Preprocessing</span><i>→</i><span>QC reports</span><i>→</i><span>Seed FC / Degree / Gradients</span><i>→</i><span>Harmonize (multi-site)</span><i>→</i><span>Statistics</span><i>→</i><span>Viewer</span></div>
 <p>fMRIPrep users start at <b>fMRIPrep denoising</b> instead of Preprocessing; everything after it is the same. The table shows what each step reads and writes:</p>
 <table>
 <tr><th>Step</th><th>Reads</th><th>Writes</th></tr>
-<tr><td>DICOM to BIDS</td><td>DICOM folders</td><td>BIDS dataset: <code>sub-*/anat</code>, <code>sub-*/func</code>, participants.tsv</td></tr>
+<tr><td>Import to BIDS</td><td>DICOM or NIfTI folders</td><td>BIDS dataset: <code>sub-*/anat</code>, <code>sub-*/func</code>, participants.tsv</td></tr>
 <tr><td>Data check</td><td>BIDS dataset or derivatives</td><td>nothing (a table on screen)</td></tr>
 <tr><td>Preprocessing</td><td>BIDS dataset</td><td><code>derivatives/seecat</code>: preprocessed, denoised and smoothed BOLD, masks, confounds, T1w tissue maps, VBM maps, QC reports, exclusion list</td></tr>
 <tr><td>fMRIPrep denoising</td><td><code>derivatives/fmriprep</code></td><td><code>derivatives/seecat</code>, as above without the anatomical outputs</td></tr>

@@ -11,7 +11,7 @@
 <tr><td><code>seecat.save_config(cfg, 'file.json')</code></td><td>save a configuration</td></tr>
 <tr><td><code>S = seecat.run(cfg)</code></td><td>run a pipeline; <code>S</code> is the summary table (one row per unit)</td></tr>
 <tr><td><code>seecat.run('file.json')</code></td><td>run a saved configuration</td></tr>
-<tr><td><code>seecat.bids.scan_dicom(dir)</code>, <code>seecat.bids.from_dicom(dir, bids)</code></td><td>DICOM to BIDS</td></tr>
+<tr><td><code>seecat.bids.scan_dicom(dir)</code>, <code>seecat.bids.from_dicom(dir, bids)</code>, <code>seecat.bids.scan_nifti(dir)</code>, <code>seecat.bids.from_nifti(dir, bids)</code>, <code>seecat.bids.plan_rules(plan, file)</code></td><td>Import to BIDS</td></tr>
 <tr><td><code>R = seecat.qc.runs(folder, 'raw')</code></td><td>Data check table</td></tr>
 <tr><td><code>seecat.qc.exclusion_list(folder)</code></td><td>read the QC exclusion list with metrics; <code>(folder, 'set', ids, exclude, notes)</code> changes it</td></tr>
 <tr><td><code>seecat.viewer(file, ...)</code></td><td>open the viewer with maps</td></tr>
@@ -232,7 +232,7 @@ seecat_work/                               work files (next to the output folder
 <h3>Coming from SeeCAT 1.x</h3>
 <table>
 <tr><th>1.x</th><th>2.0</th></tr>
-<tr><td>folders by processing stage (<code>FunRaw</code>, <code>FunImgARW…</code>)</td><td>a BIDS dataset; DICOM to BIDS converts DICOM folders</td></tr>
+<tr><td>folders by processing stage (<code>FunRaw</code>, <code>FunImgARW…</code>)</td><td>a BIDS dataset; Import to BIDS converts DICOM folders and organises NIfTI folders such as <code>FunRaw</code>/<code>T1Raw</code></td></tr>
 <tr><td>preprocessing through external toolbox functions</td><td>Preprocessing with SPM only; outputs in <code>derivatives/seecat</code></td></tr>
 <tr><td>VoxDeg</td><td>Degree (same definition: thresholded correlations, binary and weighted)</td></tr>
 <tr><td>FuncConnect</td><td>Seed FC (spheres and masks, r and Fisher z)</td></tr>

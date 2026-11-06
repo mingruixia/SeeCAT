@@ -6,21 +6,21 @@ function smoke(outDir, statMap, series)
 %   smoke(..., 'sub-01/func/..._desc-preproc_bold.nii.gz')   % also the 4D data check
 if ~exist(outDir, 'dir'), mkdir(outDir); end
 app = SeeCAT();
-for name = {'Preprocessing', 'fMRIPrep denoising', 'Seed FC', 'Degree', 'Statistics', 'DICOM to BIDS'}
+for name = {'Preprocessing', 'fMRIPrep denoising', 'Seed FC', 'Degree', 'Statistics', 'Import to BIDS'}
     app.select(name{1});
     drawnow; pause(1);
     exportapp(app.fig, fullfile(outDir, ['launcher_' strrep(name{1}, ' ', '_') '.png']));
 end
-info = findall(app.fig, 'Type', 'uiimage', 'Tooltip', 'About this option');   % DICOM to BIDS is showing
+info = findall(app.fig, 'Type', 'uiimage', 'Tooltip', 'About this option');   % Import to BIDS is showing
 if numel(info) ~= 5
-    error('smoke:dicom', 'DICOM to BIDS has %d info icons, not 5.', numel(info));
+    error('smoke:dicom', 'Import to BIDS has %d info icons, not 5.', numel(info));
 end
 for h = info'
     h.ImageClickedFcn(h, []);
     txt = cellfun(@(t) char(join(string(t), newline)), get(findall(app.fig, 'Type', 'uilabel'), 'Text'), ...
         'UniformOutput', false);
     if ~any(startsWith(txt, 'Default:  ('))
-        error('smoke:dicom', 'An info icon on DICOM to BIDS shows no help.');
+        error('smoke:dicom', 'An info icon on Import to BIDS shows no help.');
     end
 end
 app.select('Preprocessing');

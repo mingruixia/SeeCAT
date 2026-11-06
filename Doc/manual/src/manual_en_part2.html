@@ -1,36 +1,83 @@
 <h2>The modules</h2>
 <p>Each section below describes one page: what it is for, how it works, every option (the tables are generated from the software, so they show exactly what the window offers), what it reads and writes, and how to run it from a script. Options marked <span class="tag">advanced</span> appear after ticking <b>Show advanced options</b>. Options shared by several pages (denoising, censoring, quality control, output, selection, run) are described once, in sections 6.12 to 6.15.</p>
 
-<h3>DICOM to BIDS</h3>
-<p>Converts DICOM files into a BIDS dataset with dcm2niix. It reads the DICOM headers to find subjects, visits and series, names each series by rules, and writes the images with their JSON sidecars into the BIDS layout.</p>
-{{IMG dicom_page.png | DICOM to BIDS after Find subjects: the layout it recognised and one line per subject.}}
+<h3>Import to BIDS</h3>
+<p>Puts the data you have into a BIDS dataset. Point it at a folder of DICOM files, which are converted with dcm2niix (bundled), or of NIfTI images. NIfTI images may be scanner or imaging-platform exports with .json sidecars, or older .nii, .nii.gz or .img data without them; they are organised as they are. SeeCAT finds the subjects, visits and images and proposes a BIDS name for every image. You can correct the names before anything is written. The source folder is only read.</p>
+{{IMG import_page.png | Import to BIDS after Preview names on a NIfTI export: every image with its proposed BIDS name (the bids column can be edited), and the images left out with the reason.}}
 
-<h4>How subjects, sessions and series are found</h4>
+<h4>Working with it</h4>
 <ol>
-<li><b>Reading headers.</b> SeeCAT reads the first and last file of every folder that holds DICOM files (a fast reader of the header up to the series fields; other files, such as .txt or .nii, are ignored). A folder whose first and last files belong to different people is reported as an error.</li>
-<li><b>Subjects.</b> Folders with the same PatientID belong to one subject. The subject is named after the folder that holds all of that person's folders and no one else's, keeping letters and digits (<code>S_001</code> → <code>sub-S001</code>). When IDs are missing or anonymised (e.g. <code>anonymous</code>, <code>xxxx</code>, <code>0000</code>), the folder tree decides. Layouts that work include one folder per subject (<code>S001/…</code>), modality folders with subject folders inside (<code>T1/S001</code>, <code>REST/S001</code>) and deeper trees (<code>S001/visit1/T1</code>). <b>Find subjects</b> shows the layout it recognised and the subjects before anything is converted.</li>
-<li><b>Sessions.</b> A subject scanned in one visit (one DICOM study) gets no session folder. Several visits become <code>ses-1</code>, <code>ses-2</code>, … by scan date; the assignment is kept in <code>code/seecat/from_dicom_sessions.tsv</code> so a later visit gets the next number.</li>
-<li><b>Series.</b> dcm2niix converts each subject; every series is named by the first rule that matches its sidecar. The default rules take a 3D T1-weighted image (MPRAGE, SPGR, BRAVO, …) as <code>anat/…_T1w</code> and resting-state BOLD (series names containing rest, rsfMRI, or RS as a word) as <code>func/…_task-rest_bold</code>. A resting run must also be a 2D EPI with at least 20 volumes. Series that match no rule are listed, not copied.</li>
-<li><b>Writing.</b> Images go to <code>sub-&lt;label&gt;/[ses-&lt;label&gt;/]anat|func</code> as .nii.gz with their sidecars; <code>dataset_description.json</code> is written if missing and participants.tsv gets the new subjects. Images already present are kept, so converting again only adds what is missing. A table of every series and what happened to it is written to <code>code/seecat/</code>.</li>
+<li>Give the <b>Source folder</b> and the <b>BIDS folder</b>. The BIDS folder must lie outside the source folder. Leave Subject, Session and Rules empty to begin with.</li>
+<li><b>Preview names</b> writes nothing. The Log shows the layout it recognised (for example <i>subjects from folder names at level 1 (e.g. sub173_zhangsan → sub-173)</i>). The Summary table lists every image with its subject, session, series, description, source, proposed <code>bids</code> name and a note: how it was named, or why it is left out.</li>
+<li>Check the <code>bids</code> column. To change a name, edit the path. To leave an image out, empty it. A single-band reference follows its BOLD run when the run is renamed or left out.</li>
+<li><b>Convert</b> uses the table as it is shown.</li>
+<li><b>Save as rules</b> turns the checked names into a rules file and puts it in Rules. Preview and Convert then name every subject's images the same way; run them on the whole study.</li>
+</ol>
+
+<h4>How subjects, sessions and images are found</h4>
+<ol>
+<li><b>DICOM or NIfTI.</b> A folder with NIfTI images below it (outside <code>derivatives</code>) is imported from them; otherwise its DICOM files are converted.</li>
+<li><b>Subjects, NIfTI.</b> SeeCAT tries these in order:
+<ol>
+<li><code>sub-&lt;label&gt;</code> folders.</li>
+<li>The shallowest level of folders whose names all look like IDs. Such names contain a digit and are not dates, session names or series folders such as <code>07_rest</code>. This covers one folder per subject (<code>S001/…</code>), modality folders with subject folders inside (<code>FunRaw/S001</code>, <code>T1Raw/S001</code>) and exports by visit and series (<code>sub173_zhangsan/2026-10-13T11_09_18/functional/07_…</code>).</li>
+<li>IDs at the start of the file names (<code>S01_rest.nii</code>).</li>
+<li>The PatientID of the sidecars.</li>
+<li>The source folder's own name.</li>
+</ol>
+The label keeps the ID and drops a name written after it (<code>sub173_zhangsan</code> → <code>173</code>, <code>S_001</code> → <code>S001</code>). For any other layout, <code>'subject_pattern'</code> takes a regular expression with one token, e.g. <code>'Subj_(\d+)'</code>.</li>
+<li><b>Subjects, DICOM.</b> SeeCAT reads the first and last file of every folder with DICOM files. Folders with the same PatientID are one subject, named after the folder that holds all of that person's folders and no one else's. When IDs are missing or anonymised, the folder tree decides. A folder whose first and last files belong to different people is an error.</li>
+<li><b>Sessions.</b> Folders named <code>ses-&lt;label&gt;</code>, <code>pre</code>, <code>post</code>, <code>baseline</code>, <code>followup</code>, <code>visit1</code>, <code>v1</code> or <code>t1</code> give the session. Otherwise images are grouped into scanning visits by the study in the sidecars or headers, or by date folders. A subject with one visit gets no session folder. Several visits become <code>ses-1</code>, <code>ses-2</code>, … by date; the assignment is kept in <code>code/seecat/from_dicom_sessions.tsv</code>, so a later visit gets the next number.</li>
+<li><b>Names.</b> The first rule that matches an image names it (see Rules below). The default rules take a 3D T1-weighted image (MPRAGE, SPGR, BRAVO, …) as <code>anat/…_T1w</code> and resting-state BOLD (rest, rsfMRI, or RS as a word) as <code>…_task-rest_bold</code>. Images that no rule names are recognised as follows:
+<ul>
+<li><b>Task BOLD</b>: 2D EPI with 20 or more volumes. The task comes from the series name without its trailing number, which becomes the run: <code>Math_AI_trust3</code> → <code>task-mathaitrust_run-3</code>. Scanner words such as BOLD, EPI or MB are dropped from the name.</li>
+<li><b>Field maps</b>: series named fieldmap, fmap, B0 map, topup or SE-EPI. Gradient-echo field maps become <code>magnitude1</code>, <code>magnitude2</code> and <code>phasediff</code>, with <code>EchoTime1</code> and <code>EchoTime2</code> taken from the magnitudes. Spin-echo EPI field maps become <code>epi</code> with <code>dir-AP</code>, <code>PA</code>, … from the series name or the phase-encoding direction.</li>
+<li><b>Single-band references</b> (SBRef, <code>…_SB1</code>, one volume) become the <code>sbref</code> of the next BOLD run of the visit with the same slice grid.</li>
+<li><b>Diffusion</b>: images with .bval/.bvec become <code>dwi</code>.</li>
+<li><b>Left out</b>, with the reason in the note: localizers, phase and derived images, and the copy of a T1w without distortion correction (ImageType ND) when the corrected one is there. Anything else is reported, not copied.</li>
+</ul></li>
+<li><b>Runs, echoes and IntendedFor.</b> Several series with the same name in a session get <code>run-1</code>, <code>run-2</code>, … in series order. The echoes of one series get <code>echo-1</code>, … A field map set is used by the BOLD runs (and their sbrefs) acquired after it and before the next set; they are written to its <code>IntendedFor</code> as <code>bids::</code> paths.</li>
+<li><b>Images without a sidecar</b> get their description from the folders and the file name, and the volume count and TR from the header. The <code>'tr'</code> option gives the TR when the header has none. A folder of numbered 3D images (<code>f0001.nii</code>, <code>f0002.nii</code>, …: ten or more of one size) is one run and is written as one 4D image. Analyze .img/.hdr pairs are written as NIfTI.</li>
+<li><b>Writing.</b>
+<ul>
+<li>Images go to <code>sub-&lt;label&gt;/[ses-&lt;label&gt;/]anat|func|fmap|dwi</code> as .nii.gz with their sidecars.</li>
+<li>Sidecars are copied without the person's name, ID, birth date and other identifying fields. participants.tsv gets the subject, with <code>sex</code> and <code>age</code> at the scan when the sidecars give them.</li>
+<li><code>dataset_description.json</code> is written if missing.</li>
+<li>Images already in the dataset are kept, so importing again only adds what is missing.</li>
+<li>A table of every image and what happened to it is written to <code>code/seecat/from_nifti_sub-&lt;label&gt;.tsv</code> (or <code>from_dicom_…</code>). In this table the subject's folder is shown as <code>sub-&lt;label&gt;</code>, so names in folder names stay out of the dataset.</li>
+</ul></li>
 </ol>
 
 <h4>Options</h4>
 <table>
 <tr><th>Option</th><th>Batch</th><th>Default</th><th>Meaning</th></tr>
-<tr><td>DICOM folder</td><td><code>from_dicom(dicom_dir, bids_dir)</code></td><td>(required)</td><td>The folder with the DICOM files, in any of the layouts above: one subject, or a folder of subjects.</td></tr>
-<tr><td>BIDS folder</td><td><code>bids_dir</code></td><td>(required)</td><td>The BIDS dataset to write into; created if missing.</td></tr>
-<tr><td>Subject</td><td><code>'sub', '01'</code></td><td>empty</td><td>Given: everything in the DICOM folder is this subject. Empty: subjects are found as described above.</td></tr>
-<tr><td>Session</td><td><code>'ses', 'pre'</code></td><td>empty</td><td>Given: every image goes into this session. Empty: no session for one visit, <code>ses-1</code>, <code>ses-2</code>, … for several.</td></tr>
-<tr><td>Rules (JSON)</td><td><code>'rules', 'my_rules.json'</code></td><td>empty</td><td>A JSON list of naming rules; each matches sidecar fields with regular expressions (case-insensitive) and gives datatype, suffix and entities. Empty: T1w and resting BOLD.</td></tr>
+<tr><td>Source folder</td><td><code>from_nifti(src, bids_dir)</code>, <code>from_dicom(src, bids_dir)</code></td><td>(required)</td><td>DICOM files or NIfTI images, in any of the layouts above: one subject, or a folder of subjects.</td></tr>
+<tr><td>BIDS folder</td><td><code>bids_dir</code></td><td>(required)</td><td>The BIDS dataset to write into, outside the source folder; created if missing.</td></tr>
+<tr><td>Subject</td><td><code>'sub', '01'</code></td><td>empty</td><td>Given: everything in the source folder is this subject. Empty: subjects are found as described above.</td></tr>
+<tr><td>Session</td><td><code>'ses', 'pre'</code></td><td>empty</td><td>Given: every image goes into this session. Empty: from session folders, or no session for one visit and <code>ses-1</code>, <code>ses-2</code>, … for several.</td></tr>
+<tr><td>Rules (JSON)</td><td><code>'rules', 'my_rules.json'</code></td><td>empty</td><td>A JSON list of naming rules (written by Save as rules, or by hand). Empty: the built-in recognition described above.</td></tr>
 </table>
-<p>A rules file that also keeps a task run and a field map:</p>
-<pre><code>[{"match": {"SeriesDescription": "rest"}, "datatype": "func", "suffix": "bold", "entities": {"task": "rest"}},
- {"match": {"SeriesDescription": "nback"}, "datatype": "func", "suffix": "bold", "entities": {"task": "nback"}},
+<p>In scripts, a few more options are available:</p>
+<ul>
+<li><code>'dryrun', true</code> returns the plan without writing.</li>
+<li><code>'names', P</code> uses an edited plan (a table or TSV file).</li>
+<li><code>'auto', false</code> names only what rules name.</li>
+<li><code>'tr', 2</code> gives the TR for BOLD without one.</li>
+<li><code>'link', true</code> makes hard links instead of copies for .nii.gz images on the same drive. This saves space, but the dataset and the export then share those files.</li>
+<li><code>'subject_pattern'</code> finds the subject label in the path with a regular expression.</li>
+</ul>
+<p>A rule matches sidecar fields with regular expressions (case-insensitive) and gives <code>datatype</code>, <code>suffix</code> and <code>entities</code>, or <code>"skip": true</code> to leave the image out. Besides the sidecar fields, <code>Path</code> (where the image is in the source folder) and <code>Volumes</code> can be matched. The first rule that matches wins.</p>
+<pre><code>[{"match": {"SeriesDescription": "^IGT\\d*$"}, "datatype": "func", "suffix": "bold", "entities": {"task": "gambling"}},
+ {"match": {"SeriesDescription": "^Alchemy$"}, "skip": true},
+ {"match": {"Path": "^FunRaw/"}, "datatype": "func", "suffix": "bold", "entities": {"task": "rest"}},
  {"match": {"SeriesDescription": "mprage|t1"}, "datatype": "anat", "suffix": "T1w"}]</code></pre>
 <h4>Script</h4>
-<pre><code>seecat.bids.scan_dicom('D:/study/dicom')                   % what would be converted
-S = seecat.bids.from_dicom('D:/study/dicom', 'D:/study/bids');   % convert every subject
-S = seecat.bids.from_dicom('D:/study/dicom/S_001', 'D:/study/bids', 'sub', '01', 'ses', 'pre');</code></pre>
+<pre><code>P = seecat.bids.from_nifti('D:/study/export', 'D:/study/bids', 'dryrun', true);   % the plan
+P.bids{strcmp(P.description, 'IGT1')} = 'sub-173/func/sub-173_task-gambling_run-1_bold.nii.gz';
+T = seecat.bids.from_nifti('D:/study/export', 'D:/study/bids', 'names', P);       % with the edits
+seecat.bids.plan_rules(P, 'D:/study/bids_rules.json');                            % for the next subjects
+T = seecat.bids.from_nifti('D:/study/export2', 'D:/study/bids', 'rules', 'D:/study/bids_rules.json');
+S = seecat.bids.from_dicom('D:/study/dicom', 'D:/study/bids');                    % DICOM, every subject</code></pre>
 
 <h3>Data check</h3>
 <p>Before preprocessing, look at what the dataset holds. Data check lists every BOLD run of a BIDS dataset (or of a derivatives folder) with its number of volumes and TR; where a confounds table exists (after preprocessing or fMRIPrep), also the mean and largest framewise displacement and the frames flagged for motion. Runs with mean FD above 0.25 mm or more than 20 % of frames flagged are highlighted. <b>Open in viewer</b> steps through the volumes of the selected run with its motion trace; <b>QC report</b> opens its report.</p>

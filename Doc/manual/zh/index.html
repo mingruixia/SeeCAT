@@ -107,7 +107,7 @@ figcaption{color:var(--mute);font-size:14px;margin-top:6px}
 <li class="l3"><a href="#s4-3">4.3 输入框的类型</a></li>
 <li class="l2"><a href="#s5">5 整体工作流程</a></li>
 <li class="l2"><a href="#s6">6 各模块详解</a></li>
-<li class="l3"><a href="#s6-1">6.1 DICOM to BIDS</a></li>
+<li class="l3"><a href="#s6-1">6.1 Import to BIDS</a></li>
 <li class="l3"><a href="#s6-2">6.2 Data check</a></li>
 <li class="l3"><a href="#s6-3">6.3 Preprocessing</a></li>
 <li class="l3"><a href="#s6-4">6.4 fMRIPrep denoising</a></li>
@@ -173,7 +173,7 @@ figcaption{color:var(--mute);font-size:14px;margin-top:6px}
 <li class="l3"><a href="#s4-3">4.3 输入框的类型</a></li>
 <li class="l2"><a href="#s5">5 整体工作流程</a></li>
 <li class="l2"><a href="#s6">6 各模块详解</a></li>
-<li class="l3"><a href="#s6-1">6.1 DICOM to BIDS</a></li>
+<li class="l3"><a href="#s6-1">6.1 Import to BIDS</a></li>
 <li class="l3"><a href="#s6-2">6.2 Data check</a></li>
 <li class="l3"><a href="#s6-3">6.3 Preprocessing</a></li>
 <li class="l3"><a href="#s6-4">6.4 fMRIPrep denoising</a></li>
@@ -219,7 +219,7 @@ figcaption{color:var(--mute);font-size:14px;margin-top:6px}
 <h3 id="s1-1"><span class="num">1.1</span> SeeCAT 能做什么</h3>
 <p>SeeCAT 覆盖静息态研究的完整流程：</p>
 <ul>
-<li><b>DICOM to BIDS</b>：用内置的 dcm2niix 把各种常见目录结构的 DICOM 转成 BIDS 数据集，自动识别被试和 session。</li>
+<li><b>Import to BIDS</b>：把各种常见目录结构的 DICOM（用内置 dcm2niix 转换）或 NIfTI 图像（扫描仪和平台导出的带说明文件的数据，或旧的 .nii/.img 数据）整理成 BIDS 数据集。自动识别被试和 session，为任务态 run、场图和单带参考像命名，写入前列出全部名称供修改。</li>
 <li><b>Data check</b>：列出每个 BOLD run 的帧数、TR 和头动。</li>
 <li><b>Preprocessing（预处理）</b>：去除前几帧、层间时间校正、头动校正、配准、统一分割、标准化到 MNI 空间、结合带通滤波的干扰信号回归、高头动帧处理、平滑；并计算 MRIQC 图像质量指标，生成每个 run 和整个研究的 HTML 质量报告，可选输出 VBM 图。</li>
 <li><b>fMRIPrep denoising</b>：对 fMRIPrep 的输出做同样的去噪、剔除和平滑。</li>
@@ -349,7 +349,7 @@ seecat.run('my_prep.json');                  % 运行从窗口保存的配置</c
 
 <h3 id="s4-1"><span class="num">4.1</span> 布局</h3>
 <ul>
-<li><b>页面</b>（左侧），分三组：PREPARE（DICOM to BIDS、Preprocessing、fMRIPrep denoising）、ANALYSE（Seed FC、Degree、Gradients、Harmonize、Statistics）和 RESULTS（Viewer、Data check、QC reports）。Manual 打开本手册，About 显示版本。</li>
+<li><b>页面</b>（左侧），分三组：PREPARE（Import to BIDS、Preprocessing、fMRIPrep denoising）、ANALYSE（Seed FC、Degree、Gradients、Harmonize、Statistics）和 RESULTS（Viewer、Data check、QC reports）。Manual 打开本手册，About 显示版本。</li>
 <li><b>选项</b>（中间），分为 Input、Preprocessing、Denoising 等卡片。上方标签跳到对应卡片。勾选 <b>Show advanced options</b> 显示大多数研究保持默认值的高级选项。</li>
 <li><b>说明</b>（右侧）：点击选项的 <b>i</b> 图标或编辑该选项，即显示它的作用、示例、默认值和批处理字段名。鼠标停在选项上会显示简短提示。</li>
 <li><b>运行面板</b>（右下）：Run、Stop、各单元的进度和状态（Ready、Running、Finished、Failed）。</li>
@@ -376,10 +376,10 @@ seecat.run('my_prep.json');                  % 运行从窗口保存的配置</c
 </table>
 
 <h2 id="s5"><span class="num">5</span> 整体工作流程</h2>
-<div class="flow"><span>DICOM</span><i>→</i><span>DICOM to BIDS</span><i>→</i><span>BIDS 数据集</span><i>→</i><span>Data check</span><i>→</i><span>Preprocessing</span><i>→</i><span>QC reports</span><i>→</i><span>Seed FC / Degree / Gradients</span><i>→</i><span>Harmonize（多中心）</span><i>→</i><span>Statistics</span><i>→</i><span>Viewer</span></div>
+<div class="flow"><span>DICOM / NIfTI</span><i>→</i><span>Import to BIDS</span><i>→</i><span>BIDS 数据集</span><i>→</i><span>Data check</span><i>→</i><span>Preprocessing</span><i>→</i><span>QC reports</span><i>→</i><span>Seed FC / Degree / Gradients</span><i>→</i><span>Harmonize（多中心）</span><i>→</i><span>Statistics</span><i>→</i><span>Viewer</span></div>
 <p>使用 fMRIPrep 的用户从 <b>fMRIPrep denoising</b> 开始，代替 Preprocessing；之后的步骤完全相同。各步骤的输入输出如下：</p>
 <table><thead><tr><th>步骤</th><th>读取</th><th>写出</th></tr></thead>
-<tr><td>DICOM to BIDS</td><td>DICOM 文件夹</td><td>BIDS 数据集：<code>sub-*/anat</code>、<code>sub-*/func</code>、participants.tsv</td></tr>
+<tr><td>Import to BIDS</td><td>DICOM 或 NIfTI 文件夹</td><td>BIDS 数据集：<code>sub-*/anat</code>、<code>sub-*/func</code>、participants.tsv</td></tr>
 <tr><td>Data check</td><td>BIDS 数据集或 derivatives</td><td>不写文件（屏幕上的表格）</td></tr>
 <tr><td>Preprocessing</td><td>BIDS 数据集</td><td><code>derivatives/seecat</code>：预处理、去噪和平滑后的 BOLD，mask，混杂变量，T1 组织图，VBM 图，QC 报告，剔除列表</td></tr>
 <tr><td>fMRIPrep denoising</td><td><code>derivatives/fmriprep</code></td><td><code>derivatives/seecat</code>，同上但没有结构像输出</td></tr>
@@ -394,35 +394,82 @@ seecat.run('my_prep.json');                  % 运行从窗口保存的配置</c
 <h2 id="s6"><span class="num">6</span> 各模块详解</h2>
 <p>本章每节介绍一个页面：用途、原理、全部选项（表格由软件本身生成，与窗口中的选项完全一致）、读写的文件，以及脚本用法。标有 <span class="tag">高级</span> 的选项需勾选 <b>Show advanced options</b> 后才显示。多个页面共用的选项（去噪、剔除、质量控制、输出、选择、运行）集中在 6.12 至 6.15 节介绍。</p>
 
-<h3 id="s6-1"><span class="num">6.1</span> DICOM to BIDS</h3>
-<p>用 dcm2niix 把 DICOM 文件转换为 BIDS 数据集。它读取 DICOM 头信息识别被试、扫描次数和序列，按规则给每个序列命名，并把图像及其 JSON 说明文件写成 BIDS 结构。</p>
-<figure><a href="../images/dicom_page.png"><img src="../images/dicom_page.png" alt="点击 Find subjects 后的 DICOM to BIDS 页：识别出的目录结构和每个被试一行。" loading="lazy"></a><figcaption><b>图 4.</b> 点击 Find subjects 后的 DICOM to BIDS 页：识别出的目录结构和每个被试一行。</figcaption></figure>
+<h3 id="s6-1"><span class="num">6.1</span> Import to BIDS</h3>
+<p>把现有数据整理成 BIDS 数据集。源文件夹可以是 DICOM 文件，用内置的 dcm2niix 转换；也可以是 NIfTI 图像，按原样整理。NIfTI 图像可以是扫描仪或影像平台导出的带 .json 说明文件的数据，也可以是没有说明文件的旧 .nii、.nii.gz 或 .img 数据。SeeCAT 自动识别被试、扫描次数和图像，为每张图像拟定 BIDS 名称；写入任何文件之前，都可以先修改这些名称。源文件夹只读不改。</p>
+<figure><a href="../images/import_page.png"><img src="../images/import_page.png" alt="对 NIfTI 导出数据点击 Preview names 后的 Import to BIDS 页：每张图像及其拟定的 BIDS 名称（bids 列可编辑），以及不整理的图像和原因。" loading="lazy"></a><figcaption><b>图 4.</b> 对 NIfTI 导出数据点击 Preview names 后的 Import to BIDS 页：每张图像及其拟定的 BIDS 名称（bids 列可编辑），以及不整理的图像和原因。</figcaption></figure>
 
-<h4>如何识别被试、session 和序列</h4>
+<h4>使用步骤</h4>
 <ol>
-<li><b>读取头信息。</b>SeeCAT 读取每个含 DICOM 文件的文件夹中第一个和最后一个文件（只快速读取到序列字段为止；.txt、.nii 等其他文件被忽略）。第一个和最后一个文件属于不同的人时，报告为错误。</li>
-<li><b>被试。</b>PatientID 相同的文件夹属于同一个被试。被试名取自"包含此人全部文件夹、且不含他人文件夹"的那一级文件夹，只保留字母和数字（<code>S_001</code> → <code>sub-S001</code>）。PatientID 缺失或已匿名化（如 <code>anonymous</code>、<code>xxxx</code>、<code>0000</code>）时按目录树判断。支持的结构包括：每个被试一个文件夹（<code>S001/…</code>）、先按模态再按被试（<code>T1/S001</code>、<code>REST/S001</code>）以及更深的层级（<code>S001/visit1/T1</code>）。<b>Find subjects</b> 在转换前显示识别出的结构和被试。</li>
-<li><b>Session。</b>只扫描一次（一个 DICOM study）的被试不设 session 文件夹；多次扫描按日期依次为 <code>ses-1</code>、<code>ses-2</code> ……，对应关系保存在 <code>code/seecat/from_dicom_sessions.tsv</code> 中，之后新的扫描会得到下一个编号。</li>
-<li><b>序列。</b>dcm2niix 转换每个被试；每个序列按第一条与其 sidecar 匹配的规则命名。默认规则把三维 T1 加权像（MPRAGE、SPGR、BRAVO 等）命名为 <code>anat/…_T1w</code>，把静息态 BOLD（序列名含 rest、rsfMRI 或独立的 RS）命名为 <code>func/…_task-rest_bold</code>。静息态 run 还必须是二维 EPI、至少 20 帧。不匹配任何规则的序列只列出，不复制。</li>
-<li><b>写出。</b>图像以 .nii.gz 及其 sidecar 写到 <code>sub-&lt;label&gt;/[ses-&lt;label&gt;/]anat|func</code>；缺少 <code>dataset_description.json</code> 时会写出，participants.tsv 会加入新被试。已存在的图像保留，因此重新转换只补充缺少的部分。每个序列的去向记录在 <code>code/seecat/</code> 的表格中。</li>
+<li>填写 <b>Source folder</b>（源文件夹）和 <b>BIDS folder</b>（目标文件夹）。BIDS 文件夹必须在源文件夹之外。Subject、Session 和 Rules 先留空。</li>
+<li>点击 <b>Preview names</b>，不写任何文件。Log 显示识别出的目录结构（例如 <i>subjects from folder names at level 1 (e.g. sub173_zhangsan → sub-173)</i>）。Summary 表格每张图像一行，列出被试、session、序列号、序列描述、来源路径、拟定的 <code>bids</code> 名称和说明：如何命名的，或为何不整理。</li>
+<li>检查 <code>bids</code> 列。要改名，直接修改路径；要不整理某张图像，清空它。单带参考像（sbref）会随所属的 BOLD run 一起改名，run 被清空时它也一并去掉。</li>
+<li>点击 <b>Convert</b>，按表格当前内容整理。</li>
+<li>点击 <b>Save as rules</b>，把核对过的名称存为规则文件并填入 Rules。之后 Preview 和 Convert 会对每个被试按同样的方式命名，可以用它整理整个研究的数据。</li>
+</ol>
+
+<h4>如何识别被试、session 和图像</h4>
+<ol>
+<li><b>DICOM 还是 NIfTI。</b>文件夹下（<code>derivatives</code> 之外）有 NIfTI 图像时按 NIfTI 整理，否则转换其中的 DICOM 文件。</li>
+<li><b>被试（NIfTI）。</b>SeeCAT 依次尝试：
+<ol>
+<li><code>sub-&lt;label&gt;</code> 文件夹。</li>
+<li>名称都像编号的最浅一级文件夹。这类名称含数字，且不是日期、session 名称，也不是 <code>07_rest</code> 这样的序列文件夹。这一条覆盖每个被试一个文件夹（<code>S001/…</code>）、先按模态再按被试（<code>FunRaw/S001</code>、<code>T1Raw/S001</code>），以及按扫描次数和序列导出的结构（<code>sub173_zhangsan/2026-10-13T11_09_18/functional/07_…</code>）。</li>
+<li>文件名开头的编号（<code>S01_rest.nii</code>）。</li>
+<li>说明文件中的 PatientID。</li>
+<li>源文件夹本身的名称。</li>
+</ol>
+标签只保留编号，去掉编号后面的姓名（<code>sub173_zhangsan</code> → <code>173</code>，<code>S_001</code> → <code>S001</code>）。其他结构可以用 <code>'subject_pattern'</code> 指定一个含一个捕获组的正则表达式，例如 <code>'Subj_(\d+)'</code>。</li>
+<li><b>被试（DICOM）。</b>SeeCAT 读取每个含 DICOM 文件的文件夹中第一个和最后一个文件。PatientID 相同的文件夹属于同一被试，被试名取自包含此人全部文件夹、且不含他人文件夹的那一级。PatientID 缺失或已匿名化时按目录树判断。一个文件夹的第一个和最后一个文件属于不同的人时报错。</li>
+<li><b>Session。</b>名为 <code>ses-&lt;label&gt;</code>、<code>pre</code>、<code>post</code>、<code>baseline</code>、<code>followup</code>、<code>visit1</code>、<code>v1</code>、<code>t1</code> 等的文件夹直接给出 session。否则按扫描次数分组，依据是说明文件或头信息中的 study，或日期文件夹。只扫描一次的被试不设 session 文件夹；多次扫描按日期依次为 <code>ses-1</code>、<code>ses-2</code> ……，对应关系保存在 <code>code/seecat/from_dicom_sessions.tsv</code>，以后新的扫描得到下一个编号。</li>
+<li><b>命名。</b>第一条匹配的规则给图像命名（见下文的 Rules）。默认规则把三维 T1 加权像（MPRAGE、SPGR、BRAVO 等）命名为 <code>anat/…_T1w</code>，把静息态 BOLD（序列名含 rest、rsfMRI 或独立的 RS）命名为 <code>…_task-rest_bold</code>。没有规则命名的图像按以下方式识别：
+<ul>
+<li><b>任务态 BOLD</b>：二维 EPI，至少 20 帧。任务名取自去掉末尾编号的序列名，末尾编号作为 run：<code>Math_AI_trust3</code> → <code>task-mathaitrust_run-3</code>。BOLD、EPI、MB 等扫描术语不进入任务名。</li>
+<li><b>场图</b>：序列名含 fieldmap、fmap、B0 map、topup 或 SE-EPI。梯度回波场图命名为 <code>magnitude1</code>、<code>magnitude2</code> 和 <code>phasediff</code>，并由两张幅值图写入 <code>EchoTime1</code>、<code>EchoTime2</code>。自旋回波 EPI 场图命名为 <code>epi</code>，<code>dir-AP</code>、<code>PA</code> 等取自序列名或相位编码方向。</li>
+<li><b>单带参考像</b>（SBRef、<code>…_SB1</code>，单个体积）：命名为同一次扫描中紧随其后、层面网格相同的 BOLD run 的 <code>sbref</code>。</li>
+<li><b>弥散像</b>：带 .bval/.bvec 的图像命名为 <code>dwi</code>。</li>
+<li><b>不整理</b>（原因写在说明中）：定位像、相位图和衍生图像；以及 T1 未做畸变校正的副本（ImageType 含 ND），前提是校正后的那份也在。其他图像只列出，不复制。</li>
+</ul></li>
+<li><b>Run、echo 和 IntendedFor。</b>同一 session 中名称相同的多个序列按序列号依次为 <code>run-1</code>、<code>run-2</code> ……；同一序列的多个回波为 <code>echo-1</code> 等。一组场图供它之后、下一组场图之前采集的 BOLD run（及其 sbref）使用，这些 run 以 <code>bids::</code> 路径写入场图的 <code>IntendedFor</code>。</li>
+<li><b>没有说明文件的图像</b>：序列描述取自文件夹和文件名，帧数和 TR 取自图像头。图像头中没有 TR 时，用 <code>'tr'</code> 选项给出。一个文件夹中带编号的三维图像（<code>f0001.nii</code>、<code>f0002.nii</code> ……，同样大小且不少于十个）视为一个 run，写成一个四维图像。Analyze 格式的 .img/.hdr 写成 NIfTI。</li>
+<li><b>写出。</b>
+<ul>
+<li>图像以 .nii.gz 及其说明文件写到 <code>sub-&lt;label&gt;/[ses-&lt;label&gt;/]anat|func|fmap|dwi</code>。</li>
+<li>说明文件复制时去掉姓名、ID、出生日期等可识别个人身份的字段。participants.tsv 加入该被试；说明文件中有相应信息时，同时写入 <code>sex</code> 和扫描时的 <code>age</code>。</li>
+<li>缺少 <code>dataset_description.json</code> 时会写出。</li>
+<li>已在数据集中的图像保留，因此重新整理只补充缺少的部分。</li>
+<li>每张图像的去向记录在 <code>code/seecat/from_nifti_sub-&lt;label&gt;.tsv</code>（DICOM 为 <code>from_dicom_…</code>）。表中被试文件夹显示为 <code>sub-&lt;label&gt;</code>，文件夹名中的姓名不会进入数据集。</li>
+</ul></li>
 </ol>
 
 <h4>选项</h4>
 <table><thead><tr><th>选项</th><th>批处理</th><th>默认</th><th>含义</th></tr></thead>
-<tr><td>DICOM folder</td><td><code>from_dicom(dicom_dir, bids_dir)</code></td><td>（必填）</td><td>DICOM 文件所在文件夹，可以是上述任何结构：一个被试，或包含多个被试的文件夹。</td></tr>
-<tr><td>BIDS folder</td><td><code>bids_dir</code></td><td>（必填）</td><td>要写入的 BIDS 数据集；不存在时自动创建。</td></tr>
-<tr><td>Subject</td><td><code>'sub', '01'</code></td><td>空</td><td>填写：DICOM 文件夹中的全部数据都属于该被试。留空：按上述方法自动识别。</td></tr>
-<tr><td>Session</td><td><code>'ses', 'pre'</code></td><td>空</td><td>填写：所有图像放入该 session。留空：一次扫描不设 session，多次扫描为 <code>ses-1</code>、<code>ses-2</code> ……</td></tr>
-<tr><td>Rules (JSON)</td><td><code>'rules', 'my_rules.json'</code></td><td>空</td><td>命名规则的 JSON 列表；每条用正则表达式（不区分大小写）匹配 sidecar 字段，给出 datatype、suffix 和实体。留空：T1 和静息态 BOLD。</td></tr>
+<tr><td>Source folder</td><td><code>from_nifti(src, bids_dir)</code>、<code>from_dicom(src, bids_dir)</code></td><td>（必填）</td><td>DICOM 文件或 NIfTI 图像所在文件夹，可以是上述任何结构：一个被试，或包含多个被试的文件夹。</td></tr>
+<tr><td>BIDS folder</td><td><code>bids_dir</code></td><td>（必填）</td><td>要写入的 BIDS 数据集，须在源文件夹之外；不存在时自动创建。</td></tr>
+<tr><td>Subject</td><td><code>'sub', '01'</code></td><td>空</td><td>填写：源文件夹中的全部数据都属于该被试。留空：按上述方法自动识别。</td></tr>
+<tr><td>Session</td><td><code>'ses', 'pre'</code></td><td>空</td><td>填写：所有图像放入该 session。留空：取自 session 文件夹；没有时，一次扫描不设 session，多次扫描为 <code>ses-1</code>、<code>ses-2</code> ……</td></tr>
+<tr><td>Rules (JSON)</td><td><code>'rules', 'my_rules.json'</code></td><td>空</td><td>命名规则的 JSON 列表（由 Save as rules 生成，或手写）。留空：使用上述内置识别。</td></tr>
 </table>
-<p>同时保留一个任务态 run 的规则文件示例：</p>
-<pre><code>[{"match": {"SeriesDescription": "rest"}, "datatype": "func", "suffix": "bold", "entities": {"task": "rest"}},
- {"match": {"SeriesDescription": "nback"}, "datatype": "func", "suffix": "bold", "entities": {"task": "nback"}},
+<p>脚本中还有以下选项：</p>
+<ul>
+<li><code>'dryrun', true</code>：只返回整理计划，不写文件。</li>
+<li><code>'names', P</code>：使用修改过的计划（表格或 TSV 文件）。</li>
+<li><code>'auto', false</code>：只按规则命名。</li>
+<li><code>'tr', 2</code>：为没有 TR 的 BOLD 指定 TR。</li>
+<li><code>'link', true</code>：同一磁盘上的 .nii.gz 图像用硬链接代替复制，节省空间，但数据集与导出数据共用这些文件。</li>
+<li><code>'subject_pattern'</code>：用正则表达式从路径中取出被试标签。</li>
+</ul>
+<p>每条规则用正则表达式（不区分大小写）匹配说明文件字段，给出 <code>datatype</code>、<code>suffix</code> 和实体；或用 <code>"skip": true</code> 表示不整理。除说明文件字段外，还可以匹配 <code>Path</code>（图像在源文件夹中的位置）和 <code>Volumes</code>（帧数）。第一条匹配的规则生效。</p>
+<pre><code>[{"match": {"SeriesDescription": "^IGT\\d*$"}, "datatype": "func", "suffix": "bold", "entities": {"task": "gambling"}},
+ {"match": {"SeriesDescription": "^Alchemy$"}, "skip": true},
+ {"match": {"Path": "^FunRaw/"}, "datatype": "func", "suffix": "bold", "entities": {"task": "rest"}},
  {"match": {"SeriesDescription": "mprage|t1"}, "datatype": "anat", "suffix": "T1w"}]</code></pre>
 <h4>脚本</h4>
-<pre><code>seecat.bids.scan_dicom('D:/study/dicom')                   % 查看将转换哪些数据
-S = seecat.bids.from_dicom('D:/study/dicom', 'D:/study/bids');   % 转换全部被试
-S = seecat.bids.from_dicom('D:/study/dicom/S_001', 'D:/study/bids', 'sub', '01', 'ses', 'pre');</code></pre>
+<pre><code>P = seecat.bids.from_nifti('D:/study/export', 'D:/study/bids', 'dryrun', true);   % 整理计划
+P.bids{strcmp(P.description, 'IGT1')} = 'sub-173/func/sub-173_task-gambling_run-1_bold.nii.gz';
+T = seecat.bids.from_nifti('D:/study/export', 'D:/study/bids', 'names', P);       % 按修改后的计划整理
+seecat.bids.plan_rules(P, 'D:/study/bids_rules.json');                            % 存为规则，用于其他被试
+T = seecat.bids.from_nifti('D:/study/export2', 'D:/study/bids', 'rules', 'D:/study/bids_rules.json');
+S = seecat.bids.from_dicom('D:/study/dicom', 'D:/study/bids');                    % DICOM，全部被试</code></pre>
 
 <h3 id="s6-2"><span class="num">6.2</span> Data check</h3>
 <p>预处理之前，先看看数据集里有什么。Data check 列出 BIDS 数据集（或 derivatives 文件夹）中每个 BOLD run 的帧数和 TR；如果有混杂变量表（预处理或 fMRIPrep 之后），还给出平均和最大帧间位移，以及被标记为高头动的帧。平均 FD 超过 0.25 mm 或超过 20% 的帧被标记的 run 会高亮显示。<b>Open in viewer</b> 逐帧查看所选 run 及其头动曲线；<b>QC report</b> 打开它的质量报告。</p>
@@ -452,7 +499,7 @@ S = seecat.bids.from_dicom('D:/study/dicom/S_001', 'D:/study/bids', 'sub', '01',
 <div class="note"><b>为什么先去噪再平滑，为什么回归量也要滤波。</b>在平滑后的数据上回归干扰信号，会混入邻近组织的信号；只对数据带通而不对回归量带通，会把已去除的信号重新引入（Hallquist et al. 2013；Lindquist et al. 2019）。SeeCAT 对两者都滤波并一起拟合。高头动帧在滤波前插值，否则尖峰会扩散到相邻帧；插值得到的帧不会被后续统计使用（Power et al. 2014）。</div>
 
 <h4>输入选项</h4>
-<div class="wrap"><table class="params"><thead><tr><th>选项（界面）</th><th>批处理字段</th><th>默认值</th><th>含义与设置建议</th></tr></thead><tbody><tr><td>BIDS 文件夹<br><span class="en">BIDS folder</span></td><td><code>bids_dir</code></td><td><code>（空）</code></td><td><p>原始 BIDS 数据集，如 D:/study/bids，内含 sub-&lt;label&gt;/anat/*_T1w.nii.gz、sub-&lt;label&gt;/func/*_bold.nii.gz 及其 JSON 说明文件（DICOM to BIDS 写出的就是这种结构）。</p><p>未设置 Output folder 时，结果写到 &lt;BIDS 文件夹&gt;/derivatives/seecat。建议先用 Data check 查看各 run 的帧数、TR 和头动。</p></td></tr><tr><td>去除前几帧<br><span class="en">Dummy scans</span> <span class="tag">高级</span></td><td><code>dummy_scans</code></td><td><code>auto</code></td><td><p>从每个 run 开头去掉的、信号尚未稳定的帧。</p><p>auto（默认）：从数据中检测（开头若干帧中，全脑平均信号为离群值的帧）。扫描仪已经丢弃过的不会再算。<br>一个数字，如 5：每个 run 都去掉这么多帧。</p></td></tr></tbody></table></div>
+<div class="wrap"><table class="params"><thead><tr><th>选项（界面）</th><th>批处理字段</th><th>默认值</th><th>含义与设置建议</th></tr></thead><tbody><tr><td>BIDS 文件夹<br><span class="en">BIDS folder</span></td><td><code>bids_dir</code></td><td><code>（空）</code></td><td><p>原始 BIDS 数据集，如 D:/study/bids，内含 sub-&lt;label&gt;/anat/*_T1w.nii.gz、sub-&lt;label&gt;/func/*_bold.nii.gz 及其 JSON 说明文件（Import to BIDS 写出的就是这种结构）。</p><p>未设置 Output folder 时，结果写到 &lt;BIDS 文件夹&gt;/derivatives/seecat。建议先用 Data check 查看各 run 的帧数、TR 和头动。</p></td></tr><tr><td>去除前几帧<br><span class="en">Dummy scans</span> <span class="tag">高级</span></td><td><code>dummy_scans</code></td><td><code>auto</code></td><td><p>从每个 run 开头去掉的、信号尚未稳定的帧。</p><p>auto（默认）：从数据中检测（开头若干帧中，全脑平均信号为离群值的帧）。扫描仪已经丢弃过的不会再算。<br>一个数字，如 5：每个 run 都去掉这么多帧。</p></td></tr></tbody></table></div>
 <h4>预处理选项</h4>
 <div class="wrap"><table class="params"><thead><tr><th>选项（界面）</th><th>批处理字段</th><th>默认值</th><th>含义与设置建议</th></tr></thead><tbody><tr><td>层间时间校正<br><span class="en">Slice timing</span></td><td><code>slice_timing.enable</code></td><td><code>true</code></td><td><p>校正同一帧内各层采集时间的差异（SPM slice timing）。默认开启；需要各层采集时间（sidecar 中的 SliceTiming，由 dcm2niix 写出）。不知道层采集时间时请关闭。</p></td></tr><tr><td>各层采集时间（秒）<br><span class="en">Slice times (s)</span> <span class="tag">高级</span></td><td><code>slice_timing.slice_times</code></td><td><code>auto</code></td><td><p>auto（默认）：读取每个 run 的 JSON sidecar 中的 SliceTiming。<br>否则按层的顺序给出每层的采集时间（秒），如 4 层隔层采集、TR 2 秒：0 1 0.5 1.5。</p></td></tr><tr><td>参考时间<br><span class="en">Reference time</span> <span class="tag">高级</span></td><td><code>slice_timing.ref_time</code></td><td><code>middle</code></td><td><p>所有层对齐到的 TR 内的时刻。</p><p>middle（默认）：TR 的一半。<br>一个秒数，如 0 表示对齐到第一层。</p></td></tr><tr><td>头动校正<br><span class="en">Realign</span> <span class="tag">高级</span></td><td><code>realign.enable</code></td><td><code>true</code></td><td><p>把每一帧对齐，校正头动（SPM realign）。六个头动参数和 FD 写入混杂变量表。请保持开启。</p></td></tr><tr><td>对齐到平均像<br><span class="en">Register to mean</span> <span class="tag">高级</span></td><td><code>realign.register_to_mean</code></td><td><code>true</code></td><td><p>两轮：先对齐到第一帧，再对齐到对齐后各帧的平均像（SPM 的 register to mean）。更准确，默认开启。</p></td></tr><tr><td>空间标准化<br><span class="en">Normalise</span> <span class="tag">高级</span></td><td><code>normalise.enable</code></td><td><code>true</code></td><td><p>把数据变换到 MNI 空间（SPM 的 IXI549Space 模板），使不同被试可以逐体素比较。组分析需要这一步。</p></td></tr><tr><td>标准化方法<br><span class="en">Normalisation</span></td><td><code>normalise.method</code></td><td><code>auto</code></td><td><p>auto（默认）：有 T1 像时用 segment，否则用 epi。<br>segment：先把平均 EPI 与 T1 配准，再对 T1 做 SPM 统一分割，把得到的形变场用于功能像。最准确。<br>epi：把平均 EPI 直接标准化到组织模板；用于没有 T1 的数据。</p><p class="choices"><code>auto</code> | <code>segment</code> | <code>epi</code></p></td></tr><tr><td>体素大小（mm）<br><span class="en">Voxel size (mm)</span></td><td><code>normalise.voxel_size</code></td><td><code>3</code></td><td><p>标准化后数据的体素大小，如 3（默认）或 2。体素越小，占用的磁盘和内存越多（2 mm 的数据量是 3 mm 的 3.4 倍），Degree 也会慢很多。三个数字（如 3 3 4）可给各轴不同大小。</p></td></tr><tr><td>边界框<br><span class="en">Bounding box</span> <span class="tag">高级</span></td><td><code>normalise.bounding_box</code></td><td><code>[-90 -126 -72;90 90 108]</code></td><td><p>标准化图像的范围（MNI 毫米），[xmin ymin zmin; xmax ymax zmax]。默认 [-90 -126 -72; 90 90 108]，即 SPM 的边界框，包含全脑和小脑。</p></td></tr></tbody></table></div>
 <h4>VBM 选项</h4>
@@ -869,7 +916,7 @@ Done: 26 ok, 0 skipped, 0 failed.</code></pre>
 <tr><td><code>seecat.save_config(cfg, 'file.json')</code></td><td>保存配置</td></tr>
 <tr><td><code>S = seecat.run(cfg)</code></td><td>运行流程；<code>S</code> 是汇总表（每个单元一行）</td></tr>
 <tr><td><code>seecat.run('file.json')</code></td><td>运行保存的配置</td></tr>
-<tr><td><code>seecat.bids.scan_dicom(dir)</code>、<code>seecat.bids.from_dicom(dir, bids)</code></td><td>DICOM 转 BIDS</td></tr>
+<tr><td><code>seecat.bids.scan_dicom(dir)</code>、<code>seecat.bids.from_dicom(dir, bids)</code>、<code>seecat.bids.scan_nifti(dir)</code>、<code>seecat.bids.from_nifti(dir, bids)</code>、<code>seecat.bids.plan_rules(plan, file)</code></td><td>整理为 BIDS（Import to BIDS）</td></tr>
 <tr><td><code>R = seecat.qc.runs(folder, 'raw')</code></td><td>Data check 的表格</td></tr>
 <tr><td><code>seecat.qc.exclusion_list(folder)</code></td><td>读取带指标的 QC 剔除列表；<code>(folder, 'set', ids, exclude, notes)</code> 修改它</td></tr>
 <tr><td><code>seecat.viewer(file, ...)</code></td><td>用查看器打开图像</td></tr>
@@ -1086,7 +1133,7 @@ seecat_work/                               工作文件（在输出文件夹旁�
 <div class="wrap"><table><thead><tr><th>批处理字段</th><th>选项</th><th>页面</th></tr></thead><tbody><tr><td><code>align</code></td><td>对齐方式</td><td>Gradients</td></tr><tr><td><code>alpha</code></td><td>扩散 alpha</td><td>Gradients, Statistics</td></tr><tr><td><code>atlas</code></td><td>图谱</td><td>Gradients</td></tr><tr><td><code>bids_dir</code></td><td>BIDS 文件夹</td><td>Preprocessing</td></tr><tr><td><code>cdt_p</code></td><td>团块形成阈值 p</td><td>Statistics</td></tr><tr><td><code>censor.after</code></td><td>后延帧数</td><td>Preprocessing, fMRIPrep</td></tr><tr><td><code>censor.before</code></td><td>前延帧数</td><td>Preprocessing, fMRIPrep</td></tr><tr><td><code>censor.fd_threshold</code></td><td>FD 阈值（mm）</td><td>Preprocessing, fMRIPrep</td></tr><tr><td><code>censor.interp</code></td><td>插值方法</td><td>Preprocessing, fMRIPrep</td></tr><tr><td><code>censor.min_minutes</code></td><td>最少分钟数</td><td>Preprocessing, fMRIPrep</td></tr><tr><td><code>censor.mode</code></td><td>高头动帧处理</td><td>Preprocessing, fMRIPrep</td></tr><tr><td><code>contrasts</code></td><td>对比</td><td>Statistics</td></tr><tr><td><code>covariates</code></td><td>需保留的协变量</td><td>Harmonize, Statistics</td></tr><tr><td><code>covbat_var</code></td><td>CovBat 方差比例</td><td>Harmonize</td></tr><tr><td><code>denoise.acompcor_n</code></td><td>aCompCor 成分数</td><td>Preprocessing, fMRIPrep</td></tr><tr><td><code>denoise.band</code></td><td>带通（Hz）</td><td>Preprocessing, fMRIPrep</td></tr><tr><td><code>denoise.detrend_order</code></td><td>去趋势阶数</td><td>Preprocessing, fMRIPrep</td></tr><tr><td><code>denoise.enable</code></td><td>去噪</td><td>Preprocessing, fMRIPrep</td></tr><tr><td><code>denoise.regressors</code></td><td>回归量</td><td>Preprocessing, fMRIPrep</td></tr><tr><td><code>design</code></td><td>设计</td><td>Statistics</td></tr><tr><td><code>design_tsv</code></td><td>设计表（TSV）</td><td>Statistics</td></tr><tr><td><code>distance_edges</code></td><td>距离分段（mm）</td><td>Degree</td></tr><tr><td><code>dummy_scans</code></td><td>去除前几帧</td><td>Preprocessing, fMRIPrep</td></tr><tr><td><code>exclude_local_mm</code></td><td>排除近距离连接（mm）</td><td>Degree</td></tr><tr><td><code>factor</code></td><td>因素</td><td>Statistics</td></tr><tr><td><code>fmriprep_dir</code></td><td>fMRIPrep 文件夹</td><td>fMRIPrep</td></tr><tr><td><code>inference</code></td><td>多重比较校正</td><td>Statistics</td></tr><tr><td><code>input</code></td><td>输入序列</td><td>Seed FC, Degree, Gradients</td></tr><tr><td><code>input_dir</code></td><td>Derivatives 文件夹</td><td>Seed FC, Degree, Gradients, Harmonize, Statistics</td></tr><tr><td><code>keep_work</code></td><td>保留工作文件</td><td>Preprocessing, fMRIPrep, Seed FC, Degree, Gradients, Harmonize, Statistics</td></tr><tr><td><code>kernel</code></td><td>亲和度</td><td>Gradients</td></tr><tr><td><code>label</code></td><td>输出标签</td><td>Harmonize</td></tr><tr><td><code>levels</code></td><td>水平</td><td>Statistics</td></tr><tr><td><code>maps</code></td><td>被试图</td><td>Harmonize, Statistics</td></tr><tr><td><code>mask</code></td><td>Mask</td><td>Degree, Gradients, Harmonize, Statistics</td></tr><tr><td><code>masks.csf_threshold</code></td><td>脑脊液概率阈值</td><td>Preprocessing</td></tr><tr><td><code>masks.erode_mm</code></td><td>腐蚀半径（mm）</td><td>Preprocessing</td></tr><tr><td><code>masks.wm_threshold</code></td><td>白质概率阈值</td><td>Preprocessing</td></tr><tr><td><code>method</code></td><td>方法</td><td>Harmonize</td></tr><tr><td><code>n_components</code></td><td>成分数</td><td>Gradients</td></tr><tr><td><code>n_maps</code></td><td>输出图数</td><td>Gradients</td></tr><tr><td><code>n_workers</code></td><td>并行 worker 数</td><td>Preprocessing, fMRIPrep, Seed FC, Degree, Gradients, Statistics</td></tr><tr><td><code>name</code></td><td>分析名称</td><td>Statistics</td></tr><tr><td><code>node_size</code></td><td>节点大小（mm）</td><td>Gradients</td></tr><tr><td><code>nodes</code></td><td>节点</td><td>Gradients</td></tr><tr><td><code>nonlinear</code></td><td>非线性协变量</td><td>Harmonize</td></tr><tr><td><code>normalise.bounding_box</code></td><td>边界框</td><td>Preprocessing</td></tr><tr><td><code>normalise.enable</code></td><td>空间标准化</td><td>Preprocessing</td></tr><tr><td><code>normalise.method</code></td><td>标准化方法</td><td>Preprocessing</td></tr><tr><td><code>normalise.voxel_size</code></td><td>体素大小（mm）</td><td>Preprocessing</td></tr><tr><td><code>output_dir</code></td><td>输出文件夹</td><td>Preprocessing, fMRIPrep, Seed FC, Degree, Gradients, Harmonize, Statistics</td></tr><tr><td><code>overwrite</code></td><td>覆盖已完成的单元</td><td>Preprocessing, fMRIPrep, Seed FC, Degree, Gradients, Harmonize, Statistics</td></tr><tr><td><code>participants</code></td><td>participants.tsv</td><td>Harmonize, Statistics</td></tr><tr><td><code>qc.iqm</code></td><td>图像质量指标（IQM）</td><td>Preprocessing</td></tr><tr><td><code>qc.iqm_z</code></td><td>IQM 离群 z 值</td><td>Preprocessing, fMRIPrep</td></tr><tr><td><code>qc.max_mean_fd</code></td><td>最大平均 FD（mm）</td><td>Preprocessing, fMRIPrep</td></tr><tr><td><code>qc.max_rotation</code></td><td>最大转动（度）</td><td>Preprocessing, fMRIPrep</td></tr><tr><td><code>qc.max_translation</code></td><td>最大平动（mm）</td><td>Preprocessing, fMRIPrep</td></tr><tr><td><code>qc.min_brain_dice</code></td><td>最小脑区 Dice</td><td>Preprocessing, fMRIPrep</td></tr><tr><td><code>qc.min_coverage</code></td><td>最小全脑覆盖率</td><td>Preprocessing, fMRIPrep</td></tr><tr><td><code>qc_exclusions</code></td><td>排除 QC 剔除的数据</td><td>Seed FC, Degree, Gradients, Harmonize, Statistics</td></tr><tr><td><code>realign.enable</code></td><td>头动校正</td><td>Preprocessing</td></tr><tr><td><code>realign.register_to_mean</code></td><td>对齐到平均像</td><td>Preprocessing</td></tr><tr><td><code>ref_site</code></td><td>参考中心</td><td>Harmonize</td></tr><tr><td><code>regressors</code></td><td>回归变量</td><td>Statistics</td></tr><tr><td><code>res</code></td><td>分辨率标签</td><td>fMRIPrep, Seed FC, Degree, Gradients</td></tr><tr><td><code>runs</code></td><td>Run</td><td>Preprocessing, fMRIPrep, Seed FC, Degree, Gradients</td></tr><tr><td><code>seeds</code></td><td>种子点</td><td>Seed FC</td></tr><tr><td><code>sessions</code></td><td>Session</td><td>Preprocessing, fMRIPrep, Seed FC, Degree, Gradients</td></tr><tr><td><code>sign</code></td><td>相关方向</td><td>Degree</td></tr><tr><td><code>site</code></td><td>中心列</td><td>Harmonize</td></tr><tr><td><code>slice_timing.enable</code></td><td>层间时间校正</td><td>Preprocessing</td></tr><tr><td><code>slice_timing.ref_time</code></td><td>参考时间</td><td>Preprocessing</td></tr><tr><td><code>slice_timing.slice_times</code></td><td>各层采集时间（秒）</td><td>Preprocessing</td></tr><tr><td><code>smooth.enable</code></td><td>平滑</td><td>Preprocessing, fMRIPrep</td></tr><tr><td><code>smooth.fwhm</code></td><td>FWHM（mm）</td><td>Preprocessing, fMRIPrep</td></tr><tr><td><code>smooth_fwhm</code></td><td>平滑结果图</td><td>Degree</td></tr><tr><td><code>space</code></td><td>空间</td><td>fMRIPrep, Seed FC, Degree, Gradients</td></tr><tr><td><code>sparsity</code></td><td>稀疏度</td><td>Gradients</td></tr><tr><td><code>spline_df</code></td><td>样条自由度</td><td>Harmonize</td></tr><tr><td><code>subjects</code></td><td>被试</td><td>Preprocessing, fMRIPrep, Seed FC, Degree, Gradients, Harmonize, Statistics</td></tr><tr><td><code>task</code></td><td>任务</td><td>Preprocessing, fMRIPrep, Seed FC, Degree, Gradients</td></tr><tr><td><code>tfce.E</code></td><td>TFCE 范围指数 E</td><td>Statistics</td></tr><tr><td><code>tfce.H</code></td><td>TFCE 高度指数 H</td><td>Statistics</td></tr><tr><td><code>tfce.n_perm</code></td><td>TFCE 置换次数</td><td>Statistics</td></tr><tr><td><code>threshold</code></td><td>r 阈值</td><td>Degree</td></tr><tr><td><code>two_tailed</code></td><td>双侧（每个 t 对比 alpha/2）</td><td>Statistics</td></tr><tr><td><code>variance</code></td><td>方差</td><td>Statistics</td></tr><tr><td><code>vbm.enable</code></td><td>VBM 图</td><td>Preprocessing</td></tr><tr><td><code>vbm.fwhm</code></td><td>VBM 平滑（mm）</td><td>Preprocessing</td></tr><tr><td><code>vbm.modulated</code></td><td>调制</td><td>Preprocessing</td></tr><tr><td><code>weight</code></td><td>指标</td><td>Degree</td></tr><tr><td><code>work_dir</code></td><td>工作文件夹</td><td>Preprocessing, fMRIPrep, Seed FC, Degree, Gradients, Harmonize, Statistics</td></tr><tr><td><code>zscore</code></td><td>同时输出 z 分数图</td><td>Degree</td></tr></tbody></table></div>
 <h3 id="s12-2"><span class="num">12.2</span> 从 SeeCAT 1.x 迁移</h3>
 <table><thead><tr><th>1.x</th><th>2.0</th></tr></thead>
-<tr><td>按处理阶段分的目录（<code>FunRaw</code>、<code>FunImgARW…</code>）</td><td>BIDS 数据集；DICOM to BIDS 可转换 DICOM 文件夹</td></tr>
+<tr><td>按处理阶段分的目录（<code>FunRaw</code>、<code>FunImgARW…</code>）</td><td>BIDS 数据集；Import to BIDS 可转换 DICOM 文件夹，也可整理 <code>FunRaw</code>/<code>T1Raw</code> 这类 NIfTI 文件夹</td></tr>
 <tr><td>通过外部工具箱的函数预处理</td><td>只用 SPM 的 Preprocessing；输出在 <code>derivatives/seecat</code></td></tr>
 <tr><td>VoxDeg</td><td>Degree（定义相同：阈值化的相关，二值和加权）</td></tr>
 <tr><td>FuncConnect</td><td>Seed FC（球形和 mask 种子点，r 和 Fisher z）</td></tr>

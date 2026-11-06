@@ -11,7 +11,7 @@
 <tr><td><code>seecat.save_config(cfg, 'file.json')</code></td><td>保存配置</td></tr>
 <tr><td><code>S = seecat.run(cfg)</code></td><td>运行流程；<code>S</code> 是汇总表（每个单元一行）</td></tr>
 <tr><td><code>seecat.run('file.json')</code></td><td>运行保存的配置</td></tr>
-<tr><td><code>seecat.bids.scan_dicom(dir)</code>、<code>seecat.bids.from_dicom(dir, bids)</code></td><td>DICOM 转 BIDS</td></tr>
+<tr><td><code>seecat.bids.scan_dicom(dir)</code>、<code>seecat.bids.from_dicom(dir, bids)</code>、<code>seecat.bids.scan_nifti(dir)</code>、<code>seecat.bids.from_nifti(dir, bids)</code>、<code>seecat.bids.plan_rules(plan, file)</code></td><td>整理为 BIDS（Import to BIDS）</td></tr>
 <tr><td><code>R = seecat.qc.runs(folder, 'raw')</code></td><td>Data check 的表格</td></tr>
 <tr><td><code>seecat.qc.exclusion_list(folder)</code></td><td>读取带指标的 QC 剔除列表；<code>(folder, 'set', ids, exclude, notes)</code> 修改它</td></tr>
 <tr><td><code>seecat.viewer(file, ...)</code></td><td>用查看器打开图像</td></tr>
@@ -232,7 +232,7 @@ seecat_work/                               工作文件（在输出文件夹旁�
 <h3>从 SeeCAT 1.x 迁移</h3>
 <table>
 <tr><th>1.x</th><th>2.0</th></tr>
-<tr><td>按处理阶段分的目录（<code>FunRaw</code>、<code>FunImgARW…</code>）</td><td>BIDS 数据集；DICOM to BIDS 可转换 DICOM 文件夹</td></tr>
+<tr><td>按处理阶段分的目录（<code>FunRaw</code>、<code>FunImgARW…</code>）</td><td>BIDS 数据集；Import to BIDS 可转换 DICOM 文件夹，也可整理 <code>FunRaw</code>/<code>T1Raw</code> 这类 NIfTI 文件夹</td></tr>
 <tr><td>通过外部工具箱的函数预处理</td><td>只用 SPM 的 Preprocessing；输出在 <code>derivatives/seecat</code></td></tr>
 <tr><td>VoxDeg</td><td>Degree（定义相同：阈值化的相关，二值和加权）</td></tr>
 <tr><td>FuncConnect</td><td>Seed FC（球形和 mask 种子点，r 和 Fisher z）</td></tr>

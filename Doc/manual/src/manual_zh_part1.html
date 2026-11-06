@@ -5,7 +5,7 @@
 <h3>SeeCAT 能做什么</h3>
 <p>SeeCAT 覆盖静息态研究的完整流程：</p>
 <ul>
-<li><b>DICOM to BIDS</b>：用内置的 dcm2niix 把各种常见目录结构的 DICOM 转成 BIDS 数据集，自动识别被试和 session。</li>
+<li><b>Import to BIDS</b>：把各种常见目录结构的 DICOM（用内置 dcm2niix 转换）或 NIfTI 图像（扫描仪和平台导出的带说明文件的数据，或旧的 .nii/.img 数据）整理成 BIDS 数据集。自动识别被试和 session，为任务态 run、场图和单带参考像命名，写入前列出全部名称供修改。</li>
 <li><b>Data check</b>：列出每个 BOLD run 的帧数、TR 和头动。</li>
 <li><b>Preprocessing（预处理）</b>：去除前几帧、层间时间校正、头动校正、配准、统一分割、标准化到 MNI 空间、结合带通滤波的干扰信号回归、高头动帧处理、平滑；并计算 MRIQC 图像质量指标，生成每个 run 和整个研究的 HTML 质量报告，可选输出 VBM 图。</li>
 <li><b>fMRIPrep denoising</b>：对 fMRIPrep 的输出做同样的去噪、剔除和平滑。</li>
@@ -137,7 +137,7 @@ seecat.run('my_prep.json');                  % 运行从窗口保存的配置</c
 
 <h3>布局</h3>
 <ul>
-<li><b>页面</b>（左侧），分三组：PREPARE（DICOM to BIDS、Preprocessing、fMRIPrep denoising）、ANALYSE（Seed FC、Degree、Gradients、Harmonize、Statistics）和 RESULTS（Viewer、Data check、QC reports）。Manual 打开本手册，About 显示版本。</li>
+<li><b>页面</b>（左侧），分三组：PREPARE（Import to BIDS、Preprocessing、fMRIPrep denoising）、ANALYSE（Seed FC、Degree、Gradients、Harmonize、Statistics）和 RESULTS（Viewer、Data check、QC reports）。Manual 打开本手册，About 显示版本。</li>
 <li><b>选项</b>（中间），分为 Input、Preprocessing、Denoising 等卡片。上方标签跳到对应卡片。勾选 <b>Show advanced options</b> 显示大多数研究保持默认值的高级选项。</li>
 <li><b>说明</b>（右侧）：点击选项的 <b>i</b> 图标或编辑该选项，即显示它的作用、示例、默认值和批处理字段名。鼠标停在选项上会显示简短提示。</li>
 <li><b>运行面板</b>（右下）：Run、Stop、各单元的进度和状态（Ready、Running、Finished、Failed）。</li>
@@ -165,11 +165,11 @@ seecat.run('my_prep.json');                  % 运行从窗口保存的配置</c
 </table>
 
 <h2>整体工作流程</h2>
-<div class="flow"><span>DICOM</span><i>→</i><span>DICOM to BIDS</span><i>→</i><span>BIDS 数据集</span><i>→</i><span>Data check</span><i>→</i><span>Preprocessing</span><i>→</i><span>QC reports</span><i>→</i><span>Seed FC / Degree / Gradients</span><i>→</i><span>Harmonize（多中心）</span><i>→</i><span>Statistics</span><i>→</i><span>Viewer</span></div>
+<div class="flow"><span>DICOM / NIfTI</span><i>→</i><span>Import to BIDS</span><i>→</i><span>BIDS 数据集</span><i>→</i><span>Data check</span><i>→</i><span>Preprocessing</span><i>→</i><span>QC reports</span><i>→</i><span>Seed FC / Degree / Gradients</span><i>→</i><span>Harmonize（多中心）</span><i>→</i><span>Statistics</span><i>→</i><span>Viewer</span></div>
 <p>使用 fMRIPrep 的用户从 <b>fMRIPrep denoising</b> 开始，代替 Preprocessing；之后的步骤完全相同。各步骤的输入输出如下：</p>
 <table>
 <tr><th>步骤</th><th>读取</th><th>写出</th></tr>
-<tr><td>DICOM to BIDS</td><td>DICOM 文件夹</td><td>BIDS 数据集：<code>sub-*/anat</code>、<code>sub-*/func</code>、participants.tsv</td></tr>
+<tr><td>Import to BIDS</td><td>DICOM 或 NIfTI 文件夹</td><td>BIDS 数据集：<code>sub-*/anat</code>、<code>sub-*/func</code>、participants.tsv</td></tr>
 <tr><td>Data check</td><td>BIDS 数据集或 derivatives</td><td>不写文件（屏幕上的表格）</td></tr>
 <tr><td>Preprocessing</td><td>BIDS 数据集</td><td><code>derivatives/seecat</code>：预处理、去噪和平滑后的 BOLD，mask，混杂变量，T1 组织图，VBM 图，QC 报告，剔除列表</td></tr>
 <tr><td>fMRIPrep denoising</td><td><code>derivatives/fmriprep</code></td><td><code>derivatives/seecat</code>，同上但没有结构像输出</td></tr>

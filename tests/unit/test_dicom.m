@@ -269,11 +269,26 @@ tc.verifySubstring(row.note{1}, 'no SliceTiming');
 compareWithRef(tc, fullfile(tc.TestData.bids, row.bids{1}), fullfile(qa, 'Ref'));
 end
 
-function testDefaultRulesSkipEverythingUnknown(tc)
+function testWithoutAutoUnknownSeriesAreSkipped(tc)
 qa = fullfile(tc.TestData.qa, 'dcm_qa');
-T = quiet(@() seecat.bids.from_dicom(fullfile(qa, 'In', 'Orientation', 'axmb'), tc.TestData.bids, 'sub', '01'));
+T = quiet(@() seecat.bids.from_dicom(fullfile(qa, 'In', 'Orientation', 'axmb'), tc.TestData.bids, ...
+    'sub', '01', 'auto', false));
 tc.verifyTrue(all(cellfun(@isempty, T.bids)));
-tc.verifyTrue(all(strcmp(T.note, 'no rule matched')));
+tc.verifyTrue(all(startsWith(T.note, 'no rule matched')));
+end
+
+function testAutoNamesAndDryRun(tc)
+% Without rules, series that look like BOLD get a task from their name;
+% a dry run writes nothing
+qa = fullfile(tc.TestData.qa, 'dcm_qa');
+T = quiet(@() seecat.bids.from_dicom(fullfile(qa, 'In', 'Orientation', 'axmb'), tc.TestData.bids, ...
+    'sub', '01', 'dryrun', true));
+tc.verifyFalse(exist(tc.TestData.bids, 'dir') == 7);
+named = T.bids(~cellfun(@isempty, T.bids));
+for k = 1:numel(named)
+    tc.verifyNotEmpty(regexp(named{k}, '^sub-01/(func/sub-01_task-[a-z0-9]+(_run-\d+)?_(bold|sbref)|fmap/.*)\.nii\.gz$', 'once'), named{k});
+end
+tc.verifyEqual(numel(unique(named)), numel(named));
 end
 
 function testDefaultRestNames(tc)

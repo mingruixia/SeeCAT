@@ -18,7 +18,7 @@ Version 2.0 is a rewrite. It needs only SPM; it no longer uses DPABI or the
 - SPM25, or SPM12 r7771 or later.
 - Optional: BrainNet Viewer 2.0, for surface and network figures.
 
-dcm2niix (for DICOM to BIDS) is included in the release zip.
+dcm2niix (for importing DICOM) is included in the release zip.
 
 ## Install
 
@@ -77,12 +77,16 @@ seecat.viewer('group/.../..._stat-t_statmap.nii.gz')
 | `harmonize` | multi-site harmonisation of per-subject maps: ComBat (parametric, non-parametric, no EB, location only), ComBat-GAM, CovBat, linear regression |
 | `stat` | GLM group statistics (one-sample, two-sample, paired, ANOVA, regression) with RFT, FDR and TFCE (permutation) inference |
 
-DICOM to BIDS: `seecat.bids.from_dicom(dicom_dir, bids_dir)` finds the
-subjects from the DICOM headers and the folder tree (one folder per subject,
-one per modality with subject folders inside, deeper trees), names them
-after their folders and makes sessions from the scan dates;
-`seecat.bids.scan_dicom(dicom_dir)` shows what it finds. Give `'sub'` and
-`'ses'` to set the labels yourself.
+Import to BIDS: `seecat.bids.from_dicom(dicom_dir, bids_dir)` converts DICOM
+folders, and `seecat.bids.from_nifti(nifti_dir, bids_dir)` organises NIfTI
+images (scanner and platform exports with .json sidecars, or older .nii/.img
+data). Both find the subjects from the folder tree and the headers (one folder
+per subject, modality folders with subject folders inside, deeper trees),
+make sessions from session folders or scan dates, and name T1w, BOLD (task from
+the series name), field maps (with IntendedFor) and single-band references.
+`'dryrun', true` returns the names for checking; an edited plan goes back in
+with `'names'`, and `seecat.bids.plan_rules` saves it as rules for the next
+subjects. Give `'sub'` and `'ses'` to set the labels yourself.
 
 Each run writes an HTML QC report per subject and per dataset. The Data check
 page lists every BOLD run's volumes, TR and head motion, and the viewer steps

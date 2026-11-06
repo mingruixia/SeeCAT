@@ -7,7 +7,7 @@
       "advanced": false,
       "widget": "folder",
       "default": "",
-      "help": "The raw BIDS dataset, e.g. D:/study/bids, with sub-<label>/anat/*_T1w.nii.gz and sub-<label>/func/*_bold.nii.gz plus their JSON sidecars (DICOM to BIDS writes this).\n\nResults go to <BIDS folder>/derivatives/seecat unless Output folder is set. Use Data check first to see the runs, TR and head motion.",
+      "help": "The raw BIDS dataset, e.g. D:/study/bids, with sub-<label>/anat/*_T1w.nii.gz and sub-<label>/func/*_bold.nii.gz plus their JSON sidecars (Import to BIDS writes this).\n\nResults go to <BIDS folder>/derivatives/seecat unless Output folder is set. Use Data check first to see the runs, TR and head motion.",
       "choices": []
     },
     {

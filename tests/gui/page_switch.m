@@ -12,7 +12,7 @@ function problems = page_switch(qcFolder)
 if nargin < 1, qcFolder = ''; end
 app = SeeCAT();
 c = onCleanup(@() delete(app.fig));
-names = {'DICOM to BIDS', 'Preprocessing', 'fMRIPrep denoising', 'Seed FC', 'Degree', 'Gradients', ...
+names = {'Import to BIDS', 'Preprocessing', 'fMRIPrep denoising', 'Seed FC', 'Degree', 'Gradients', ...
     'Harmonize', 'Statistics', 'Viewer', 'Data check', 'QC reports'};
 pipes = {'', 'prep', 'fmriprep', 'fc', 'degree', 'gradient', 'harmonize', 'stat', '', '', ''};
 problems = {};

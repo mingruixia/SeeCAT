@@ -1,5 +1,5 @@
 {
-"*.bids_dir": {"label": "BIDS 文件夹", "help": "原始 BIDS 数据集，如 D:/study/bids，内含 sub-<label>/anat/*_T1w.nii.gz、sub-<label>/func/*_bold.nii.gz 及其 JSON 说明文件（DICOM to BIDS 写出的就是这种结构）。\n\n未设置 Output folder 时，结果写到 <BIDS 文件夹>/derivatives/seecat。建议先用 Data check 查看各 run 的帧数、TR 和头动。"},
+"*.bids_dir": {"label": "BIDS 文件夹", "help": "原始 BIDS 数据集，如 D:/study/bids，内含 sub-<label>/anat/*_T1w.nii.gz、sub-<label>/func/*_bold.nii.gz 及其 JSON 说明文件（Import to BIDS 写出的就是这种结构）。\n\n未设置 Output folder 时，结果写到 <BIDS 文件夹>/derivatives/seecat。建议先用 Data check 查看各 run 的帧数、TR 和头动。"},
 "prep.dummy_scans": {"label": "去除前几帧", "help": "从每个 run 开头去掉的、信号尚未稳定的帧。\n\nauto（默认）：从数据中检测（开头若干帧中，全脑平均信号为离群值的帧）。扫描仪已经丢弃过的不会再算。\n一个数字，如 5：每个 run 都去掉这么多帧。"},
 "*.slice_timing.enable": {"label": "层间时间校正", "help": "校正同一帧内各层采集时间的差异（SPM slice timing）。默认开启；需要各层采集时间（sidecar 中的 SliceTiming，由 dcm2niix 写出）。不知道层采集时间时请关闭。"},
 "*.slice_timing.slice_times": {"label": "各层采集时间（秒）", "help": "auto（默认）：读取每个 run 的 JSON sidecar 中的 SliceTiming。\n否则按层的顺序给出每层的采集时间（秒），如 4 层隔层采集、TR 2 秒：0 1 0.5 1.5。"},

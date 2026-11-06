@@ -1,7 +1,7 @@
 function make_shots(which)
 % MAKE_SHOTS  Screenshots of the manual, from the worked examples.
 %   make_shots            % all
-%   make_shots('viewer')  % one group: window, pages, run, qc, viewer
+%   make_shots('viewer')  % one group: window, pages, import, run, qc, viewer
 %
 % Needs a desktop session (windows are captured from the screen and checked
 % against exportapp),
@@ -16,6 +16,34 @@ run = 'D:/data/test_seecat/DIDA/manual_run';
 D = fullfile(run, 'derivatives', 'seecat');
 cfgs = fullfile(run, 'configs');
 pos = [40 40 1480 940];
+
+if any(strcmp(which, {'all', 'import'}))
+    % Import to BIDS: Preview names on a synthetic NIfTI export (no real names)
+    addpath(fullfile(repo, 'tests', 'data'));
+    demo = 'D:/data/test_seecat/nifti_demo';
+    if exist(demo, 'dir'), rmdir(demo, 's'); end
+    make_nifti_demo(fullfile(demo, 'export'), 'sub173_testname');
+    app = SeeCAT();
+    app.fig.Position = pos;
+    settle(app.fig);
+    app.select('Import to BIDS');
+    settle(app.fig);
+    e1 = byTip(app.fig, 'DICOM files or NIfTI images');
+    e1.Value = fullfile(demo, 'export');
+    e2 = byTip(app.fig, 'The BIDS dataset to write');
+    e2.Value = fullfile(demo, 'bids');
+    b = findall(app.fig, 'Type', 'uibutton', 'Text', 'Preview names');
+    b.ButtonPushedFcn(b, []);
+    settle(app.fig);
+    tb = findall(app.fig, 'Type', 'uitable');
+    tb = tb(arrayfun(@(t) istable(t.Data) && ismember('bids', t.Data.Properties.VariableNames), tb));
+    P = tb.Data;
+    tb.Data = [P(~cellfun(@isempty, P.bids), :); P(cellfun(@isempty, P.bids), :)];   % named images first
+    tb.ColumnWidth = {60, 60, 50, 170, 'auto', 330, 260};
+    settle(app.fig);
+    shot(app.fig, fullfile(img, 'import_page.png'));
+    delete(app.fig);
+end
 
 if any(strcmp(which, {'all', 'pages'}))
     app = SeeCAT();
@@ -50,18 +78,7 @@ if any(strcmp(which, {'all', 'pages'}))
         settle(app.fig);
         shot(app.fig, fullfile(img, pages{k, 2}));
     end
-    % DICOM to BIDS: Find subjects on the DICOM test folder
-    app.select('DICOM to BIDS');
-    settle(app.fig);
-    e1 = byTip(app.fig, 'One subject');
-    e1.Value = 'D:/data/test_seecat/dicom';
-    e2 = byTip(app.fig, 'The BIDS dataset to write');
-    e2.Value = 'D:/data/test_seecat/bids_example';
-    b = findall(app.fig, 'Type', 'uibutton', 'Text', 'Find subjects');
-    b.ButtonPushedFcn(b, []);
-    settle(app.fig);
-    shot(app.fig, fullfile(img, 'dicom_page.png'));
-    % Data check on the raw dataset (the DICOM page's log hidden)
+    % Data check on the raw dataset
     app.select('Data check');
     settle(app.fig);
     closeDrawer(app.fig);

@@ -1,5 +1,49 @@
 # Changelog
 
+## Unreleased: 2.1 development
+
+### Added
+- **Import to BIDS: NIfTI folders.** The DICOM to BIDS page is now Import
+  to BIDS. It takes DICOM folders as before, or NIfTI images: scanner and
+  platform exports with dcm2niix-style .json sidecars, or older data without
+  sidecars (.nii, .nii.gz, Analyze .img/.hdr, one 4D file or numbered 3D
+  volumes per run). The kind is found from the files. New functions:
+  - `seecat.bids.from_nifti`;
+  - `seecat.bids.scan_nifti`, which finds subjects in `sub-` folders, the
+    shallowest folder level named like IDs, IDs at the start of file
+    names, the PatientID, or a `subject_pattern`, and drops a name written
+    after the ID (`sub173_zhangsan` -> `sub-173`); sessions come from
+    session folders or the scanning visits;
+  - `seecat.bids.source_kind`.
+- **Built-in recognition for both kinds** (`seecat.bids.organize`, shared
+  with from_dicom; `'auto'`, default on):
+  - task BOLD named from the series (`Math_AI_trust3` -> `task-mathaitrust`
+    `run-3`);
+  - gradient-echo field maps as magnitude1/2 + phasediff with EchoTime1/2,
+    spin-echo EPI field maps as epi with dir;
+  - IntendedFor (`bids::` URIs) by acquisition order;
+  - single-band references as the sbref of the next run;
+  - localizers, phase and derived images, and the ND copy of a
+    distortion-corrected T1w, left out with the reason.
+- **Preview names, edit, Save as rules.** Preview names lists every image
+  with its proposed BIDS name without writing (`'dryrun', true`); names
+  edited or emptied in the Summary table are used by Convert (`'names'`).
+  `seecat.bids.plan_rules` (Save as rules) turns a checked plan into rules
+  for the next subjects. Rules may also match `Path` and `Volumes`, and
+  `"skip": true` leaves images out.
+- **Privacy in imported sidecars.** Sidecars are copied without the name,
+  ID, birth date and other identifying fields; participants.tsv gets sex and
+  age at the scan from them. The report in code/seecat shows the subject's
+  folder as `sub-<label>`.
+- `'link', true` (scripts): hard links instead of copies for .nii.gz images.
+- Tests: tests/unit/test_nifti.m on synthetic exports
+  (tests/data/make_nifti_demo.m); test_dicom covers auto naming and dry runs.
+
+### Changed
+- from_dicom names BOLD-like series that no rule names (`'auto', false`
+  restores the old behaviour) and its table has a `source` column.
+- The BIDS folder of a NIfTI import must lie outside the source folder.
+
 ## 2.0.0 (2026-11-06)
 
 ### Added

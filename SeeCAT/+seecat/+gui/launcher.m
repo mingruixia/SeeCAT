@@ -10,13 +10,13 @@ function app = launcher()
 
 T = seecat.gui.theme();
 pages = struct( ...
-    'name', {'DICOM to BIDS', 'Preprocessing', 'fMRIPrep denoising', 'Seed FC', 'Degree', 'Gradients', ...
+    'name', {'Import to BIDS', 'Preprocessing', 'fMRIPrep denoising', 'Seed FC', 'Degree', 'Gradients', ...
     'Harmonize', 'Statistics', 'Viewer', 'Data check', 'QC reports'}, ...
     'pipe', {'', 'prep', 'fmriprep', 'fc', 'degree', 'gradient', 'harmonize', 'stat', '', '', ''}, ...
     'icon', {'dicom', 'sliders', 'filter', 'target', 'network', 'gradient', 'merge', 'stat', 'brain', 'activity', 'report'}, ...
     'group', {'PREPARE', 'PREPARE', 'PREPARE', 'ANALYSE', 'ANALYSE', 'ANALYSE', 'ANALYSE', 'ANALYSE', ...
     'RESULTS', 'RESULTS', 'RESULTS'}, ...
-    'summary', {'Convert DICOM folders to a BIDS dataset with dcm2niix: one subject, or a folder of subjects.', ...
+    'summary', {'Put DICOM or NIfTI folders into a BIDS dataset: preview the names, correct them, convert.', ...
     'Slice timing, realignment, normalisation, denoising and smoothing of a raw BIDS dataset.', ...
     'Denoising and smoothing of fMRIPrep outputs, with the same steps as Preprocessing.', ...
     'Seed-based functional connectivity maps from denoised data.', ...
@@ -27,10 +27,13 @@ pages = struct( ...
     'Slices, thresholds, clusters and surfaces of statistic maps.', ...
     'Volumes, TR and head motion of every BOLD run; open a run to step through its volumes.', ...
     'Confirm or change which runs are excluded, from motion, coverage and image quality metrics.'}, ...
-    'about', {['Convert DICOM folders to a BIDS dataset with dcm2niix. Point it at a folder of ' ...
-    'subjects in any common layout (one folder per subject, modality folders with subject ' ...
-    'folders inside, or deeper trees); Find subjects shows what was found before converting. ' ...
-    'T1w and resting-state BOLD are recognised by their series names; Rules adds others.'], ...
+    'about', {['Put DICOM folders (converted with dcm2niix) or NIfTI images (scanner or platform ' ...
+    'exports with .json sidecars, or older .nii/.img data) into a BIDS dataset. The kind is ' ...
+    'found from the files; subjects and sessions from the folders in any common layout. ' ...
+    'Preview names lists every image with its BIDS name: T1w, BOLD (task from the series ' ...
+    'name), field maps with IntendedFor and single-band references are recognised, localizers ' ...
+    'left out. Edit a name in the Summary table (empty: leave it out), Convert, and Save as ' ...
+    'rules to name the next subjects the same way.'], ...
     ['Preprocess a raw BIDS dataset with SPM: dummy-scan removal, slice timing, realignment, ' ...
     'normalisation to MNI (via T1w segmentation), nuisance regression with band-pass ' ...
     'filtering and high-motion censoring, and smoothing. Writes desc-denoised (for Seed FC and ' ...
@@ -167,7 +170,7 @@ summary.Layout.Column = 1;
 
 seecat.gui.segment([logTab, sumTab], [true false]);
 state = struct('page', 'Preprocessing', 'pipe', '', 'cfg', [], 'defaults', [], 'form', [], 'drafts', struct(), ...
-    'run', [], 'timer', [], 'help', '', 'started', [], 'units', 0, 'stale', 0, 'output', '');
+    'run', [], 'timer', [], 'help', '', 'started', [], 'units', 0, 'stale', 0, 'output', '', 'plan', []);
 seecat.gui.style(fig);
 app.fig = fig;
 app.select = @(name) select(name);
@@ -254,8 +257,8 @@ show();
         end
         tabs.Data = struct('font', T.font, 'sections', {{}}, 'active', '');
         switch p.name
-            case 'DICOM to BIDS'
-                dicomPage();
+            case 'Import to BIDS'
+                importPage();
             case 'Viewer'
                 viewerPage();
             case 'Data check'
@@ -314,7 +317,7 @@ show();
             p = pages(strcmp({pages.name}, state.page));
             t = p.name;
             txt = [p.about ' Click the info icon of an option, or edit it, to see its description here.'];
-            if isempty(p.pipe) && ~strcmp(p.name, 'DICOM to BIDS')
+            if isempty(p.pipe) && ~strcmp(p.name, 'Import to BIDS')
                 txt = p.about;
             end
             meta = '';
@@ -504,12 +507,13 @@ show();
             'Padding', [16 14 16 14], 'RowSpacing', 12, 'BackgroundColor', T.page);
     end
 
-    function dicomPage()
+    function importPage()
         g = pageGrid(22 + 5 * T.row + 32 + 6 * 6 + 24);
-        cg = pageCard(g, 'Conversion', [repmat({T.row}, 1, 5), {32}]);
-        H = dicomHelp();
+        cg = pageCard(g, 'Import', [repmat({T.row}, 1, 5), {32}]);
+        H = importHelp();
         kinds = {'folder', 'folder', '', '', 'file'};
-        hint = {'', '', 'Empty: found automatically', 'Empty: one per scanning visit', 'Empty: T1w and resting BOLD'};
+        hint = {'DICOM or NIfTI', '', 'Empty: found automatically', 'Empty: one per scanning visit', ...
+            'Empty: built-in recognition'};
         ed = gobjects(1, 5);
         for i = 1:5
             uilabel(cg, 'Text', H(i).label, 'FontColor', T.text2, 'Tooltip', H(i).tip);
@@ -520,8 +524,8 @@ show();
             end
             k = i;
             ed(i) = uieditfield(parent, 'text', 'BackgroundColor', T.panel, 'FontColor', T.text, ...
-                'Tooltip', H(i).tip, 'ValueChangingFcn', @(~, ~) dicomInfo(H(k)), ...
-                'ValueChangedFcn', @(~, ~) dicomInfo(H(k)));
+                'Tooltip', H(i).tip, 'ValueChangingFcn', @(~, ~) importInfo(H(k)), ...
+                'ValueChangedFcn', @(~, ~) importInfo(H(k)));
             ed(i).Placeholder = hint{i};
             if ~isempty(kinds{i})
                 kind = kinds{i};
@@ -529,71 +533,120 @@ show();
                     'Tooltip', 'Browse', 'ButtonPushedFcn', @(~, ~) pick(ed(k), kind));
             end
             uiimage(cg, 'ImageSource', seecat.gui.icon('info', T.hex.muted), 'Tooltip', 'About this option', ...
-                'ImageClickedFcn', @(~, ~) dicomInfo(H(k)));
+                'ImageClickedFcn', @(~, ~) importInfo(H(k)));
         end
-        b2 = uigridlayout(cg, [1 3], 'ColumnWidth', {140, 150, '1x'}, 'Padding', [0 0 0 0], ...
+        b2 = uigridlayout(cg, [1 4], 'ColumnWidth', {120, 150, 140, '1x'}, 'Padding', [0 0 0 0], ...
             'ColumnSpacing', 8, 'BackgroundColor', T.panel);
         b2.Layout.Row = 7;
         b2.Layout.Column = 2;
         uibutton(b2, 'Text', 'Convert', 'Icon', seecat.gui.icon('play', '#FFFFFF'), 'FontWeight', 'bold', ...
             'BackgroundColor', T.accent, 'FontColor', [1 1 1], 'ButtonPushedFcn', @(~, ~) convert(ed));
-        sb = button(b2, 'Find subjects', 'refresh', @(~, ~) scanDicom(ed));
-        sb.Tooltip = 'List the subjects SeeCAT finds in the DICOM folder, without converting';
+        sb = button(b2, 'Preview names', 'refresh', @(~, ~) preview(ed));
+        sb.Tooltip = 'List every image and the BIDS name it will get, without writing anything';
+        rb = button(b2, 'Save as rules', 'save', @(~, ~) saveRules(ed));
+        rb.Tooltip = 'Turn the (edited) names in the Summary table into a rules file for the next subjects';
         seecat.gui.style(fig);
     end
 
-    function dicomInfo(h)
-        if strcmp(state.help, ['dicom:' h.label]), return, end
+    function importInfo(h)
+        if strcmp(state.help, ['import:' h.label]), return, end
         setHelp(h.label, h.text, sprintf('Default:  %s\nBatch:  %s', h.default, h.batch));
-        state.help = ['dicom:' h.label];
+        state.help = ['import:' h.label];
     end
 
-    function scanDicom(ed)
-        if ~isempty(strtrim(ed(3).Value))
-            logBox.Value = {sprintf('Subject is set: everything in the DICOM folder becomes sub-%s.', ...
-                strtrim(ed(3).Value))};
-            showPane('log');
+    function [kind, args] = importArgs(ed)
+        src = strtrim(ed(1).Value);
+        if isempty(src) || ~exist(src, 'dir')
+            error('SeeCAT:gui', 'Choose the source folder (DICOM or NIfTI) first.');
+        end
+        if isempty(strtrim(ed(2).Value))
+            error('SeeCAT:gui', 'Choose the BIDS folder to write into.');
+        end
+        kind = seecat.bids.source_kind(src);
+        args = {'sub', ed(3).Value, 'ses', ed(4).Value};
+        if ~isempty(strtrim(ed(5).Value))
+            args = [args, {'rules', strtrim(ed(5).Value)}];
+        end
+    end
+
+    function R = runImport(kind, ed, args)
+        if strcmp(kind, 'nifti')
+            R = seecat.bids.from_nifti(strtrim(ed(1).Value), strtrim(ed(2).Value), args{:});
+        else
+            R = seecat.bids.from_dicom(strtrim(ed(1).Value), strtrim(ed(2).Value), args{:});
+        end
+    end
+
+    function preview(ed)
+        try
+            [kind, args] = importArgs(ed);
+        catch err
+            uialert(fig, err.message, 'Preview names');
             return
         end
-        d = uiprogressdlg(fig, 'Title', 'DICOM to BIDS', 'Message', 'Reading DICOM headers ...', ...
-            'Indeterminate', 'on');
+        msg = 'Reading the NIfTI folder ...';
+        if strcmp(kind, 'dicom')
+            msg = 'Converting the DICOM files to a temporary folder to read them ...';
+        end
+        d = uiprogressdlg(fig, 'Title', 'Preview names', 'Message', msg, 'Indeterminate', 'on');
         try
-            [S, ~, info] = seecat.bids.scan_dicom(ed(1).Value);
+            info = struct('layout', '', 'ignored', {{}});
+            if strcmp(kind, 'nifti')
+                [~, ~, info] = seecat.bids.scan_nifti(strtrim(ed(1).Value), 'sub', ed(3).Value);
+            elseif isempty(strtrim(ed(3).Value))
+                [~, ~, info] = seecat.bids.scan_dicom(strtrim(ed(1).Value));
+            end
+            P = runImport(kind, ed, [args, {'dryrun', true}]);
         catch err
             close(d);
-            uialert(fig, err.message, 'Find subjects');
+            uialert(fig, err.message, 'Preview names');
             return
         end
         close(d);
-        msg = {info.layout};
-        for k = 1:height(S)
-            msg{end+1} = sprintf('sub-%s  <-  %s   (PatientID %s; %d folder(s), %d file(s), %d study/studies)', ...
-                S.subject{k}, S.source{k}, S.patient_id{k}, S.folders(k), S.files(k), S.studies(k)); %#ok<AGROW>
-        end
+        state.plan = struct('src', strtrim(ed(1).Value), 'kind', kind);
+        summary.Data = P;
+        summary.ColumnEditable = strcmp(P.Properties.VariableNames, 'bids');
+        named = ~cellfun(@isempty, P.bids);
+        msg = {sprintf('%s folder. %s', upper(kind), info.layout)};
+        msg{end+1} = sprintf('%d subject(s), %d image(s): %d get a BIDS name, %d are left out (see note).', ...
+            numel(unique(P.subject)), height(P), nnz(named), nnz(~named));
         for k = 1:numel(info.ignored)
-            msg{end+1} = sprintf('skipped, no DICOM files: %s', info.ignored{k}); %#ok<AGROW>
+            msg{end+1} = sprintf('no subject: %s', info.ignored{k}); %#ok<AGROW>
         end
-        msg{end+1} = 'Convert uses these subjects. To change a label, convert that folder alone with Subject set.';
+        msg{end+1} = ['Check the bids column of the Summary. Edit a name to change it, empty it to ' ...
+            'leave the image out; Convert uses the table as it is. Save as rules names the next subjects alike.'];
         logBox.Value = msg;
-        summary.Data = S;
-        showPane('log');
+        showPane('summary');
+        main.RowHeight{3} = max(210, round(fig.Position(4) * 0.5));   % room to check the names
     end
 
     function convert(ed)
-        args = {'sub', ed(3).Value, 'ses', ed(4).Value};
-        if ~isempty(ed(5).Value)
-            args = [args, {'rules', ed(5).Value}];
-        end
-        d = uiprogressdlg(fig, 'Title', 'DICOM to BIDS', 'Indeterminate', 'on');
         try
-            R = seecat.bids.from_dicom(ed(1).Value, ed(2).Value, args{:});
+            [kind, args] = importArgs(ed);
+        catch err
+            uialert(fig, err.message, 'Import to BIDS');
+            return
+        end
+        usePlan = ~isempty(state.plan) && strcmp(state.plan.src, strtrim(ed(1).Value)) ...
+            && istable(summary.Data) && all(ismember({'source', 'bids'}, summary.Data.Properties.VariableNames));
+        if usePlan
+            args = [args, {'names', summary.Data}];
+        end
+        d = uiprogressdlg(fig, 'Title', 'Import to BIDS', 'Indeterminate', 'on');
+        try
+            R = runImport(kind, ed, args);
             close(d);
+            state.plan = [];
+            summary.ColumnEditable = false;
             summary.Data = R;
             subs = unique(R.subject);
             bad = unique(R.subject(isnan(R.series) & cellfun(@isempty, R.description)));
-            kept = startsWith(R.note, 'already in the dataset');
+            kept = contains(R.note, 'already in the dataset');
             msg = {sprintf('%d subject(s), %d image(s): %d copied, %d already there and kept, into %s', ...
                 numel(subs), height(R), nnz(~cellfun(@isempty, R.bids) & ~kept), nnz(kept), ed(2).Value)};
+            if usePlan
+                msg{end+1} = 'Names from the previewed table were used.';
+            end
             for k = 1:numel(bad)
                 msg{end+1} = sprintf('sub-%s failed: %s', bad{k}, R.note{strcmp(R.subject, bad{k})}); %#ok<AGROW>
             end
@@ -601,18 +654,36 @@ show();
             [what, ~, j] = unique(strcat(skip.description, ' | ', regexprep(skip.note, '\d+ volumes', 'many volumes')));
             for k = 1:numel(what)
                 rows = skip(j == k, :);
-                msg{end+1} = sprintf('Not converted, %d subject(s): %s (%s)', numel(unique(rows.subject)), ...
+                msg{end+1} = sprintf('Not copied, %d subject(s): %s (%s)', numel(unique(rows.subject)), ...
                     rows.description{1}, rows.note{1}); %#ok<AGROW>
-            end
-            if ~isempty(what)
-                msg{end+1} = 'Series that match no rule are not converted; give a rules file to name them.';
             end
             logBox.Value = msg;
             showPane('summary');
         catch err
             close(d);
-            uialert(fig, err.message, 'DICOM to BIDS');
+            uialert(fig, err.message, 'Import to BIDS');
         end
+    end
+
+    function saveRules(ed)
+        if isempty(state.plan) || ~istable(summary.Data) || ~ismember('bids', summary.Data.Properties.VariableNames)
+            uialert(fig, 'Preview names first, and correct the names in the Summary table.', 'Save as rules', ...
+                'Icon', 'info');
+            return
+        end
+        [f, p] = uiputfile('*.json', 'Save the naming rules', 'bids_rules.json');
+        figure(fig);
+        if isequal(f, 0), return, end
+        try
+            r = seecat.bids.plan_rules(summary.Data, fullfile(p, f));
+        catch err
+            uialert(fig, err.message, 'Save as rules');
+            return
+        end
+        ed(5).Value = fullfile(p, f);
+        logBox.Value = {sprintf(['%d rule(s) written to %s and set as Rules: Convert and Preview names ' ...
+            'now name every subject''s images the same way.'], numel(r), fullfile(p, f))};
+        showPane('log');
     end
 
     function viewerPage()
@@ -913,76 +984,84 @@ show();
     end
 end
 
-function H = dicomHelp()
-% Help for the DICOM to BIDS fields: side column text, tooltip, default and
-% the matching seecat.bids.from_dicom argument
+function H = importHelp()
+% Help for the Import to BIDS fields: side column text, tooltip, default and
+% the matching seecat.bids.from_nifti / from_dicom argument
 H = struct('label', {}, 'tip', {}, 'text', {}, 'default', {}, 'batch', {});
-H(1).label = 'DICOM folder';
-H(1).tip = 'One subject''s DICOM files, or a folder with one folder per subject';
-H(1).text = sprintf(['The folder with the DICOM files, arranged in any common way. Subjects ' ...
-    'come from the PatientID in the headers, or from the folder tree when IDs are removed; ' ...
-    'Find subjects lists them before converting. Files such as .txt, .csv and .nii are not read.\n\n' ...
+H(1).label = 'Source folder';
+H(1).tip = 'DICOM files or NIfTI images: one subject, or a folder of subjects';
+H(1).text = sprintf(['The folder with the data, arranged in any common way. SeeCAT looks at the ' ...
+    'files: NIfTI images (.nii, .nii.gz, .img) are organised as they are, with their .json ' ...
+    'sidecars when there are any; otherwise the DICOM files are converted with dcm2niix. The ' ...
+    'folder is only read.\n\n' ...
+    'Subjects come from sub-<label> folders, the shallowest level of folders named like IDs, ' ...
+    'IDs at the start of the file names, or the PatientID; a name after the ID is dropped. ' ...
+    'Preview names shows what was found.\n\n' ...
     'Examples\n' ...
     '  S_001/, S_002/  ->  sub-S001, sub-S002\n' ...
-    '  S_001/visit1/T1/  ->  sub-S001\n' ...
-    '  T1/S_001/, REST/S_001/  ->  sub-S001']);
+    '  sub173_zhangsan/2026-10-13/functional/...  ->  sub-173\n' ...
+    '  FunRaw/S001/, T1Raw/S001/  ->  sub-S001\n' ...
+    '  T1/S_001/ (DICOM)  ->  sub-S001']);
 H(1).default = '(required)';
-H(1).batch = 'from_dicom(dicom_dir, bids_dir)';
+H(1).batch = 'from_nifti(src, bids_dir) / from_dicom(src, bids_dir)';
 
 H(2).label = 'BIDS folder';
 H(2).tip = 'The BIDS dataset to write into (created if missing)';
-H(2).text = sprintf(['The BIDS dataset to write into; created if missing. Images go to ' ...
-    'sub-<label>/[ses-<label>/]anat, func, ... as .nii.gz with a .json sidecar. ' ...
-    'dataset_description.json is written if missing and participants.tsv gets new subjects. ' ...
-    'Images already there are kept, so converting again only adds what is missing.\n\n' ...
+H(2).text = sprintf(['The BIDS dataset to write into; created if missing, and outside the source ' ...
+    'folder. Images go to sub-<label>/[ses-<label>/]anat, func, fmap, ... as .nii.gz with a .json ' ...
+    'sidecar, without names, birth dates or IDs. dataset_description.json is written if missing; ' ...
+    'participants.tsv gets new subjects, with sex and age at the scan when the sidecars have them. ' ...
+    'Images already there are kept, so importing again only adds what is missing.\n\n' ...
     'Example\n' ...
-    '  D:/data/mystudy  ->  D:/data/mystudy/sub-S001/anat/sub-S001_T1w.nii.gz\n\n' ...
-    'A table of every series and where it went is written to code/seecat/.']);
+    '  D:/data/mystudy  ->  D:/data/mystudy/sub-173/func/sub-173_task-rest_bold.nii.gz\n\n' ...
+    'A table of every image and where it went is written to code/seecat/.']);
 H(2).default = '(required)';
-H(2).batch = 'from_dicom(dicom_dir, bids_dir)';
+H(2).batch = 'from_nifti(src, bids_dir)';
 
 H(3).label = 'Subject';
-H(3).tip = 'Label without "sub-", letters and digits. Empty: each folder in the DICOM folder is a subject';
+H(3).tip = 'Label without "sub-", letters and digits. Empty: found from the folders';
 H(3).text = sprintf(['The participant label, without "sub-": letters and digits only.\n\n' ...
-    'Given: everything in the DICOM folder is this subject.\n' ...
-    'Empty: SeeCAT finds the subjects (Find subjects lists them). Files of one PatientID are ' ...
-    'one subject, named after the folder that holds all of them and no one else''s, with other ' ...
-    'characters removed; a single person is named after the DICOM folder. Without usable IDs ' ...
-    'the folder tree decides. A subject that fails is reported and the others still convert.\n\n' ...
+    'Given: everything in the source folder is this subject.\n' ...
+    'Empty: SeeCAT finds the subjects (Preview names lists them). A subject that fails is ' ...
+    'reported and the others still go in.\n\n' ...
     'Examples\n' ...
     '  01  ->  sub-01\n' ...
     '  empty, folder S_001  ->  sub-S001\n' ...
-    '  empty, T1/Pat-12a and REST/Pat-12a  ->  sub-Pat12a']);
+    '  empty, folder sub173_zhangsan  ->  sub-173']);
 H(3).default = '(empty: from folder names)';
 H(3).batch = '''sub'', ''01''';
 
 H(4).label = 'Session';
 H(4).tip = 'Label without "ses-". Empty: no session folder for one visit, ses-1, ses-2, ... for several';
 H(4).text = sprintf(['The session label, without "ses-": letters and digits only.\n\n' ...
-    'Given: every image goes into this session; series with the same name get run-1, run-2.\n' ...
-    'Empty: a subject scanned in one visit (one DICOM study) gets no session folder. Several ' ...
-    'visits become ses-1, ses-2, ... by scan date. Converting a visit again keeps its session, ' ...
-    'and a later visit gets the next number (recorded in code/seecat/from_dicom_sessions.tsv). ' ...
-    'A subject already converted without a session needs a label for a new visit.\n\n' ...
+    'Given: every image goes into this session.\n' ...
+    'Empty: folders named ses-<label>, pre, post, baseline, visit1, ... give the session. ' ...
+    'Otherwise a subject scanned in one visit gets no session folder, and several visits ' ...
+    '(scan dates) become ses-1, ses-2, ... Importing a visit again keeps its session, and a ' ...
+    'later visit gets the next number (recorded in code/seecat/from_dicom_sessions.tsv).\n\n' ...
     'Examples\n' ...
     '  pre  ->  sub-01/ses-pre/\n' ...
     '  empty, two visits  ->  ses-1/, ses-2/\n' ...
     '  empty, one visit  ->  sub-01/anat/']);
-H(4).default = '(empty: from the scan dates)';
+H(4).default = '(empty: from folders or scan dates)';
 H(4).batch = '''ses'', ''pre''';
 
 H(5).label = 'Rules (JSON)';
-H(5).tip = 'Naming rules (seecat.bids.dicom_rules)';
-H(5).text = sprintf(['A JSON file of rules that name the series. Each rule matches sidecar fields ' ...
-    '(regular expressions, case-insensitive) and gives datatype, suffix and entities; the first ' ...
-    'rule that matches wins. Series that match no rule are listed in the summary, not copied.\n\n' ...
-    'Empty: a 3D T1w (MPRAGE, SPGR, BRAVO, ...) and resting BOLD (rest, rsfMRI, or RS as a ' ...
-    'word, e.g. func_RS).\n\n' ...
+H(5).tip = 'Naming rules (seecat.bids.dicom_rules); Save as rules writes one';
+H(5).text = sprintf(['A JSON file of rules that name the images. Each rule matches sidecar ' ...
+    'fields (regular expressions, case-insensitive; also Path and Volumes) and gives datatype, ' ...
+    'suffix and entities, or "skip": true; the first rule that matches wins.\n\n' ...
+    'Empty: built-in recognition. 3D T1w (MPRAGE, SPGR, ...), resting BOLD, task BOLD named ' ...
+    'from the series (Math_AI_trust2 -> task-mathaitrust run-2), field maps (magnitude1/2 + ' ...
+    'phasediff, or epi) with IntendedFor, single-band references (sbref of the next run); ' ...
+    'localizers and phase images left out.\n\n' ...
+    'Easiest: Preview names, correct the names in the Summary table, Save as rules, then ' ...
+    'import all subjects with it.\n\n' ...
     'Example\n' ...
-    '  [{"match": {"SeriesDescription": "rest"},\n' ...
+    '  [{"match": {"SeriesDescription": "^IGT\\\\d*$"},\n' ...
     '    "datatype": "func", "suffix": "bold",\n' ...
-    '    "entities": {"task": "rest"}}]']);
-H(5).default = '(empty: T1w and resting BOLD)';
+    '    "entities": {"task": "gambling"}}]']);
+H(5).default = '(empty: built-in recognition)';
 H(5).batch = '''rules'', ''my_rules.json''';
 end
 
