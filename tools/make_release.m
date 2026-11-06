@@ -61,7 +61,7 @@ tarFile = fullfile(o.out, [name '.tar']);
 git(repo, sprintf('archive --format=tar -o "%s" HEAD', tarFile));
 untar(tarFile, stage);
 delete(tarFile);
-for drop = {'tools', 'tests/legacy_baseline', '.gitignore', '.gitattributes', 'Doc/description.docx', 'Doc/manual/src', 'pax_global_header'}
+for drop = {'tools', 'tests', '.gitignore', '.gitattributes', 'Doc/description.docx', 'Doc/manual/src', 'pax_global_header'}
     f = fullfile(stage, drop{1});
     if exist(f, 'dir')
         rmdir(f, 's');

@@ -101,7 +101,8 @@ It covers every module and option and works through a three-site example.
 results = runtests('tests/unit');
 ```
 
-See `tests/README.md` for the public test data.
+See `tests/README.md` for the public test data. The tests and their data
+are in the source repository only; the release zip does not include them.
 
 ## Licence
 

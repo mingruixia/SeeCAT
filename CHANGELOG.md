@@ -3,6 +3,8 @@
 ## Unreleased: 2.0 development
 
 ### Added
+- **Release without tests.** The release zip no longer contains `tests/`
+  (unit tests, fixtures, test-data scripts); they stay in the repository.
 - **PDF manual layout.** A cover, a contents page with page numbers (a
   second pass reads each heading's page with pdftotext), running headers
   with the chapter and page numbers, chapter openers, booktabs tables and
