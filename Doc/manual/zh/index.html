@@ -258,19 +258,19 @@ figcaption{color:var(--mute);font-size:14px;margin-top:6px}
 
 <h3 id="s2-2"><span class="num">2.2</span> 安装</h3>
 <ol>
-<li>从 GitHub 或 NITRC 下载 <code>SeeCAT-2.0.zip</code> 并解压。</li>
+<li>从 GitHub 或 NITRC 下载 <code>SeeCAT-2.0.0.zip</code> 并解压。</li>
 <li>在 MATLAB 中：
 <pre><code>addpath('path/to/spm');
-addpath('path/to/SeeCAT-2.0/SeeCAT');
+addpath('path/to/SeeCAT-2.0.0/SeeCAT');
 savepath   % 可选：为以后的会话保存路径</code></pre></li>
 <li>打开主窗口：
 <pre><code>SeeCAT</code></pre></li>
 </ol>
-<div class="note"><b>macOS。</b>首次运行时 dcm2niix 如被系统拦截，可在"系统设置 → 隐私与安全性"中允许，或运行 <code>xattr -dr com.apple.quarantine SeeCAT-2.0/external</code>。</div>
+<div class="note"><b>macOS。</b>首次运行时 dcm2niix 如被系统拦截，可在"系统设置 → 隐私与安全性"中允许，或运行 <code>xattr -dr com.apple.quarantine SeeCAT-2.0.0/external</code>。</div>
 <div class="note"><b>Linux。</b>内置的 dcm2niix 需要 glibc 2.29 以上（Ubuntu 20.04+、Debian 11+、RHEL/Rocky 9+）。较旧的系统请自行安装 dcm2niix（如 <code>pip install dcm2niix</code>），放到 PATH 中，或把环境变量 <code>SEECAT_DCM2NIIX</code> 设为它的路径。</div>
 
 <h3 id="s2-3"><span class="num">2.3</span> 发布包内容</h3>
-<pre><code>SeeCAT-2.0/
+<pre><code>SeeCAT-2.0.0/
   SeeCAT/              工具箱本体：把这个文件夹加入路径
     SeeCAT.m           打开主窗口
     +seecat/           全部函数（seecat.config、seecat.run、seecat.viewer 等）

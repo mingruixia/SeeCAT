@@ -1,6 +1,6 @@
 # Changelog
 
-## Unreleased: 2.0 development
+## 2.0.0 (2026-11-06)
 
 ### Added
 - **Fixes from the 2026-11-06 review** (regression tests in
@@ -529,7 +529,7 @@
 
 ### Known issues
 
-## Unreleased: phase 0 fixes on top of 1.0 beta
+## Phase 0 fixes on top of 1.0 beta (part of 2.0.0)
 
 ### Fixed
 - **Stat, repeated-measures ANOVA**: the per-subject regressors were filled from a

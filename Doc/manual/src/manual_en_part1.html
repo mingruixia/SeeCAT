@@ -45,19 +45,19 @@
 
 <h3>Install</h3>
 <ol>
-<li>Download <code>SeeCAT-2.0.zip</code> from GitHub or NITRC and unzip it.</li>
+<li>Download <code>SeeCAT-2.0.0.zip</code> from GitHub or NITRC and unzip it.</li>
 <li>In MATLAB:
 <pre><code>addpath('path/to/spm');
-addpath('path/to/SeeCAT-2.0/SeeCAT');
+addpath('path/to/SeeCAT-2.0.0/SeeCAT');
 savepath   % optional: keep the paths for later sessions</code></pre></li>
 <li>Open the main window:
 <pre><code>SeeCAT</code></pre></li>
 </ol>
-<div class="note"><b>macOS.</b> If dcm2niix is blocked the first time, allow it in System Settings → Privacy &amp; Security, or run <code>xattr -dr com.apple.quarantine SeeCAT-2.0/external</code>.</div>
+<div class="note"><b>macOS.</b> If dcm2niix is blocked the first time, allow it in System Settings → Privacy &amp; Security, or run <code>xattr -dr com.apple.quarantine SeeCAT-2.0.0/external</code>.</div>
 <div class="note"><b>Linux.</b> The bundled dcm2niix needs glibc 2.29 or later (Ubuntu 20.04+, Debian 11+, RHEL/Rocky 9+). On older systems install dcm2niix (e.g. <code>pip install dcm2niix</code>) and put it on the PATH or set the environment variable <code>SEECAT_DCM2NIIX</code> to its path.</div>
 
 <h3>What is in the release</h3>
-<pre><code>SeeCAT-2.0/
+<pre><code>SeeCAT-2.0.0/
   SeeCAT/              the toolbox: add this folder to the path
     SeeCAT.m           opens the main window
     +seecat/           all functions (seecat.config, seecat.run, seecat.viewer, ...)
