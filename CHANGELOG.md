@@ -53,6 +53,30 @@
   labels (`rest, nback` in the window, `{'rest', 'nback'}` in a config). The
   analysis pages still take one task.
 
+### Fixed (2026-11-07 review; tests in tests/unit/test_review3.m and test_nifti.m)
+- *Numbered 3D volumes of different subjects or runs were merged.* Only the
+  number at the end of a file name may change within a series
+  (`S01_rest_0001` and `S02_rest_0001`, or `run1_vol0001` and
+  `run2_vol0001`, are different runs), and frames are ordered by that number
+  alone. A series with gaps in its numbers, or whose images differ in grid,
+  orientation (the header's qform/sform) or TR, is not merged and a warning
+  says why. High-resolution 3D images and names ending in a subject number
+  are never series.
+- *Files named by a relative path (`seed.nii`, `mask.nii`) were not
+  followed* by resume and were not protected as inputs. Any text with a
+  file extension that is a file in the current folder is now an input, by
+  its canonical path; keywords and files found only on the MATLAB path are
+  not.
+- *Names in file names reached the dataset.* The words after the ID at the
+  start of a file name that no other subject has, and the words of
+  PatientName, are taken out of the import report, the descriptions and all
+  kept text fields of the sidecars (`seecat.bids.scrub_names`), as the words
+  after the ID in folder names already were. The manual says which names
+  are recognised and asks to check before sharing.
+- *A code edit in a running MATLAB session was not noticed.*
+  seecat.util.code_fingerprint now checks the code files' names, sizes and
+  dates on every run and reads them again when they changed.
+
 ## 2.0.0 (2026-11-06)
 
 ### Added

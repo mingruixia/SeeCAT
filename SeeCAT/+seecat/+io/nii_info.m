@@ -5,6 +5,8 @@ function h = nii_info(file)
 % h.dim     1 x 4 (x, y, z, volumes; 1 where the header has fewer)
 % h.pixdim  1 x 4 (voxel size in mm, then the volume spacing)
 % h.tr      volume spacing in seconds (NaN when the header has none)
+% h.geom    the header bytes of the voxel size and orientation (qfac,
+%           pixdim 1-3, qform and sform), to tell whether images share a grid
 %
 % Only the header is read, also from .nii.gz, so listing many runs stays
 % quick. NIfTI-1 and NIfTI-2, either byte order.
@@ -20,10 +22,12 @@ if nifti2
     dim = num(b, 17, 8, 'int64', swap);
     pix = num(b, 105, 8, 'double', swap);
     units = double(num(b, 501, 1, 'int32', swap));
+    geom = [b(105:136), b(345:496)];
 else
     dim = num(b, 41, 8, 'int16', swap);
     pix = num(b, 77, 8, 'single', swap);
     units = double(b(124));
+    geom = [b(77:92), b(253:328)];
 end
 dim = double(dim);
 n = max(1, min(dim(1), 7));
@@ -43,6 +47,7 @@ if ~(t > 0)
     t = NaN;
 end
 h.tr = t;
+h.geom = geom;
 end
 
 function v = num(b, at, n, cls, swap)

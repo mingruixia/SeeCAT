@@ -37,14 +37,14 @@
 <li><b>不整理</b>（原因写在说明中）：定位像、相位图和衍生图像；以及 T1 未做畸变校正的副本（ImageType 含 ND），前提是校正后的那份也在。其他图像只列出，不复制。</li>
 </ul></li>
 <li><b>Run、echo 和 IntendedFor。</b>同一 session 中名称相同的多个序列按序列号依次为 <code>run-1</code>、<code>run-2</code> ……；同一序列的多个回波为 <code>echo-1</code> 等。一组场图供它之后、下一组场图之前采集的 BOLD run（及其 sbref）使用，这些 run 以 <code>bids::</code> 路径写入场图的 <code>IntendedFor</code>。</li>
-<li><b>没有说明文件的图像</b>：序列描述取自文件夹和文件名，帧数和 TR 取自图像头。图像头中没有 TR 时，用 <code>'tr'</code> 选项给出。一个文件夹中带编号的三维图像（<code>f0001.nii</code>、<code>f0002.nii</code> ……，同样大小且不少于十个）视为一个 run，写成一个四维图像。Analyze 格式的 .img/.hdr 写成 NIfTI。</li>
+<li><b>没有说明文件的图像</b>：序列描述取自文件夹和文件名，帧数和 TR 取自图像头。图像头中没有 TR 时，用 <code>'tr'</code> 选项给出。同一文件夹中带编号的三维图像（<code>f0001.nii</code>、<code>f0002.nii</code> ……，不少于十个），只有文件名末尾的编号不同时，视为一个 run，写成一个四维图像。<code>S01_rest_0001.nii</code> 与 <code>S02_rest_0001.nii</code>、<code>run1_vol0001.nii</code> 与 <code>run2_vol0001.nii</code> 属于不同的 run。编号不连续，或图像的网格、方向、TR 不一致时不合并，并给出警告说明原因；此时请把每个 run 的图像放到单独的文件夹，或先合成四维图像。Analyze 格式的 .img/.hdr 写成 NIfTI。</li>
 <li><b>写出。</b>
 <ul>
 <li>图像以 .nii.gz 及其说明文件写到 <code>sub-&lt;label&gt;/[ses-&lt;label&gt;/]anat|func|fmap|dwi</code>。</li>
-<li>说明文件复制时去掉姓名、ID、出生日期等可识别个人身份的字段。participants.tsv 加入该被试；说明文件中有相应信息时，同时写入 <code>sex</code> 和扫描时的 <code>age</code>。</li>
+<li>说明文件复制时去掉姓名、ID、出生日期等可识别个人身份的字段。保留下来的文本字段（SeriesDescription、ProtocolName 及嵌套字段）和无说明文件图像的描述中，也会去掉被试姓名。姓名的来源有三处：PatientName；被试文件夹名中编号后面的词（<code>sub173_zhangsan</code>）；文件名开头编号后面、其他被试的文件中都没有的词（<code>sub173_zhangsan_rest.nii</code> 与 <code>sub174_lisi_rest.nii</code> 并存时）。其他写法的姓名（<code>zhangsan_173</code>，或与其他词连写）无法识别，其他自由文本也原样保留，共享数据集前请检查报告和说明文件。participants.tsv 加入该被试；说明文件中有相应信息时，同时写入 <code>sex</code> 和扫描时的 <code>age</code>。</li>
 <li>缺少 <code>dataset_description.json</code> 时会写出。</li>
 <li>已在数据集中的图像保留，因此重新整理只补充缺少的部分。</li>
-<li>每张图像的去向记录在 <code>code/seecat/from_nifti_sub-&lt;label&gt;.tsv</code>（DICOM 为 <code>from_dicom_…</code>）。表中被试文件夹显示为 <code>sub-&lt;label&gt;</code>，文件夹名中的姓名不会进入数据集。</li>
+<li>每张图像的去向记录在 <code>code/seecat/from_nifti_sub-&lt;label&gt;.tsv</code>（DICOM 为 <code>from_dicom_…</code>）。表中被试文件夹或文件名开头的编号显示为 <code>sub-&lt;label&gt;</code>，按上述方式识别出的姓名不出现在路径和描述中。原始路径只出现在窗口 Preview names 的表格和 <code>seecat.bids.from_nifti</code> 返回的表中，不写入数据集。</li>
 </ul></li>
 </ol>
 

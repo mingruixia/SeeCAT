@@ -8,9 +8,12 @@ function [T, groups, info] = scan_nifti(src, varargin)
 % SRC (folders named derivatives, and hidden ones, are left out). A .json
 % with the same name is the image's sidecar (as written by dcm2niix and
 % most scanner export tools); without one, the description, volume count
-% and TR come from the path and the header. A folder of numbered 3D images
-% without sidecars (vol0001.nii, vol0002.nii, ...: 10 or more of the same
-% size) is one run.
+% and TR come from the path and the header. Numbered 3D images without
+% sidecars (vol0001.nii, vol0002.nii, ...: 10 or more) are one run when
+% only the number at the end of the name changes: S01_rest_0001.nii and
+% S02_rest_0001.nii, or run1_vol0001.nii and run2_vol0001.nii, are
+% different runs. A series whose numbers have gaps, or whose images differ
+% in grid, orientation or TR, is not merged (a warning says why).
 %
 % Subjects, in this order:
 %   1. 'sub' given: everything is that subject.
@@ -27,6 +30,15 @@ function [T, groups, info] = scan_nifti(src, varargin)
 %   7. One subject, named after SRC.
 % Labels keep the ID and drop a name after it: sub173_zhangsan -> 173,
 % S_001 -> S001, sub-01 -> 01.
+%
+% Names of people: the words after the ID in a subject's folder name
+% (sub173_zhangsan), the words right after the ID at the start of a file
+% name when no other subject's files have them (sub173_zhangsan_rest.nii
+% next to sub174_lisi_rest.nii), and the sidecars' PatientName are taken
+% out of the descriptions and of the paths written to the dataset (field
+% public), and organize removes them from the sidecars (field names). A
+% name written in another way (zhangsan_173, or glued to other words) is
+% not recognised: check the report before sharing the dataset.
 %
 % Sessions: folders named ses-<label>, or pre/post/baseline/followup/
 % visit1/v1/time1/t1 ..., give the session label. Otherwise images are
@@ -90,11 +102,17 @@ if isempty(R)
 end
 
 % descriptions of images without a sidecar; the path as it may be shown in
-% the dataset, with the subject's folder (often an ID and a name) as sub-<label>
+% the dataset, with the subject's folder (often an ID and a name) as
+% sub-<label>; both without the names of people
+words = personalWords(R, parts, level, lab);
 [R.public] = deal('');
+[R.names] = deal({});
 for i = 1:numel(R)
     if isempty(R(i).json)
         R(i).desc = description(R(i), parts{i}, level(i), lab{i});
+    end
+    R(i).desc = seecat.bids.scrub_names(R(i).desc, words{i});
+    if isempty(R(i).json)
         R(i).meta.SeriesDescription = R(i).desc;
     end
     q = strsplit(R(i).source, '/');
@@ -103,7 +121,8 @@ for i = 1:numel(R)
     elseif numel(q) == 1
         q{1} = regexprep(q{1}, '^[^_\-.]+', ['sub-' lab{i}]);   % ID at the start of the file name
     end
-    R(i).public = strjoin(q, '/');
+    R(i).public = seecat.bids.scrub_names(strjoin(q, '/'), words{i});
+    R(i).names = words{i};
 end
 [subs, ~, g] = unique(lab, 'stable');
 groups = cell(numel(subs), 1);
@@ -134,7 +153,7 @@ low = lower(rel);
 skip = ~cellfun(@isempty, regexp(low, '(^|/)(derivatives|\.[^/]*)(/|$)', 'once'));
 isImg = (endsWith(low, '.nii') | endsWith(low, '.nii.gz') | endsWith(low, '.img')) & ~skip;
 R = struct('files', {}, 'json', {}, 'meta', {}, 'study', {}, 'ses', {}, 'series', {}, ...
-    'desc', {}, 'source', {}, 'aux', {}, 'dim', {}, 'tr', {});
+    'desc', {}, 'source', {}, 'aux', {}, 'dim', {}, 'tr', {}, 'pixdim', {}, 'geom', {}, 'stem', {});
 for i = find(isImg)
     f = fullfile(D(i).folder, D(i).name);
     stem = regexprep(f, '(\.nii\.gz|\.nii|\.img)$', '', 'ignorecase');
@@ -174,6 +193,9 @@ for i = find(isImg)
     end
     r.dim = h.dim;
     r.tr = h.tr;
+    r.pixdim = h.pixdim;
+    r.geom = h.geom;
+    r.stem = '';
     if isempty(r.json)
         r.meta = synthesize(h);
     end
@@ -209,40 +231,68 @@ end
 end
 
 function R = mergeVolumes(R)
-% Numbered 3D images in one folder, without sidecars: one run
+% Numbered 3D images without sidecars: one run per series, a series being
+% the images of one folder whose names differ only in the number at the
+% end (f0001 ... f0240). Not merged, with a warning: numbers with gaps or
+% written twice (rest_01, rest_001), and images of different grids,
+% orientations or TRs. High-resolution 3D images (structural scans of
+% several people, T1_S01 ... T1_S12) and names ending in a subject number
+% (rest_sub12) are never series.
 if isempty(R)
     return
 end
 folder = cellfun(@(s) fileparts(s), {R.source}, 'UniformOutput', false);
 [~, name] = cellfun(@(s) fileparts(regexprep(s, '\.gz$', '')), {R.source}, 'UniformOutput', false);
-key = strcat(folder, '|', regexprep(name, '\d+', '#'), '|', ...
-    arrayfun(@(r) sprintf('%d_', r.dim(1:3)), R, 'UniformOutput', false));
-cand = arrayfun(@(r) isempty(r.json) && r.dim(4) == 1, R) & contains(name, digitsPattern);
+tok = regexp(name, '^(.*?)(\d+)$', 'tokens', 'once');
+cand = ~cellfun(@isempty, tok) & arrayfun(@(r) isempty(r.json) && r.dim(4) == 1 ...
+    && ~(min(r.dim(1:3)) >= 100 && max(r.pixdim(1:3)) <= 1.5), R);
+prefix = repmat({''}, size(R));
+num = nan(size(R));
+for i = find(cand)
+    prefix{i} = tok{i}{1};
+    num(i) = str2double(tok{i}{2});
+    if ~isempty(regexpi(prefix{i}, '(^|[^a-z])(sub|subj|subject|s|p|pat|patient)[-_]?$', 'once'))
+        cand(i) = false;
+    end
+end
+key = strcat(folder, '|', prefix, '|', arrayfun(@(r) sprintf('%d_', r.dim(1:3)), R, 'UniformOutput', false));
 keep = true(size(R));
 for k = reshape(unique(key(cand)), 1, [])
     idx = find(strcmp(key, k{1}) & cand);
     if numel(idx) < 10
         continue
     end
-    [~, ord] = sortrows(cell2mat(cellfun(@numbers, name(idx)', 'UniformOutput', false)));
+    [n, ord] = sort(num(idx));
     idx = idx(ord);
+    label = [regexprep([folder{idx(1)} '/'], '^/', '') prefix{idx(1)} '#'];
+    why = '';
+    if any(diff(n) == 0)
+        why = sprintf('number %d is written twice', n(find(diff(n) == 0, 1)));
+    elseif any(diff(n) ~= 1)
+        gap = setdiff(n(1):n(end), n);
+        why = sprintf('numbers %d to %d with %d missing (e.g. %d)', n(1), n(end), numel(gap), gap(1));
+    elseif ~all(arrayfun(@(r) isequal(r.geom, R(idx(1)).geom), R(idx)))
+        why = 'the images differ in voxel size or orientation';
+    elseif all(isfinite([R(idx).tr])) && numel(unique(round([R(idx).tr] * 1e6))) > 1
+        why = 'the images differ in TR';
+    end
+    if ~isempty(why)
+        warning('SeeCAT:bids', ['%s (%d images) not merged into one run: %s. Put each run''s ' ...
+            'volumes in a folder of their own, or merge them into a 4D image.'], label, numel(idx), why);
+        continue
+    end
     r = R(idx(1));
     r.files = [R(idx).files];
     r.dim(4) = numel(idx);
-    r.source = [folder{idx(1)} '/' regexprep(name{idx(1)}, '\d+', '#') ' (' num2str(numel(idx)) ' volumes)'];
-    r.source = regexprep(r.source, '^/', '');
-    r.meta = synthesize(struct('dim', r.dim, 'pixdim', [2 2 2 r.tr], 'tr', r.tr));
+    [~, a, ea] = fileparts(R(idx(1)).source);
+    [~, b, eb] = fileparts(R(idx(end)).source);
+    r.source = sprintf('%s (%d volumes, %s%s to %s%s)', label, numel(idx), a, ea, b, eb);
+    r.stem = prefix{idx(1)};
+    r.meta = synthesize(struct('dim', r.dim, 'pixdim', r.pixdim, 'tr', r.tr));
     R(idx(1)) = r;
     keep(idx(2:end)) = false;
 end
 R = R(keep);
-end
-
-function v = numbers(s)
-% The numbers in a file name, last first (the volume number), padded to 4
-v = fliplr(str2double(regexp(s, '\d+', 'match')));
-v = [v, zeros(1, 4 - numel(v))];
-v = v(1:4);
 end
 
 %% ---- subjects ------------------------------------------------------------
@@ -433,10 +483,75 @@ if level > 0
 end
 keep = keep(~cellfun(@sessionLike, keep) & cellfun(@isempty, regexp(keep, '^\d{4}[-_.]?\d{2}[-_.]?\d{2}', 'once')));
 [~, stem] = fileparts(regexprep(r.source, '(\.nii)?\.gz$|\.nii$|\.img$', ''));
+if ~isempty(r.stem)
+    stem = r.stem;                                % numbered volumes: the name without the number
+end
 stem = regexprep(stem, ['(^|[_\-])(sub-?|subj-?)?' regexptranslate('escape', lab) '(?=[_\-]|$)'], '', 'ignorecase');
 stem = regexprep(stem, '^[_\-]+|[_\-]+$', '');
 d = strjoin([keep, {stem}], '/');
 d = regexprep(d, '/+$', '');
+end
+
+function w = personalWords(R, parts, level, lab)
+% Per image: the words that are (probably) the subject's name, for all the
+% images of that subject
+n = numel(R);
+w = repmat({{}}, n, 1);
+[~, stems] = cellfun(@(s) fileparts(regexprep(s, '\.gz$', '')), {R.source}, 'UniformOutput', false);
+tok = regexp(stems, '[^_\-\s.]+', 'match');
+subs = unique(lab);
+for i = 1:n
+    if level(i) > 0
+        w{i} = [w{i}, afterId(parts{i}{level(i)})];          % sub173_zhangsan/
+    end
+    t = tok{i};
+    if numel(subs) > 1 && numel(t) >= 3 && strcmp(cleanLabel(t{1}), lab{i})
+        others = [tok{~strcmp(lab, lab{i})}];               % words of the other subjects' files
+        for j = 2:numel(t) - 1                                % never the last word: the scan
+            if ~nameLike(t{j}) || any(strcmpi(others, t{j}))
+                break
+            end
+            w{i}{end+1} = t{j};                               % sub173_zhangsan_rest
+        end
+    end
+    pn = char(string(field(R(i).meta, 'PatientName', '')));
+    if realID(pn)
+        p = regexp(pn, '[^\^\s,_\-.]+', 'match');
+        w{i} = [w{i}, p(cellfun(@nameLike, p)), {strjoin(p, '')}];
+    end
+end
+for s = reshape(subs, 1, [])
+    k = strcmp(lab, s{1});
+    u = unique([w{k}]);
+    u = u(cellfun(@numel, u) >= 2);
+    w(k) = {u};
+end
+end
+
+function c = afterId(s)
+% The words after the ID in a folder name: sub173_zhangsan -> {'zhangsan'}
+tok = regexp(char(s), '[^_\-\s.]+', 'match');
+c = {};
+seenDigit = false;
+for j = 1:numel(tok)
+    hasDigit = ~isempty(regexp(tok{j}, '\d', 'once'));
+    if seenDigit && ~hasDigit
+        c = tok(j:end);
+        c = c(cellfun(@nameLike, c));
+        return
+    end
+    seenDigit = seenDigit || hasDigit;
+end
+end
+
+function tf = nameLike(t)
+% A word that could be a name: no digits, not a word of scan names
+scan = {'rest', 'resting', 'rs', 'rsfmri', 'fmri', 'bold', 'func', 'fun', 'epi', 'task', 'run', 'ses', ...
+    'anat', 't1', 't2', 't1w', 't2w', 'mprage', 'spgr', 'flair', 'dti', 'dwi', 'fmap', 'fieldmap', ...
+    'sbref', 'ap', 'pa', 'lr', 'rl', 'mag', 'phase', 'phasediff', 'magnitude', 'raw', 'img', 'nii', ...
+    'scan', 'series', 'vol', 'volume', 'pre', 'post', 'baseline', 'followup', 'localizer', 'scout', ...
+    'brain', 'mri', 'data', 'nifti', 'image', 'struct', 'structural', 'functional', 'ep2d', 'mb'};
+tf = isempty(regexp(t, '\d', 'once')) && numel(t) >= 2 && ~ismember(lower(t), scan);
 end
 
 function q = folderParts(rel)

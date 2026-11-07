@@ -6,7 +6,10 @@ function [h, files] = input_fingerprint(unit, cfg)
 % participants' values joined to them, sidecar metadata, ...) and every
 % existing file named anywhere in the unit or in the config CFG: seed and
 % ROI images, analysis masks, atlases, image covariates, the participants
-% table. A file up to 64 MB is identified by its contents (MD5), a larger
+% table. A path is taken as MATLAB reads it: absolute, or relative to the
+% current folder (seed.nii, ./seed.nii, ../rois/seed.nii), never a file
+% found on the MATLAB path; text without a file extension (keywords such
+% as 'gm' or 'auto') is not a file. A file up to 64 MB is identified by its contents (MD5), a larger
 % one (BOLD series) by its size and modification time. A unit whose inputs
 % were replaced, edited, added or left out by QC gets another fingerprint,
 % so seecat.run redoes it instead of skipping it.
@@ -34,8 +37,9 @@ h = seecat.util.hash(struct('unit', jsonencode(unit), 'files', {stats}, 'version
 
     function collect(v)
         if ischar(v) && isrow(v) && numel(v) < 1024
-            % paths only (a bare word such as 'gm' could name a function on the MATLAB path)
-            if any(v == '/' | v == '\') && exist(v, 'file') == 2 && ~isfolder(v)
+            % file names with an extension (a bare word such as 'gm' is a keyword);
+            % isfile looks in the current folder only, as the readers do
+            if ~isempty(regexp(v, '\.[A-Za-z0-9]{1,8}$', 'once')) && isfile(v)
                 files{end+1} = seecat.util.canonical_path(v);
             end
         elseif isstring(v)

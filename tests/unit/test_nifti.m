@@ -133,6 +133,105 @@ tc.verifyEqual(squeeze(Y(1, 1, 1, [1 22]))', [1 22]);      % volumes in number o
 tc.verifyEqual(seecat.io.nii_info(fullfile(tc.TestData.bids, row.bids{1})).tr, 2.5, 'AbsTol', 1e-6);
 end
 
+function testNumberedVolumesKeepSubjectsAndRuns(tc)
+% 2 subjects x 2 runs x 20 volumes in one folder: 4 runs, frames in order
+src = tc.TestData.src;
+for s = 1:2
+    for r = 1:2
+        for k = 1:20
+            img3d(fullfile(src, sprintf('S%02d_rest_run%d_%04d.nii', s, r, k)), [6 6 4], s * 1000 + r * 100 + k);
+        end
+    end
+end
+[S, G] = seecat.bids.scan_nifti(src);
+tc.verifyEqual(S.subject, {'S01'; 'S02'});
+tc.verifyEqual(cellfun(@numel, G), [2; 2]);
+tc.verifyEqual(arrayfun(@(g) g.dim(4), [G{:}]), [20 20 20 20]);
+T = quiet(@() seecat.bids.from_nifti(src, tc.TestData.bids, 'tr', 2));
+tc.verifyEqual(sort(T.bids), sort({'sub-S01/func/sub-S01_task-rest_run-1_bold.nii.gz'; ...
+    'sub-S01/func/sub-S01_task-rest_run-2_bold.nii.gz'; 'sub-S02/func/sub-S02_task-rest_run-1_bold.nii.gz'; ...
+    'sub-S02/func/sub-S02_task-rest_run-2_bold.nii.gz'}));
+for s = 1:2
+    for r = 1:2
+        Y = seecat.io.read_nii(fullfile(tc.TestData.bids, sprintf('sub-S%02d/func/sub-S%02d_task-rest_run-%d_bold.nii.gz', s, s, r)));
+        tc.verifyEqual(squeeze(Y(1, 1, 1, :))', s * 1000 + r * 100 + (1:20), sprintf('S%02d run %d', s, r));
+    end
+end
+% two runs in one subject's folder (run1_vol0001 ..., run2_vol0001 ...)
+rmdir(src, 's');
+for r = 1:2
+    for k = 1:20
+        img3d(fullfile(src, 'S01', 'rest', sprintf('run%d_vol%04d.nii', r, k)), [6 6 4], r * 100 + k);
+    end
+end
+T = quiet(@() seecat.bids.from_nifti(src, fullfile(tc.TestData.root, 'bids2'), 'tr', 2));
+tc.verifyEqual(sort(T.bids), {'sub-S01/func/sub-S01_task-rest_run-1_bold.nii.gz'; ...
+    'sub-S01/func/sub-S01_task-rest_run-2_bold.nii.gz'});
+Y = seecat.io.read_nii(fullfile(tc.TestData.root, 'bids2', 'sub-S01/func/sub-S01_task-rest_run-2_bold.nii.gz'));
+tc.verifyEqual(squeeze(Y(1, 1, 1, :))', 200 + (1:20));
+end
+
+function testNumberedVolumesThatDifferAreNotMerged(tc)
+% same size, another orientation; and a gap in the numbers
+src = fullfile(tc.TestData.src, 'S01', 'rest');
+for k = 1:12
+    M = diag([3 3 3 1]);
+    if k == 7
+        M(1, 4) = 10;                              % shifted
+    end
+    img(fullfile(src, sprintf('f%04d.nii', k)), [6 6 4], 1, k, M);
+end
+tc.verifyWarning(@() seecat.bids.scan_nifti(tc.TestData.src), 'SeeCAT:bids');
+[~, G] = quiet(@() seecat.bids.scan_nifti(tc.TestData.src));
+tc.verifyEqual(numel(G{1}), 12, 'volumes of different orientation were merged');
+rmdir(tc.TestData.src, 's');
+for k = [1:5 7:12]
+    img3d(fullfile(src, sprintf('f%04d.nii', k)), [6 6 4], k);
+end
+lastwarn('');
+[~, G] = quiet(@() seecat.bids.scan_nifti(tc.TestData.src));
+tc.verifyEqual(numel(G{1}), 11, 'numbers with a gap were merged');
+tc.verifySubstring(lastwarn, '1 missing');
+end
+
+function testNamesAreTakenOutOfTheDataset(tc)
+src = tc.TestData.src;
+img4d(fullfile(src, 'sub173_zhangsan_rest.nii'), [6 6 4], 20);
+img4d(fullfile(src, 'sub174_lisi_rest.nii'), [6 6 4], 20);
+src2 = fullfile(tc.TestData.root, 'export2');
+f = fullfile(src2, 'S175_wangwu', 'wangwu_rest.nii.gz');
+img4d(f, [6 6 4], 20);
+img4d(fullfile(src2, 'S176_zhaoliu', 'rest.nii'), [6 6 4], 20);
+sidecar(f, struct('SeriesNumber', 3, 'SeriesDescription', 'WangWu rest', 'ProtocolName', 'rest_wang_wu', ...
+    'PatientName', 'Wang^Wu', 'ScanningSequence', 'EP', 'MRAcquisitionType', '2D', ...
+    'ImageType', {{'ORIGINAL'; 'PRIMARY'}}, 'RepetitionTime', 2, 'Notes', struct('by', 'scan of wangwu')));
+T = [quiet(@() seecat.bids.from_nifti(src, tc.TestData.bids, 'tr', 2)); ...
+    quiet(@() seecat.bids.from_nifti(src2, tc.TestData.bids, 'tr', 2))];
+tc.verifyEqual(sort(T.bids), sort({'sub-173/func/sub-173_task-rest_bold.nii.gz'; ...
+    'sub-174/func/sub-174_task-rest_bold.nii.gz'; 'sub-S175/func/sub-S175_task-rest_bold.nii.gz'; ...
+    'sub-S176/func/sub-S176_task-rest_bold.nii.gz'}));
+F = dir(fullfile(tc.TestData.bids, '**', '*'));
+F = F(~[F.isdir] & ~endsWith({F.name}, '.nii.gz'));
+for k = 1:numel(F)
+    txt = lower(fileread(fullfile(F(k).folder, F(k).name)));
+    for w = {'zhangsan', 'lisi', 'wangwu', 'wang', 'wu', 'zhaoliu'}
+        tc.verifyEmpty(regexp(txt, ['(?<![a-z])' w{1} '(?![a-z])'], 'once'), sprintf('%s in %s', w{1}, F(k).name));
+    end
+end
+j = readJson(tc.TestData.bids, 'sub-S175/func/sub-S175_task-rest_bold.json');
+tc.verifyEqual(j.SeriesDescription, 'rest');
+tc.verifyEqual(j.ProtocolName, 'rest');
+r = fileread(fullfile(tc.TestData.bids, 'code', 'seecat', 'from_nifti_sub-173.tsv'));
+tc.verifySubstring(r, 'sub-173_rest.nii');
+% scan words are not names; a task only one subject has stays when it is the last word
+rmdir(src, 's');
+img4d(fullfile(src, 'S01_zhangsan_rest.nii'), [6 6 4], 20);
+img4d(fullfile(src, 'S02_nback.nii'), [6 6 4], 20);
+[~, G] = seecat.bids.scan_nifti(src);
+tc.verifyEqual({G{1}.public, G{2}.public}, {'sub-S01_rest.nii', 'sub-S02_nback.nii'});
+tc.verifyEqual({G{1}.desc, G{2}.desc}, {'rest', 'nback'});
+end
+
 function testSessionFoldersAndBidsLikeTree(tc)
 src = tc.TestData.src;
 for v = {'pre', 'post'}
@@ -247,8 +346,11 @@ function img4d(file, dim, nv)
 img(file, dim, nv, []);
 end
 
-function img(file, dim, nv, value)
+function img(file, dim, nv, value, mat)
 % A small int16 image; volume k holds the value k (or VALUE for 3D)
+if nargin < 5
+    mat = [];
+end
 [d, name, ext] = fileparts(file);
 if ~exist(d, 'dir')
     mkdir(d);
@@ -263,7 +365,10 @@ if prod(dim) >= 1e6
     vox = 1;
 end
 for k = 1:nv
-    V = struct('fname', file, 'dim', dim, 'dt', [spm_type('int16') 0], 'mat', diag([vox vox vox 1]), ...
+    if isempty(mat)
+        mat = diag([vox vox vox 1]);
+    end
+    V = struct('fname', file, 'dim', dim, 'dt', [spm_type('int16') 0], 'mat', mat, ...
         'pinfo', [1; 0; 0], 'n', [k 1], 'descrip', 'test');
     if analyze
         V.dt = [spm_type('int16') 0];

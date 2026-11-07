@@ -20,6 +20,8 @@ function T = organize(img, bids_dir, sub, varargin)
 %   aux     other files of the image (.bval, .bvec), copied alongside
 %   dim     [x y z volumes]
 %   tr      repetition time from the image header (NaN if none)
+%   names   (optional) words that are the subject's name, taken out of
+%           the sidecar and the report (seecat.bids.scan_nifti)
 %
 % Naming, in this order:
 %   1. The first rule that matches (seecat.bids.dicom_rules) names the
@@ -43,7 +45,10 @@ function T = organize(img, bids_dir, sub, varargin)
 % phasediff gets EchoTime1 and EchoTime2 from its magnitude images.
 %
 % Sidecars are copied without identifying fields (PatientName, PatientID,
-% PatientBirthDate, ...). participants.tsv gets the subject, with sex and
+% PatientBirthDate, ...), and the subject's name (the words of PatientName
+% and the field names) is taken out of every text field that is kept
+% (SeriesDescription, ProtocolName, ... also nested ones). Other free text
+% is kept as it is: check it before sharing the dataset. participants.tsv gets the subject, with sex and
 % age at the scan when the sidecars give them.
 %
 % Options: 'ses' (one label for all images), 'rules' (from dicom_rules),
@@ -174,6 +179,9 @@ end
 W = T;
 if isfield(img, 'public')                % no names of people from folder names in the dataset
     W.source = {img.public}';
+end
+for i = 1:numel(img)
+    W.description{i} = seecat.bids.scrub_names(W.description{i}, nameWords(img(i)));
 end
 seecat.io.write_tsv(W, fullfile(bids_dir, 'code', 'seecat', [o.report '_' tag '.tsv']));
 end
@@ -669,10 +677,12 @@ end
 
 function m = sidecar(r, a, extra, tr)
 m = r.meta;
+words = nameWords(r);
 private = {'PatientName', 'PatientID', 'PatientBirthDate', 'PatientSex', 'PatientAge', 'PatientWeight', ...
     'PatientSize', 'AccessionNumber', 'ReferringPhysicianName', 'InstitutionAddress', 'PatientComments', ...
     'SeriesDescriptionOriginal', 'ImageComments'};
 m = rmfield(m, intersect(fieldnames(m), private));
+m = seecat.bids.scrub_names(m, words);
 if ismember(a.suffix, {'bold', 'sbref'})
     m.TaskName = char(string(a.ent.task));
 end
@@ -685,6 +695,20 @@ if strcmp(a.suffix, 'bold') && ~isfield(m, 'RepetitionTime')
 end
 for f = fieldnames(extra)'
     m.(f{1}) = extra.(f{1});
+end
+end
+
+function w = nameWords(r)
+% The subject's name: the image's names, and the words of PatientName
+w = {};
+if isfield(r, 'names')
+    w = cellstr(r.names);
+end
+pn = char(string(field(r.meta, 'PatientName', '')));
+if ~isempty(pn) && isempty(regexpi(strtrim(pn), '^(anon\w*|unknown|none|n/?a|x+|0+|\*+|-+)$', 'once'))
+    p = regexp(pn, '[^\^\s,_\-.]+', 'match');
+    p = p(cellfun(@(t) isempty(regexp(t, '\d', 'once')), p));
+    w = [w(:)', p, {strjoin(p, '')}];
 end
 end
 
