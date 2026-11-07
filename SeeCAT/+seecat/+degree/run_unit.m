@@ -9,6 +9,9 @@ function result = run_unit(unit, cfg, log)
 % in the run's space, with JSON sidecars of the settings.
 
 S = seecat.conn.load_series(unit, cfg.mask);
+if isfield(unit, 'group_mask') && ~isempty(unit.group_mask)
+    log('group mask: %s', unit.group_mask);
+end
 t = tic;
 [D, maps] = seecat.conn.degree(S.Y(:, S.in), S.xyz(:, S.in), struct('threshold', cfg.threshold, ...
     'sign', {cfg.sign}, 'weight', {cfg.weight}, 'exclude_local_mm', cfg.exclude_local_mm, ...
@@ -37,7 +40,7 @@ for k = 1:numel(maps)
     end
     meta = struct('Measure', measure.(m.weight), 'Sign', m.sign, 'Threshold', cfg.threshold, ...
         'ExcludeLocalMM', cfg.exclude_local_mm, 'DistanceMM', [m.lo min(m.hi, realmax)], ...
-        'Mask', cfg.mask, 'Sources', {{src}}, 'FramesUsed', S.n_kept, 'FramesTotal', S.n_frames, ...
+        'Mask', cfg.mask, 'GroupMask', groupMask(unit, cfg), 'Voxels', nnz(S.in), 'Sources', {{src}}, 'FramesUsed', S.n_kept, 'FramesTotal', S.n_frames, ...
         'Software', ['SeeCAT ' seecat.version()]);
     for q = 1:size(out, 1)
         vol = zeros(S.hdr.dim, 'single');
@@ -57,6 +60,18 @@ for k = 1:numel(maps)
     end
 end
 result = struct('n_kept', S.n_kept, 'n_voxels', nnz(S.in));
+end
+
+function g = groupMask(unit, cfg)
+% The group mask as a BIDS URI, or '' without one
+g = '';
+if isfield(unit, 'group_mask') && ~isempty(unit.group_mask)
+    g = strrep(unit.group_mask, '\', '/');
+    root = strrep(cfg.output_dir, '\', '/');
+    if startsWith(lower(g), lower([root '/']))
+        g = ['bids:seecat:' g(numel(root) + 2:end)];
+    end
+end
 end
 
 function f = smoothMap(vol, hdr, fwhm, idx, f)

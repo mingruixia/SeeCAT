@@ -15,7 +15,9 @@ function S = load_series(unit, maskSpec)
 % MASKSPEC: 'brain' = the subject mask; 'gm' = SeeCAT's TPM GM mask
 % (templates/tpl-IXI549Space_res-<2|3>_label-GM_mask.nii, the resolution
 % nearest the data), resampled to the data grid; or a mask file. The
-% analysis mask is always limited to the subject mask.
+% analysis mask is always limited to the subject mask, and to
+% unit.group_mask when the unit has one (seecat.conn.group_mask: the
+% voxels in the brain mask of every run).
 
 T = seecat.io.read_tsv(unit.confounds);
 keep = true(height(T), 1);
@@ -51,6 +53,10 @@ switch maskSpec
     otherwise
         g = seecat.io.read_nii(maskSpec, 'Ref', hdr, 'Interp', 0) > 0;
         m = g(idx);
+end
+if isfield(unit, 'group_mask') && ~isempty(unit.group_mask)
+    g = seecat.io.read_nii(unit.group_mask, 'Ref', hdr, 'Interp', 0) > 0;
+    m = m(:) & g(idx);
 end
 S.in = m(:);
 S.n_frames = height(T);

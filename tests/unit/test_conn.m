@@ -88,6 +88,50 @@ tc.verifyEqual(mean(z(m)), 0, 'AbsTol', 1e-5);
 tc.verifyEqual(std(z(m)), 1, 'AbsTol', 1e-4);
 end
 
+function testDegreeGroupMask(tc)
+% Two runs whose brain masks differ: without the group mask 64 and 48
+% voxels, with it 48 in both
+in = tempname;
+c = onCleanup(@() rmdir(in, 's'));
+makeRun(in, '01');
+makeRun(in, '02');
+f = fullfile(in, 'sub-02', 'func', 'sub-02_task-rest_space-IXI549Space_res-3_desc-brain_mask.nii.gz');
+[m, V] = seecat.io.read_nii(f);
+m(5, :, :) = 0;
+seecat.io.write_nii(uint8(m), V(1), f, 'DataType', 'uint8');
+cfg = seecat.config('degree');
+cfg.input_dir = in;
+cfg.mask = 'brain';
+cfg.weight = {'binary'};
+cfg.smooth_fwhm = 0;
+S = quiet(@() seecat.run(cfg));
+tc.verifyEqual(S.n_voxels, [64; 48]);
+cfg.group_mask = true;
+S = quiet(@() seecat.run(cfg));
+tc.verifyEqual(S.status, {'ok'; 'ok'});
+tc.verifyEqual(S.n_voxels, [48; 48]);
+g = dir(fullfile(in, 'group', 'masks', 'space-IXI549Space_res-3_desc-group*_mask.nii.gz'));
+tc.verifyNumElements(g, 1);
+gm = seecat.io.read_nii(fullfile(g.folder, g.name)) > 0;
+tc.verifyEqual(nnz(gm), 48);
+j = jsondecode(fileread(fullfile(g.folder, strrep(g.name, '.nii.gz', '.json'))));
+tc.verifyEqual(j.NumberOfRuns, 2);
+for s = {'01', '02'}
+    z = seecat.io.read_nii(fullfile(in, ['sub-' s{1}], 'func', ...
+        ['sub-' s{1} '_task-rest_space-IXI549Space_res-3_desc-degPosBinR0p2_stat-z_connectivity.nii.gz']));
+    tc.verifyEqual(z ~= 0, gm, s{1});
+end
+S = quiet(@() seecat.run(cfg));
+tc.verifyEqual(S.status, {'skipped'; 'skipped'});
+% one subject only: another group mask, and the first one is left as it is
+t = g.datenum;
+cfg.subjects = {'01'};
+S = quiet(@() seecat.run(cfg));
+tc.verifyEqual(S.n_voxels, 64);
+tc.verifyNumElements(dir(fullfile(in, 'group', 'masks', '*_mask.nii.gz')), 2);
+tc.verifyEqual(dir(fullfile(g.folder, g.name)).datenum, t);
+end
+
 function testSeedsFromJsonConfig(tc)
 f = [tempname '.json'];
 c = onCleanup(@() delete(f));
