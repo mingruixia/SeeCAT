@@ -19,6 +19,7 @@ cfg.input = 'denoised';      % desc of the input series, e.g. 'denoised' or 'den
 cfg.space = '';              % needed only when several spaces are present
 cfg.res = '';                % res label, needed only when there are several
 cfg.seeds = struct('name', {}, 'center', {}, 'radius', {}, 'file', {});
+cfg.group_mask = false;      % only voxels in the brain mask of every run
 
 cfg.qc_exclusions = true;         % leave out runs excluded in reports/qc_exclusions.tsv
 v = seecat.util.validators;
@@ -30,6 +31,7 @@ spec = [
     'space',     v.text,                                          'empty or a space label'
     'res',       v.text,                                          'empty or a res label'
     'seeds',     @validSeeds,                                     'a non-empty struct array of seeds: name + center + radius, or name + file'
+    'group_mask', v.flag,                                         'true or false'
     'qc_exclusions', v.flag, 'true or false'
     }
     spec];

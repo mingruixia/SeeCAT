@@ -1,6 +1,12 @@
-function S = load_series(unit, maskSpec)
+function S = load_series(unit, maskSpec, only)
 % LOAD_SERIES  A run's BOLD series, masks and kept frames, for analyses.
 %   S = seecat.conn.load_series(unit, 'gm')     % or 'brain', or a mask file
+%   S = seecat.conn.load_series(unit, 'brain', true)   % only the analysis-mask voxels
+%
+% With ONLY true, the columns outside the analysis mask are left out (Y,
+% index, xyz, brain and in then hold the analysis-mask voxels only); Seed FC
+% and Gradients use it with 'brain', so a group mask limits every voxel
+% they use.
 %
 % UNIT has bold, mask (subject brain mask) and confounds (from
 % seecat.bids.derivative_units). Frames with censor = 1 in the confounds
@@ -59,6 +65,14 @@ if isfield(unit, 'group_mask') && ~isempty(unit.group_mask)
     m = m(:) & g(idx);
 end
 S.in = m(:);
+S.brain = true(numel(idx), 1);
+if nargin > 2 && only
+    S.Y = S.Y(:, S.in);
+    S.index = S.index(S.in);
+    S.xyz = S.xyz(:, S.in);
+    S.brain = S.brain(S.in);
+    S.in = true(nnz(S.in), 1);
+end
 S.n_frames = height(T);
 S.n_kept = nnz(keep);
 end

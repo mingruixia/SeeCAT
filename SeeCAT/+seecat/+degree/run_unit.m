@@ -40,7 +40,7 @@ for k = 1:numel(maps)
     end
     meta = struct('Measure', measure.(m.weight), 'Sign', m.sign, 'Threshold', cfg.threshold, ...
         'ExcludeLocalMM', cfg.exclude_local_mm, 'DistanceMM', [m.lo min(m.hi, realmax)], ...
-        'Mask', cfg.mask, 'GroupMask', groupMask(unit, cfg), 'Voxels', nnz(S.in), 'Sources', {{src}}, 'FramesUsed', S.n_kept, 'FramesTotal', S.n_frames, ...
+        'Mask', cfg.mask, 'GroupMask', seecat.conn.group_mask_uri(unit, cfg), 'Voxels', nnz(S.in), 'Sources', {{src}}, 'FramesUsed', S.n_kept, 'FramesTotal', S.n_frames, ...
         'Software', ['SeeCAT ' seecat.version()]);
     for q = 1:size(out, 1)
         vol = zeros(S.hdr.dim, 'single');
@@ -60,18 +60,6 @@ for k = 1:numel(maps)
     end
 end
 result = struct('n_kept', S.n_kept, 'n_voxels', nnz(S.in));
-end
-
-function g = groupMask(unit, cfg)
-% The group mask as a BIDS URI, or '' without one
-g = '';
-if isfield(unit, 'group_mask') && ~isempty(unit.group_mask)
-    g = strrep(unit.group_mask, '\', '/');
-    root = strrep(cfg.output_dir, '\', '/');
-    if startsWith(lower(g), lower([root '/']))
-        g = ['bids:seecat:' g(numel(root) + 2:end)];
-    end
-end
 end
 
 function f = smoothMap(vol, hdr, fwhm, idx, f)

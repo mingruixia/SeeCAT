@@ -6,7 +6,10 @@ function result = run_unit(unit, cfg, log)
 % *_desc-<seed>_stat-z_connectivity.nii.gz (Fisher z) in the run's space,
 % with a JSON sidecar giving the seed, the input series and the frames used.
 
-S = seecat.conn.load_series(unit, 'brain');
+S = seecat.conn.load_series(unit, 'brain', true);    % brain (and group) mask voxels
+if isfield(unit, 'group_mask') && ~isempty(unit.group_mask)
+    log('group mask: %s (%d voxels)', unit.group_mask, numel(S.index));
+end
 nS = numel(cfg.seeds);
 seeds = false(numel(S.index), nS);
 defs = cell(1, nS);
@@ -38,7 +41,7 @@ for s = 1:nS
         f = fullfile(unit.work_dir, sprintf('%s_%s.nii', cfg.seeds(s).name, stats{q, 1}));
         seecat.io.write_nii(vol, S.hdr, f);
         meta = struct('Seed', defs{s}, 'Statistic', stats{q, 1}, 'Sources', {{src}}, ...
-            'FramesUsed', S.n_kept, 'FramesTotal', S.n_frames, 'Software', ['SeeCAT ' seecat.version()]);
+            'GroupMask', seecat.conn.group_mask_uri(unit, cfg), 'FramesUsed', S.n_kept, 'FramesTotal', S.n_frames, 'Software', ['SeeCAT ' seecat.version()]);
         rel = seecat.bids.deriv_name(unit.bold, 'desc', cfg.seeds(s).name, 'stat', stats{q, 1}, ...
             'suffix', 'connectivity', 'ext', '.nii.gz');
         seecat.util.publish_output(f, rel, meta, opt);

@@ -132,6 +132,39 @@ tc.verifyNumElements(dir(fullfile(in, 'group', 'masks', '*_mask.nii.gz')), 2);
 tc.verifyEqual(dir(fullfile(g.folder, g.name)).datenum, t);
 end
 
+function testSeedFcGroupMask(tc)
+% The brain mask of sub-02 lacks one slab: with the group mask, both runs'
+% maps cover the same 48 voxels; without it, sub-01's covers 64
+in = tempname;
+c = onCleanup(@() rmdir(in, 's'));
+makeRun(in, '01');
+makeRun(in, '02');
+f = fullfile(in, 'sub-02', 'func', 'sub-02_task-rest_space-IXI549Space_res-3_desc-brain_mask.nii.gz');
+[m, V] = seecat.io.read_nii(f);
+m(5, :, :) = 0;
+seecat.io.write_nii(uint8(m), V(1), f, 'DataType', 'uint8');
+cfg = seecat.config('fc');
+cfg.input_dir = in;
+cfg.seeds = struct('name', 'A', 'center', [0 0 0], 'radius', 6);
+map = @(s) seecat.io.read_nii(fullfile(in, ['sub-' s], 'func', ...
+    ['sub-' s '_task-rest_space-IXI549Space_res-3_desc-A_stat-z_connectivity.nii.gz']));
+S = quiet(@() seecat.run(cfg));
+tc.verifyEqual(S.status, {'ok'; 'ok'});
+tc.verifyEqual(nnz(map('01')), 64);
+cfg.group_mask = true;
+S = quiet(@() seecat.run(cfg));
+tc.verifyEqual(S.status, {'ok'; 'ok'});
+g = dir(fullfile(in, 'group', 'masks', '*_desc-group*_mask.nii.gz'));
+gm = seecat.io.read_nii(fullfile(g.folder, g.name)) > 0;
+tc.verifyEqual(nnz(gm), 48);
+for s = {'01', '02'}
+    tc.verifyEqual(map(s{1}) ~= 0, gm, s{1});
+end
+j = jsondecode(fileread(fullfile(in, 'sub-01', 'func', ...
+    'sub-01_task-rest_space-IXI549Space_res-3_desc-A_stat-z_connectivity.json')));
+tc.verifyEqual(j.GroupMask, ['bids:seecat:group/masks/' g.name]);
+end
+
 function testSeedsFromJsonConfig(tc)
 f = [tempname '.json'];
 c = onCleanup(@() delete(f));

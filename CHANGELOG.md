@@ -41,12 +41,13 @@
   sessions and tasks of its BOLD runs with the number of runs per task, and
   the empty Subjects and Task fields show what they will take
   (`seecat.bids.summary`).
-- **Degree: same voxels in every run** (`group_mask`, default off). The
-  brain masks of all selected runs are intersected into a group mask
-  (`seecat.conn.group_mask`, written to group/masks/ with the list of runs),
-  and each run's network uses only those voxels, combined with Mask. Without
-  it, the voxel count differs a little between subjects with their field of
-  view and segmentation.
+- **Degree, Seed FC and Gradients: same voxels in every run** (`group_mask`,
+  default off). The brain masks of all selected runs are intersected into a
+  group mask (`seecat.conn.group_mask`, written to group/masks/ with the list
+  of runs), and each run uses only those voxels: Degree's network (combined
+  with Mask), Seed FC's seeds and maps, and Gradients' node averages (voxel
+  grid or atlas). Without it, the voxel count differs a little between
+  subjects with their field of view and segmentation.
 - Tests: tests/unit/test_nifti.m on synthetic exports
   (tests/data/make_nifti_demo.m); test_dicom covers auto naming and dry runs.
 

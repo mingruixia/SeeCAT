@@ -102,6 +102,46 @@ gv = valuesAt(f('02', 1), [x(:) y(:) z(:)]);
 tc.verifyEqual(ga, gv, 'AbsTol', 1e-5);
 end
 
+function testGroupMask(tc)
+% sub-03's brain mask lacks the slab x = 9 mm: with the group mask, every
+% run's node series come from the same 180 voxels; parcels of two voxels
+% along x then average one voxel at that edge in every run
+root = tempname;
+c = onCleanup(@() rmdir(root, 's'));
+in = fullfile(root, 'derivatives', 'seecat');
+for s = 1:3
+    makeRun(in, sprintf('%02d', s));
+end
+f = fullfile(in, 'sub-03', 'func', 'sub-03_task-rest_space-IXI549Space_res-3_desc-brain_mask.nii.gz');
+[m, V] = seecat.io.read_nii(f);
+m(6, :, :) = 0;
+seecat.io.write_nii(uint8(m), V(1), f, 'DataType', 'uint8');
+[i, ~, ~] = ndgrid(1:6, 1:6, 1:6);
+atlas = ceil(i / 2) + 3 * (reshape(0:35, 1, 6, 6));   % 108 parcels of 2 voxels along x
+af = fullfile(root, 'atlas.nii');
+seecat.io.write_nii(atlas, V(1), af);
+cfg = seecat.config('gradient');
+cfg.input_dir = in;
+cfg.nodes = 'atlas';
+cfg.atlas = af;
+cfg.group_mask = true;
+units = seecat.gradient.plan(seecat.config(cfg));
+g = units.runs(1).group_mask;
+tc.verifyEqual(nnz(seecat.io.read_nii(g) > 0), 180);
+tc.verifyTrue(all(strcmp({units.runs.group_mask}, g)));
+S1 = seecat.conn.load_series(units.runs(1), 'brain', true);
+tc.verifyNumElements(S1.index, 180);
+S0 = seecat.conn.load_series(rmfield(units.runs(1), 'group_mask'), 'brain', true);
+tc.verifyNumElements(S0.index, 216);
+S = quiet(@() seecat.run(cfg));
+tc.verifyEqual(S.status, {'ok'}, S.message{1});
+tc.verifyEqual(S.n_common_nodes, 108);
+j = jsondecode(fileread(fullfile(in, 'sub-01', 'func', ...
+    'sub-01_task-rest_space-IXI549Space_res-3_desc-grad1Atlasatlas_connectivity.json')));
+[~, gn, ge] = fileparts(g);
+tc.verifyEqual(j.GroupMask, ['bids:seecat:group/masks/' gn ge]);
+end
+
 function v = valuesAt(file, mm)
 [g, V] = seecat.io.read_nii(file);
 p = round(V.mat \ [mm'; ones(1, size(mm, 1))]);
