@@ -16,6 +16,7 @@ cfg.space = '';
 cfg.res = '';                % res label, needed only when there are several
 cfg.mask = 'gm';                      % 'gm' (TPM GM > 0.2), 'brain' (subject), or a file
 cfg.group_mask = false;               % also keep only voxels in the brain mask of every run
+cfg.mask_only = false;                % use the mask as given, not limited to the brain mask
 cfg.threshold = 0.2;                  % r
 cfg.sign = {'positive'};              % any of 'positive', 'absolute', 'negative'
 cfg.weight = {'binary', 'weighted'};  % degree and/or strength
@@ -35,6 +36,7 @@ spec = [
     'res',              v.text,                                       'empty or a res label'
     'mask',             @(x) v.text(x) && (any(strcmp(x, {'gm', 'brain'})) || exist(x, 'file') == 2), '''gm'', ''brain'' or a mask file'
     'group_mask',       v.flag,                                       'true or false'
+    'mask_only',        v.flag,                                       'true or false'
     'threshold',        @(x) isnumeric(x) && isscalar(x) && x >= 0 && x < 1, 'a correlation threshold in [0, 1)'
     'sign',             @(x) iscellstr(x) && ~isempty(x) && all(ismember(x, {'positive', 'absolute', 'negative'})), 'a non-empty subset of positive, absolute, negative' %#ok<ISCLSTR>
     'weight',           @(x) iscellstr(x) && ~isempty(x) && all(ismember(x, {'binary', 'weighted'})), 'a non-empty subset of binary, weighted' %#ok<ISCLSTR>

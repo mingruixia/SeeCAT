@@ -4,13 +4,20 @@ function result = run_unit(unit, cfg, log)
 %
 % Writes, per sign x weight x distance bin,
 %   *_desc-deg<Pos|Abs|Neg><Bin|Wei>R<thr>[D<lo>to<hi>]_stat-raw_connectivity.nii.gz
-%   ... stat-z (z-scored within the analysis mask; cfg.zscore)
+%   ... stat-z (z-scored within the analysis mask, over the voxels with
+%       signal; cfg.zscore)
 %   ... desc-...Sm<fwhm> versions of both (cfg.smooth_fwhm > 0)
 % in the run's space, with JSON sidecars of the settings.
 
-S = seecat.conn.load_series(unit, cfg.mask);
+maskOnly = isfield(cfg, 'mask_only') && cfg.mask_only;
+S = seecat.conn.load_series(unit, cfg.mask, true, struct('mask_only', maskOnly));
 if isfield(unit, 'group_mask') && ~isempty(unit.group_mask)
     log('group mask: %s', unit.group_mask);
+end
+live = S.live(:);
+if maskOnly
+    log('mask as given: %d voxels, %d outside this run''s brain mask, %d without signal (degree 0)', ...
+        numel(S.index), nnz(~S.brain), nnz(~live));
 end
 t = tic;
 [D, maps] = seecat.conn.degree(S.Y(:, S.in), S.xyz(:, S.in), struct('threshold', cfg.threshold, ...
@@ -36,11 +43,13 @@ for k = 1:numel(maps)
     out = {'raw', D(:, k)};
     if cfg.zscore
         d = D(:, k);
-        out(end+1, :) = {'z', (d - mean(d)) / std(d)}; %#ok<AGROW>
+        zd = zeros(size(d));                       % over the voxels with signal; 0 elsewhere
+        zd(live) = (d(live) - mean(d(live))) / std(d(live));
+        out(end+1, :) = {'z', zd}; %#ok<AGROW>
     end
     meta = struct('Measure', measure.(m.weight), 'Sign', m.sign, 'Threshold', cfg.threshold, ...
         'ExcludeLocalMM', cfg.exclude_local_mm, 'DistanceMM', [m.lo min(m.hi, realmax)], ...
-        'Mask', cfg.mask, 'GroupMask', seecat.conn.group_mask_uri(unit, cfg), 'Voxels', nnz(S.in), 'Sources', {{src}}, 'FramesUsed', S.n_kept, 'FramesTotal', S.n_frames, ...
+        'Mask', cfg.mask, 'MaskOnly', maskOnly, 'GroupMask', seecat.conn.group_mask_uri(unit, cfg), 'Voxels', nnz(S.in), 'VoxelsWithSignal', nnz(live), 'Sources', {{src}}, 'FramesUsed', S.n_kept, 'FramesTotal', S.n_frames, ...
         'Software', ['SeeCAT ' seecat.version()]);
     for q = 1:size(out, 1)
         vol = zeros(S.hdr.dim, 'single');

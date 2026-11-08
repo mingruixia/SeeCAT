@@ -142,6 +142,49 @@ j = jsondecode(fileread(fullfile(in, 'sub-01', 'func', ...
 tc.verifyEqual(j.GroupMask, ['bids:seecat:group/masks/' gn ge]);
 end
 
+function testMaskAsGiven(tc)
+% sub-03's brain mask lacks the slab x = 9 mm but its data do not (as
+% fMRIPrep data can): with the atlas used as given, every run averages the
+% 180 atlas voxels (the atlas has no voxels at x = -6 mm)
+root = tempname;
+c = onCleanup(@() rmdir(root, 's'));
+in = fullfile(root, 'derivatives', 'seecat');
+for s = 1:3
+    makeRun(in, sprintf('%02d', s));
+end
+f = fullfile(in, 'sub-03', 'func', 'sub-03_task-rest_space-IXI549Space_res-3_desc-brain_mask.nii.gz');
+[m, V] = seecat.io.read_nii(f);
+m(6, :, :) = 0;
+seecat.io.write_nii(uint8(m), V(1), f, 'DataType', 'uint8');
+[i, ~, ~] = ndgrid(1:6, 1:6, 1:6);
+atlas = ceil(i / 2) + 3 * (reshape(0:35, 1, 6, 6));
+atlas(1, :, :) = 0;
+af = fullfile(root, 'atlas.nii');
+seecat.io.write_nii(atlas, V(1), af);
+cfg = seecat.config('gradient');
+cfg.input_dir = in;
+cfg.nodes = 'atlas';
+cfg.atlas = af;
+cfg.mask_only = true;
+units = seecat.gradient.plan(seecat.config(cfg));
+N = units.nodes;
+S3 = seecat.conn.load_series(units.runs(3), N.mask_file, true, struct('mask_only', true));
+tc.verifyNumElements(S3.index, 180);
+tc.verifyEqual(nnz(S3.brain), 144);
+tc.verifyTrue(all(S3.live));
+S0 = seecat.conn.load_series(units.runs(3), 'brain', true);
+tc.verifyNumElements(S0.index, 180);              % the brain mask: x = 9 mm left out
+tc.verifyEqual(nnz(S0.xyz(1, :) > 7.5), 0);
+S = quiet(@() seecat.run(cfg));
+tc.verifyEqual(S.status, {'ok'}, S.message{1});
+tc.verifyEqual(S.n_common_nodes, 108);
+j = jsondecode(fileread(fullfile(in, 'sub-03', 'func', ...
+    'sub-03_task-rest_space-IXI549Space_res-3_desc-grad1Atlasatlas_connectivity.json')));
+tc.verifyTrue(j.MaskOnly);
+cfg.group_mask = true;
+tc.verifyError(@() seecat.gradient.plan(seecat.config(cfg)), 'SeeCAT:conn');
+end
+
 function v = valuesAt(file, mm)
 [g, V] = seecat.io.read_nii(file);
 p = round(V.mat \ [mm'; ones(1, size(mm, 1))]);

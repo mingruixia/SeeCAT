@@ -3,7 +3,8 @@ function result = run_unit(unit, cfg, log)
 %   result = seecat.gradient.run_unit(unit, cfg, log)
 %
 % 1. Node series of each run (mean of the run's brain-mask voxels in each
-%    node; censored frames left out), kept in the work folder.
+%    node, or with cfg.mask_only of the mask or atlas voxels with signal;
+%    censored frames left out), kept in the work folder.
 % 2. Per run: Pearson r between nodes, seecat.gradient.embed. With
 %    align = 'group', Fisher z of r is also summed over runs.
 % 3. Alignment (seecat.gradient.align, generalized Procrustes): the runs
@@ -32,8 +33,15 @@ checkMemory(N.n, cfg);
 present = false(N.n, nr);
 frames = zeros(nr, 2);
 files = cell(nr, 1);
+maskOnly = isfield(cfg, 'mask_only') && cfg.mask_only;
 for r = 1:nr
-    S = seecat.conn.load_series(runs(r), 'brain', true);   % brain (and group) mask voxels
+    if maskOnly                                    % the mask or atlas voxels as given
+        S = seecat.conn.load_series(runs(r), N.mask_file, true, struct('mask_only', true));
+        log('run %d: mask as given, %d voxels, %d outside its brain mask, %d without signal (left out)', ...
+            r, numel(S.index), nnz(~S.brain), nnz(~S.live));
+    else
+        S = seecat.conn.load_series(runs(r), 'brain', true);   % brain (and group) mask voxels
+    end
     [Yn, present(:, r)] = nodeSeries(S, N);
     frames(r, :) = [S.n_kept, S.n_frames];
     files{r} = fullfile(unit.work_dir, sprintf('nodes_%03d.mat', r));
@@ -89,6 +97,7 @@ opt = struct('output_dir', cfg.output_dir, 'work_dir', unit.work_dir, 'manifest'
 base = struct('Nodes', cfg.nodes, 'NodeTag', N.tag, 'Kernel', cfg.kernel, 'Sparsity', cfg.sparsity, ...
     'Alpha', cfg.alpha, 'Components', cfg.n_components, 'Alignment', cfg.align, ...
     'Software', ['SeeCAT ' seecat.version()]);
+base.MaskOnly = isfield(cfg, 'mask_only') && cfg.mask_only;
 if strcmp(cfg.nodes, 'voxels')
     base.NodeSizeMM = cfg.node_size;
     base.Mask = cfg.mask;

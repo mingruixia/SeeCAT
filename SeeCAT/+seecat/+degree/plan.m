@@ -4,6 +4,8 @@ function [units, cfg] = plan(cfg)
 % See seecat.bids.derivative_units. With cfg.group_mask, the brain masks of
 % all planned runs are intersected (seecat.conn.group_mask) and each unit
 % gets the file as unit.group_mask, so every run uses the same voxels.
+% cfg.mask_only uses cfg.mask as given instead (seecat.conn.check_mask_only).
+seecat.conn.check_mask_only(cfg, true);
 [units, cfg] = seecat.bids.derivative_units(cfg, cfg.input);
 if isfield(cfg, 'group_mask') && cfg.group_mask
     f = seecat.conn.group_mask(units, cfg);

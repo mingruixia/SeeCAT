@@ -48,6 +48,16 @@
   with Mask), Seed FC's seeds and maps, and Gradients' node averages (voxel
   grid or atlas). Without it, the voxel count differs a little between
   subjects with their field of view and segmentation.
+- **Degree, Seed FC and Gradients: use the mask as given** (`mask_only`,
+  default off). The voxels of the chosen mask (gm or a mask file; for
+  Gradients also the atlas) are used without the brain mask of each run, so
+  every run has exactly those voxels. Voxels without signal (outside a run's
+  brain mask or field of view) get degree 0 or r = 0, and Gradients leaves
+  them out of the node averages; Degree's z-scored maps are computed over
+  the voxels with signal. It cannot be combined with `group_mask`. Seed FC
+  has a new `mask` (`brain`, default, `gm` or a file) for the voxels its
+  maps cover. JSON sidecars record `MaskOnly` (Degree also
+  `VoxelsWithSignal`).
 - Tests: tests/unit/test_nifti.m on synthetic exports
   (tests/data/make_nifti_demo.m); test_dicom covers auto naming and dry runs.
 

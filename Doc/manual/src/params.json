@@ -865,13 +865,33 @@
       "choices": []
     },
     {
+      "path": "mask",
+      "label": "Mask",
+      "section": "Maps",
+      "advanced": false,
+      "widget": "mask",
+      "default": "brain",
+      "help": "The voxels the maps cover.\n\nWhole brain (brain, default): every voxel of the subject's brain mask.\nGrey matter (gm): SeeCAT's grey-matter mask (SPM TPM GM > 0.2) resampled to the data.\nMask file: your own NIfTI image in the space of the data (MNI); voxels > 0 are kept, e.g. a mask shared by all subjects.\n\nThe mask is limited to the subject's brain mask, unless \"Use the mask as given\" is on. It does not change the seeds: they take their voxels from the brain mask either way.",
+      "choices": []
+    },
+    {
       "path": "group_mask",
       "label": "Same voxels in every run",
-      "section": "Seeds",
+      "section": "Maps",
       "advanced": false,
       "widget": "flag",
       "default": "false",
       "help": "Use only the voxels that lie inside the brain mask of every selected run (the group mask): each seed then has the same voxels in every run, and every map covers the same voxels. Off (default): each run uses its own brain mask, which differs a little between subjects with their field of view and segmentation; a seed at the edge of the scan can then have fewer voxels in some runs.\n\nThe group mask is the intersection of the brain masks of the runs this page selects (subjects, task, QC exclusions). It is written to group/masks/ in the output folder, with the list of runs in its .json. A run with poor coverage makes it smaller for everyone: check the QC report, or exclude that run. Adding or leaving out runs changes the group mask, and the runs are then computed again.",
+      "choices": []
+    },
+    {
+      "path": "mask_only",
+      "label": "Use the mask as given",
+      "section": "Maps",
+      "advanced": false,
+      "widget": "flag",
+      "default": "false",
+      "help": "Use every voxel of the Mask above, without limiting it to the subject's brain mask: every run's maps then cover exactly the voxels of the mask, and each seed uses all its own voxels that carry signal. Off (default): the brain mask of each run limits both.\n\nNeeds grey matter (gm) or a mask file as the Mask, and cannot go with \"Same voxels in every run\". Outside a run's brain mask or field of view the denoised series is 0, so r and z are 0 there. The log of each run gives how many voxels lie outside its brain mask.",
       "choices": []
     },
     {
@@ -1023,7 +1043,7 @@
       "advanced": false,
       "widget": "mask",
       "default": "gm",
-      "help": "The voxels that make up the network: every voxel of this mask is a node and is correlated with every other.\n\nGrey matter (gm, default): SeeCAT's grey-matter mask (SPM TPM GM > 0.2) resampled to the data, as in SeeCAT 1.0. White matter and CSF voxels would add noise connections.\nWhole brain (brain): every voxel of the subject's brain mask.\nMask file: your own NIfTI image in the space of the data (MNI); voxels > 0 are kept, e.g. a cortical mask or a mask shared by all subjects. Choose it with the folder button.\n\nThe mask is always limited to the subject's brain mask. The time and memory grow with the square of the number of voxels: about 50 000 grey-matter voxels at 3 mm, 4 times more at 2 mm.",
+      "help": "The voxels that make up the network: every voxel of this mask is a node and is correlated with every other.\n\nGrey matter (gm, default): SeeCAT's grey-matter mask (SPM TPM GM > 0.2) resampled to the data, as in SeeCAT 1.0. White matter and CSF voxels would add noise connections.\nWhole brain (brain): every voxel of the subject's brain mask.\nMask file: your own NIfTI image in the space of the data (MNI); voxels > 0 are kept, e.g. a cortical mask or a mask shared by all subjects. Choose it with the folder button.\n\nThe mask is limited to the subject's brain mask, unless \"Use the mask as given\" is on. The time and memory grow with the square of the number of voxels: about 50 000 grey-matter voxels at 3 mm, 4 times more at 2 mm.",
       "choices": []
     },
     {
@@ -1034,6 +1054,16 @@
       "widget": "flag",
       "default": "false",
       "help": "Keep only the voxels that lie inside the brain mask of every selected run (the group mask), so every run's network has the same nodes. Off (default): each run uses the mask above within its own brain mask, so the number of voxels differs a little between subjects, with their field of view and segmentation.\n\nThe group mask is the intersection of the brain masks of the runs this page selects (subjects, task, QC exclusions), combined with the Mask above. It is written to group/masks/ in the output folder, with the list of runs in its .json. A run with poor coverage makes it smaller for everyone: check the QC report, or exclude that run.\n\nAdding or leaving out runs changes the group mask, and the runs are then computed again.",
+      "choices": []
+    },
+    {
+      "path": "mask_only",
+      "label": "Use the mask as given",
+      "section": "Network",
+      "advanced": false,
+      "widget": "flag",
+      "default": "false",
+      "help": "Use every voxel of the Mask above, without limiting it to the subject's brain mask: every run then has exactly the voxels of the mask, e.g. a mask you made for the whole group. Off (default): the mask is taken within each run's brain mask.\n\nNeeds grey matter (gm) or a mask file as the Mask, and cannot go with \"Same voxels in every run\". Outside a run's brain mask or field of view the denoised series is 0, so those voxels have no connections: their degree is 0, and the z-scored maps are computed over the voxels with signal only. The log of each run gives how many voxels lie outside its brain mask; the JSON sidecars have VoxelsWithSignal.",
       "choices": []
     },
     {
@@ -1296,6 +1326,16 @@
       "widget": "flag",
       "default": "false",
       "help": "Average each node over the same voxels in every run: only the voxels inside the brain mask of every selected run (the group mask) are used, for voxel grids and atlases alike. Off (default): each run averages its own brain-mask voxels, so a node at the edge of the scan can hold fewer voxels, or none, in some runs; the alignment uses only the nodes with data in every run either way.\n\nThe group mask is the intersection of the brain masks of the runs this page selects (subjects, task, QC exclusions). It is written to group/masks/ in the output folder, with the list of runs in its .json. A run with poor coverage makes it smaller for everyone: check the QC report, or exclude that run. Adding or leaving out runs changes the group mask, and the gradients are then computed again.",
+      "choices": []
+    },
+    {
+      "path": "mask_only",
+      "label": "Use the mask as given",
+      "section": "Nodes",
+      "advanced": false,
+      "widget": "flag",
+      "default": "false",
+      "help": "Average each node over the voxels of the Mask (voxel nodes) or of the Atlas (atlas nodes) as given, without the brain masks of the runs. Off (default): each node averages the brain-mask voxels of the run that fall in it (for voxel nodes also those outside the Mask).\n\nCannot go with \"Same voxels in every run\". Voxels without signal (outside a run's brain mask or field of view, where the denoised series is 0) are left out of the averages, so a node at the edge can still lack data in some runs; the alignment uses only the nodes with data in every run.",
       "choices": []
     },
     {

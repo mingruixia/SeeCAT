@@ -18,6 +18,7 @@ cfg.nodes = 'voxels';            % 'voxels' (a grid of node_size mm) or 'atlas'
 cfg.node_size = 4;               % mm, voxels only
 cfg.mask = 'gm';                 % voxels only: 'gm', 'brain' or a mask file
 cfg.group_mask = false;          % only voxels in the brain mask of every run
+cfg.mask_only = false;           % the voxels of the mask (or atlas) as given, no brain mask
 cfg.atlas = '';                  % atlas only: integer label image (MNI)
 cfg.n_components = 10;           % computed (and aligned)
 cfg.n_maps = 3;                  % written per run
@@ -39,6 +40,7 @@ spec = [
     'node_size',    @(x) isnumeric(x) && isscalar(x) && x >= 2 && x <= 12, 'a voxel size in mm, 2 to 12'
     'mask',         @(x) v.text(x) && (any(strcmp(x, {'gm', 'brain'})) || exist(x, 'file') == 2), '''gm'', ''brain'' or a mask file'
     'group_mask',   v.flag,                                        'true or false'
+    'mask_only',    v.flag,                                        'true or false'
     'atlas',        @(x) v.text(x) && (isempty(x) || exist(x, 'file') == 2), 'empty or an atlas image'
     'n_components', @(x) v.count(x) && x >= 2 && x <= 50,         'an integer from 2 to 50'
     'n_maps',       @(x) v.count(x) && x >= 1,                     'a positive integer'

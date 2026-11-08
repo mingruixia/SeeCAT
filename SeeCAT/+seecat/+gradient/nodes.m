@@ -10,7 +10,9 @@ function N = nodes(cfg)
 %
 % N fields: kind, dim, mat (the grid the maps are written on), index
 % (linear indices of the nodes in that grid; voxels) or labels and vol
-% (atlas), n (number of nodes), tag (for file names, e.g. 'Vox4').
+% (atlas), n (number of nodes), tag (for file names, e.g. 'Vox4'), mask_file
+% (the mask or atlas image: with cfg.mask_only, its voxels > 0 are the
+% voxels the nodes average).
 
 here = fileparts(fileparts(fileparts(mfilename('fullpath'))));       % SeeCAT/
 switch cfg.nodes
@@ -42,6 +44,7 @@ switch cfg.nodes
             inside = inside + hit;
         end
         N.kind = 'voxels';
+        N.mask_file = f;
         N.dim = dim;
         N.mat = mat;
         N.index = find(inside >= 13.5)';
@@ -51,6 +54,7 @@ switch cfg.nodes
         [A, Va] = seecat.io.read_nii(cfg.atlas);
         A = round(A(:, :, :, 1));
         N.kind = 'atlas';
+        N.mask_file = cfg.atlas;
         N.dim = Va.dim(1:3);
         N.mat = Va.mat;
         N.vol = A;

@@ -165,6 +165,96 @@ j = jsondecode(fileread(fullfile(in, 'sub-01', 'func', ...
 tc.verifyEqual(j.GroupMask, ['bids:seecat:group/masks/' g.name]);
 end
 
+function testDegreeMaskAsGiven(tc)
+% A mask of 80 voxels, 16 of them outside the brain masks (64 voxels).
+% sub-02 has signal there (as fMRIPrep data can), sub-01 has not
+[in, mf, c] = maskAsGivenData(); %#ok<ASGLU>
+cfg = seecat.config('degree');
+cfg.input_dir = in;
+cfg.mask = mf;
+cfg.weight = {'binary'};
+cfg.smooth_fwhm = 0;
+S = quiet(@() seecat.run(cfg));
+tc.verifyEqual(S.n_voxels, [64; 64]);          % the mask within each brain mask
+cfg.mask_only = true;
+S = quiet(@() seecat.run(cfg));
+tc.verifyEqual(S.status, {'ok'; 'ok'});
+tc.verifyEqual(S.n_voxels, [80; 80]);          % the mask as given
+file = @(s, k) fullfile(in, ['sub-' s], 'func', ...
+    ['sub-' s '_task-rest_space-IXI549Space_res-3_desc-degPosBinR0p2_stat-' k '_connectivity.nii.gz']);
+raw1 = seecat.io.read_nii(file('01', 'raw'));
+raw2 = seecat.io.read_nii(file('02', 'raw'));
+tc.verifyTrue(all(raw1(6, 2:5, 2:5) == 0, 'all'));     % no signal: degree 0
+tc.verifyTrue(all(raw2(6, 2:5, 2:5) > 0, 'all'));      % signal outside the brain mask is used
+z1 = seecat.io.read_nii(file('01', 'z'));
+d = raw1(2:5, 2:5, 2:5);
+z = z1(2:5, 2:5, 2:5);
+tc.verifyEqual(double(z(:)), (double(d(:)) - mean(d(:))) / std(double(d(:))), 'AbsTol', 1e-4);  % over voxels with signal
+tc.verifyTrue(all(z1(6, 2:5, 2:5) == 0, 'all'));
+j = jsondecode(fileread(strrep(file('01', 'raw'), '.nii.gz', '.json')));
+tc.verifyTrue(j.MaskOnly);
+tc.verifyEqual([j.Voxels j.VoxelsWithSignal], [80 64]);
+% settings that cannot go with it
+cfg.group_mask = true;
+tc.verifyError(@() quiet(@() seecat.run(cfg)), 'SeeCAT:conn');
+cfg.group_mask = false;
+cfg.mask = 'brain';
+tc.verifyError(@() quiet(@() seecat.run(cfg)), 'SeeCAT:conn');
+end
+
+function testSeedFcMaskAsGiven(tc)
+% The seed is one voxel outside the brain masks, where sub-02 has signal:
+% it is empty unless the mask is used as given
+[in, mf, c] = maskAsGivenData(); %#ok<ASGLU>
+cfg = seecat.config('fc');
+cfg.input_dir = in;
+cfg.mask = mf;
+cfg.seeds = struct('name', 'A', 'center', [-9 0 0], 'radius', 1);   % voxel (6, 3, 3)
+map = @(s) seecat.io.read_nii(fullfile(in, ['sub-' s], 'func', ...
+    ['sub-' s '_task-rest_space-IXI549Space_res-3_desc-A_stat-z_connectivity.nii.gz']));
+S = quiet(@() seecat.run(cfg));
+tc.verifyEqual(S.status, {'ok'; 'ok'});
+tc.verifyEqual(S.empty_seeds, [1; 1]);
+cfg.seeds = struct('name', 'A', 'center', [0 0 0], 'radius', 6);
+S = quiet(@() seecat.run(cfg));
+tc.verifyEqual(S.empty_seeds, [0; 0]);
+tc.verifyEqual(nnz(map('02')), 64);              % the mask within the brain mask
+cfg.mask_only = true;
+cfg.seeds = struct('name', 'A', 'center', [-9 0 0], 'radius', 1);
+S = quiet(@() seecat.run(cfg));
+tc.verifyEqual(S.status, {'ok'; 'ok'});
+tc.verifyEqual(S.empty_seeds, [1; 0]);           % sub-01 has no signal there
+m2 = map('02');
+tc.verifyEqual(nnz(m2), 80);                     % the whole mask
+tc.verifyGreaterThan(m2(6, 3, 3), 3);            % the seed itself
+j = jsondecode(fileread(fullfile(in, 'sub-02', 'func', ...
+    'sub-02_task-rest_space-IXI549Space_res-3_desc-A_stat-z_connectivity.json')));
+tc.verifyTrue(j.MaskOnly);
+cfg.seeds = struct('name', 'A', 'center', [0 0 0], 'radius', 6);
+S = quiet(@() seecat.run(cfg));
+m1 = map('01');
+tc.verifyEqual(nnz(m1), 64);                     % no signal in the slab outside sub-01's brain
+tc.verifyTrue(all(m1(6, 2:5, 2:5) == 0, 'all'));
+end
+
+function [in, mf, c] = maskAsGivenData()
+% Two runs (brain mask 2:5 in each direction), a mask file of the voxels
+% 2:6 x 2:5 x 2:5, and signal in the slab x = 6 for sub-02 only
+in = tempname;
+c = onCleanup(@() rmdir(in, 's'));
+makeRun(in, '01');
+makeRun(in, '02');
+f = fullfile(in, 'sub-02', 'func', 'sub-02_task-rest_space-IXI549Space_res-3_desc-denoised_bold.nii.gz');
+[Y, V] = seecat.io.read_nii(f);
+rng(5);
+Y(6, 2:5, 2:5, :) = Y(5, 2:5, 2:5, :) + 0.5 * randn(1, 4, 4, size(Y, 4));
+seecat.io.write_nii(Y, V(1), f);
+m = false(6, 6, 6);
+m(2:6, 2:5, 2:5) = true;
+mf = fullfile(in, 'mymask.nii');
+seecat.io.write_nii(uint8(m), V(1), mf, 'DataType', 'uint8');
+end
+
 function testSeedsFromJsonConfig(tc)
 f = [tempname '.json'];
 c = onCleanup(@() delete(f));
