@@ -54,8 +54,8 @@ later and plug in the same way.)
 
 ## 3. Code layout
 
-Recommended: a MATLAB namespace package, so nothing collides with SPM,
-DPABI or other toolboxes on the user's path.
+Recommended: a MATLAB namespace package, so nothing collides with SPM
+or other toolboxes on the user's path.
 
 ```
 SeeCAT/

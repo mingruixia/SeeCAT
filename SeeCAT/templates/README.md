@@ -18,7 +18,7 @@ seecat.util.make_templates('SeeCAT/templates', [2 3])
 | `label-WM` | WM > 0.9 |
 | `label-CSF` | CSF > 0.7 |
 
-They replace the DPABI-distributed `BrainMask_05`, `GreyMask_02`,
+They replace the 1.0 masks `BrainMask_05`, `GreyMask_02`,
 `WhiteMask_09`, `CsfMask_07` and `GMwithoutCER` (61x73x61), removed in
 2.0. The thresholds are the same, but SPM12/25's TPM is sharper than the maps
 those masks came from: the GM mask has 52,276 voxels at 3 mm (was 67,541;

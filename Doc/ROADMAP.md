@@ -5,9 +5,9 @@ Maintainer: Mingrui Xia. Licence: GPL-3.0-or-later.
 
 ## Ground rules
 
-- **No DPABI code.** Every DPABI-derived file and function is removed and
-  reimplemented. DPABI may be used only as an external cross-check in tests;
-  it is never shipped or called.
+- **No third-party analysis code.** Every file and function SeeCAT 1.0 took
+  from other toolboxes is removed and reimplemented. Other toolboxes may be
+  used only as an external cross-check in tests; they are never shipped or called.
 - **SPM is the only required toolbox** (SPM25; SPM12 r7771+ should work).
   BrainNet Viewer is optional, for surface and network figures.
 - **Batch API first, GUI second.** Every step runs from a config struct
@@ -57,7 +57,7 @@ See `CHANGELOG.md`.
         regular grid).
   - [x] One parallel pattern everywhere; no `cd`.
 - [x] Rebuild `templates/` masks from SPM TPM (`seecat.util.make_templates`, 2 and
-      3 mm); DPABI-distributed masks removed.
+      3 mm); the 1.0 masks removed.
 - [x] Atlases from installed sources (SPM Neuromorphometrics, BrainNet AAL/Brodmann);
       underlays ch2 / ch2better / MNI 2009c kept (gzip), chosen by data space.
 - [x] End-to-end on ds002785 (multiband, TR 0.75 s, 5 subjects): non-steady-state
@@ -72,7 +72,7 @@ See `CHANGELOG.md`.
       SeeCAT derivatives. Degree equals SeeCAT 1.0 on the legacy baseline input
       (float32 precision) and takes 35 s instead of ~20 min per subject; all 9
       ds000030 subjects in 2 min on 4 workers.
-- [x] Rewrite Stat with no DPABI-derived code (`seecat.config('stat')`,
+- [x] Rewrite Stat with no third-party code (`seecat.config('stat')`,
       Doc/design/stat.md, accepted 2026-10-31):
   - [x] QR-based GLM with T and F contrasts, image covariates, ReML
         non-sphericity.
@@ -83,7 +83,7 @@ See `CHANGELOG.md`.
   - [x] Validated against SPM for all built-in designs (one-sample, two-sample
         with covariate, paired, ANOVA, regression with covariate, within-subject
         ANOVA with non-sphericity) and against 1.0's T map.
-  - [ ] DPABI V9 cross-check (needs a DPABI installation; not a gate).
+  - [ ] Cross-check against another toolbox's group statistics (not a gate).
 - [x] QC report as HTML: per run (motion, FD with censored frames, DVARS and
       FD–DVARS before/after denoising, carpet plots, registration and nuisance
       mask snapshots) and per dataset (`reports/<pipeline>_qc.html`), for prep
@@ -96,7 +96,7 @@ See `CHANGELOG.md`.
 - [x] Own slice viewer (`seecat.viewer`): overlays, thresholding, cluster report, atlas labels,
       montage and export.
 - [x] BrainNet Viewer 2.0 hook (Scene JSON; app or `BrainNetRender`).
-- [x] Remove all 1.0 GUIs, `Visual/`, `sc_check_dpabi.m`, `jobmats`, `dcm2nii`, atlas files.
+- [x] Remove all 1.0 GUIs, `Visual/`, the 1.0 dependency check, `jobmats`, `dcm2nii`, atlas files.
 
 ## Week 9 (12/21 – 12/31): release
 

@@ -2,7 +2,7 @@
 
 Status: **accepted** (2026-10-31; S1–S5 and S8 as recommended, S6 and S7 as chosen). Roadmap weeks 5–6. Replaces the
 1.0 Stat module and the GRF/FDR/AlphaSim tools of the 1.0 viewer, with no
-DPABI-derived code.
+third-party code.
 
 ## 1. Goals
 
@@ -170,8 +170,8 @@ JSON of a stat map: `Statistic`, `DegreesOfFreedom`, `Contrast` (name,
 weights), `DesignColumns`, `FWHMmm`, `Resels`, `ReselsPerVoxel`,
 `NonSphericity`, `VIF`, `Software`, `Sources`.
 
-T and F maps also carry the 1.0 header string (S7), so 1.0 tools and DPABI
-read them: `CAT{T_[df]}{dLh_<dLh>}{FWHMx_<x>FWHMy_<y>FWHMz_<z>mm}` (F:
+T and F maps also carry the 1.0 header string (S7), so 1.0 tools and
+other viewers that use this header read them: `CAT{T_[df]}{dLh_<dLh>}{FWHMx_<x>FWHMy_<y>FWHMz_<z>mm}` (F:
 `CAT{F_[df1,df2]}…`), with dLh = (4 ln 2)^(3/2) / (FWHMx FWHMy FWHMz in
 voxels), as 1.0 wrote it; fractional df keep one decimal. The JSON stays the
 primary source; the viewer reads it first.
@@ -202,7 +202,7 @@ Group pipelines plan one unit; heavy parts are vectorised (batch-api §7).
 | FDR | own BH vs `spm_uc_FDR` (voxel FDR) | equal threshold |
 | image covariates | per-voxel `regress` loop on a sample of voxels | 1e-10 |
 | 1.0 maps | `T2_zFCSeed01_CONvsSCHZ` from the 1.0 baseline | T equal where both masks include the voxel |
-| cross-check | DPABI V9 (if installed): same T map, smoothness | reported, not a gate |
+| cross-check | another toolbox (if installed): same T map, smoothness | reported, not a gate |
 
 Test data: ds000030 zFC (PCC), CONTROL 5 vs SCHZ 4 (sub-50052 has no
 derivative), age and gender covariates; ds002785 one-sample on 5 subjects;

@@ -2,7 +2,7 @@
 
 Status: **accepted** (2026-10-31; G5 by data space, the others as recommended). Roadmap weeks 7–8. Replaces the
 1.0 GUIDE windows (`SeeCAT.m`, `PrepfMRI/`, `FuncConnect/`, `VoxDeg/`,
-`Stat/`, `Visual/`, `Utilities/SeeCAT_Calculator`) and `sc_check_dpabi.m`.
+`Stat/`, `Visual/`, `Utilities/SeeCAT_Calculator`) and the 1.0 dependency check.
 
 ## 1. Goals
 
@@ -199,7 +199,7 @@ map so the figure can be reproduced.
 `SeeCAT.m`/`.fig`, `SeeCAT_vbm.fig`, `PrepfMRI/` (GUI, `jobmats`,
 `dcm2nii`), `FuncConnect/`, `VoxDeg/`, `Stat/`, `Visual/`,
 `Utilities/SeeCAT_Calculator.*` (calculator: v2.1, roadmap),
-`Utilities/sc_check_dpabi.m`, `Utilities/sc_list_subjects.m`, and the atlas
+the 1.0 dependency check, `Utilities/sc_list_subjects.m`, and the atlas
 files and the unused underlays (`ch2bet`, 2009c face mask) in `templates/`. `tests/legacy_baseline` keeps running the
 1.0 export outside the repository. The 1.0 tests that drive the old Stat code
 (`test_p0_fixes`) move to that export too.

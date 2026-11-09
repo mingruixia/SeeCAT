@@ -147,7 +147,7 @@ end
 
 function f = gmMask(root)
 % SeeCAT 1.0's grey-matter mask; the repository has the TPM-based one since
-% the DPABI masks were removed (seecat.util.make_templates)
+% the 1.0 masks were removed (seecat.util.make_templates)
 f = fullfile(root, 'templates', 'GreyMask_02_61x73x61.nii');
 if ~exist(f, 'file')
     f = fullfile(root, 'templates', 'tpl-IXI549Space_res-3_label-GM_mask.nii');

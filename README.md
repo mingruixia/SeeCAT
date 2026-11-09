@@ -6,8 +6,8 @@ connectivity, voxel-wise degree centrality, connectivity gradients,
 multi-site harmonisation, group statistics and viewing,
 from a BIDS dataset to BIDS-derivatives outputs.
 
-Version 2.0 is a rewrite. It needs only SPM; it no longer uses DPABI or the
-`FunImgARW…` folder layout of 1.x.
+Version 2.0 is a rewrite. It needs only SPM, and no longer uses other toolboxes or
+the `FunImgARW…` folder layout of 1.x.
 
 ## Requirements
 

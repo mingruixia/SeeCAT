@@ -173,7 +173,7 @@
   Screenshots are retaken full-resolution and checked against the window's
   own content, so another window in front can no longer end up in them
   (the main-window picture showed a PDF reader); pages start at the top,
-  help and log match each picture. The manual no longer mentions DPABI.
+  help and log match each picture.
   The help column shows tick-box defaults as on/off.
 - **Fixes from the 2026-11-05 review** (regression tests in
   tests/unit/test_audit.m, tests/gui/page_drafts.m):
@@ -530,7 +530,7 @@
 - Group masks rebuilt from SPM's TPM (`seecat.util.make_templates`): brain, GM,
   WM and CSF at 2 and 3 mm, `tpl-IXI549Space_res-*_mask.nii` with JSON
   sidecars, thresholds as in 1.0 (brain 0.5, GM 0.2, WM 0.9, CSF 0.7). The
-  DPABI-distributed masks (`BrainMask_05`, `GreyMask_02`, `WhiteMask_09`,
+  1.0 masks (`BrainMask_05`, `GreyMask_02`, `WhiteMask_09`,
   `CsfMask_07`, `GMwithoutCER`) are removed; Stat, VoxDeg, FuncConnect and the
   legacy PrepfMRI use the new files. The default GM analysis mask is smaller
   than 1.0's (52,276 vs 67,541 voxels at 3 mm, Dice 0.87; brain mask Dice
@@ -636,7 +636,7 @@
   and Go to cards, cluster table docked and numbered by size.
 - Removed: every 1.0 GUIDE window (`SeeCAT.fig`, PrepfMRI, FuncConnect,
   VoxDeg, Stat, Visual, Calculator — calculator returns in 2.1),
-  `sc_check_dpabi.m`, `jobmats`, `dcm2nii`, the 1.0 atlas and label files, and
+  the 1.0 dependency check, `jobmats`, `dcm2nii`, the 1.0 atlas and label files, and
   unused underlays; ch2, ch2better and MNI 2009c are now `.nii.gz`. The 1.0
   phase-0 tests of removed code are dropped (band-pass tests kept in
   `test_bandpass.m`).
@@ -688,7 +688,7 @@
   - Subject folders are listed with `sc_list_subjects`: directories only, hidden
     entries skipped, no longer relying on `.`, `..` and `.DS_Store` sorting first.
   - The invalid `parpool('size')` fallback was replaced by `seecat.util.start_pool`.
-- **Viewer**: opening it now lists the DPABI functions it needs but cannot find,
+- **Viewer**: opening it now lists the external functions it needs but cannot find,
   instead of failing later with "Undefined function".
 - The log message at the end of realignment said "Started".
 
@@ -713,7 +713,7 @@
   - `seecat.io.read_nii` / `seecat.io.write_nii`: one NIfTI I/O layer for
     v2. Images are read in stored orientation (nothing is flipped), `.nii.gz`
     and file lists are supported, and an optional reference grid resamples in
-    world space. These replace the DPABI `y_Read*`/`y_Write` calls; Stat
+    world space. These replace the third-party read/write calls of 1.0; Stat
     already writes through them.
   - Phase-0 helpers moved in: `sc_resample_to_ref` → `seecat.io.resample`,
     `sc_bandpass` → `seecat.denoise.bandpass`, `sc_start_pool` →
