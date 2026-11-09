@@ -20,3 +20,6 @@ Doc/screenshots/
 # with the stamp that ties them to the committed manual sources
 Doc/manual/*.pdf
 Doc/manual/pdf_build.json
+
+# Daily review reports from the user (read by the scheduled review task)
+review/
