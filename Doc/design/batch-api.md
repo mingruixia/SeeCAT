@@ -216,7 +216,7 @@ several exist.
 - Check (2026-10-31): fed SeeCAT's own prep outputs (same naming), the
   fmriprep pipeline reproduces prep's denoised and smoothed series exactly.
 
-### 5.6 Seed FC and voxel-wise degree (`fc`, `degree` pipelines)
+### 5.6 Seed FC, voxel-wise degree and gradients (`fc`, `degree`, `gradient` pipelines)
 
 Both read a SeeCAT derivatives folder (`input_dir`, from prep or fmriprep):
 `desc-<input>_bold` (default `denoised`), the brain mask and the confounds
@@ -224,7 +224,8 @@ table; frames with `censor = 1` are dropped (D3).
 
 - `fc`: `seeds` = struct array of name + center (mm) + radius (mm), or name +
   file. A seed's series is the mean of its voxels with signal; maps (r and
-  Fisher z) cover the subject brain mask. `desc-<seed>_stat-{r,z}_connectivity`.
+  Fisher z) cover the analysis mask `mask` (default `brain`; `gm` or a file).
+  `desc-<seed>_stat-{r,z}_connectivity`.
 - `degree`: analysis mask `gm` (TPM GM > 0.2 at the data's resolution,
   resampled to the grid; D11), `brain`, or a file. Definition as in 1.0's
   VoxDeg (`seecat.conn.degree`): signs positive/absolute/negative, binary
@@ -234,6 +235,24 @@ table; frames with `censor = 1` are dropped (D3).
   [D<lo>to<hi>][Sm<fwhm>]_stat-{raw,z}_connectivity`.
 - The correlation matrix is computed in blocks of 1000 voxels (memory
   block x V); every map comes from the same pass.
+- `gradient`: node series (voxels of a coarser grid inside `mask`, or atlas
+  parcels), Pearson r between nodes, diffusion map embedding as BrainSpace
+  (`seecat.gradient.embed`), then alignment of the runs (`align`: `group`,
+  `procrustes`, `none`). All runs of the selection are one unit.
+- `mask_mode` (all three; `seecat.conn.mask_mode`): how the analysis mask
+  meets the brain mask of each run. `run` (default): within the run's brain
+  mask. `group`: within the group mask, the intersection of the brain masks
+  of all selected runs (`seecat.conn.group_mask`, written once by `plan` to
+  `group/masks/<name>_mask.nii.gz` with the list of runs in its .json, and
+  passed to the units as `unit.group_mask`). `given`: the mask itself, no
+  brain mask (`load_series` option `mask_only`); needs `gm` or a file, and
+  voxels outside a run's brain mask carry no signal (`S.live`): degree 0,
+  left out of node means. The flags `group_mask` / `mask_only` of earlier
+  2.1 builds are mapped to `mask_mode` by `seecat.config`. Sidecars record
+  `Mask`, `MaskMode`, `GroupMask` (and for degree `VoxelsWithSignal`).
+- Degree z maps are z-scored over the voxels with signal; a map with one
+  value there gets z = 0, `ZScoreDefined` false and is counted in
+  `n_constant_maps`.
 
 ### 5.7 QC report
 

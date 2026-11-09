@@ -72,7 +72,7 @@
 "*.weight": {"label": "指标", "help": "对一个体素的连接累加什么；每个勾选项各自输出一组图。\n\nbinary = 度（desc-deg...Bin...）：超过阈值的连接数目。\nweighted = 强度（desc-deg...Wei...）：这些连接 r 值之和。\n\n例：一个体素有 r = 0.3、0.5、0.6 三条连接，则度为 3，强度为 1.4。"},
 "*.exclude_local_mm": {"label": "排除近距离连接（mm）", "help": "距离小于此值的体素之间的连接不计入。相邻体素部分因为数据本身的平滑性而相关，短连接可能主导度中心性。\n\n0（默认）：全部计入。如 20：去掉短于 20 mm 的连接（排除紧邻区域）。"},
 "*.distance_edges": {"label": "距离分段（mm）", "help": "按长度把连接分段，每段一张图。给出各段的边界（mm），递增，从 0 或以上开始；Inf 表示没有上限。\n\n[0 Inf]（默认）：一张包含全部连接的图。\n[0 75 Inf]：短程（不超过 75 mm）和长程（超过 75 mm）度中心性，如 desc-degPosBinR0p2D0to75 和 ...D75toInf。\n[0 25 75 Inf]：三段。\n\n长度为 d 的连接属于满足 lo < d ≤ hi 的那一段。"},
-"*.zscore": {"label": "同时输出 z 分数图", "help": "同时写出在 mask 内 z 分数化的图（减去均值、除以 mask 内体素的标准差），作为 stat-raw 旁边的 stat-z。\n\n原始度值受体素数和每个被试数据质量的影响；z 分数图更便于被试间比较，通常作为组统计的输入。"},
+"*.zscore": {"label": "同时输出 z 分数图", "help": "同时写出在 mask 内 z 分数化的图（减去均值、除以 mask 内体素的标准差，在有信号的体素上计算），作为 stat-raw 旁边的 stat-z。\n\n原始度值受体素数和每个被试数据质量的影响；z 分数图更便于被试间比较，通常作为组统计的输入。\n\n若某张图在所有体素上取值相同（例如没有连接达到 r 阈值），z 无定义：z 图写为 0，日志给出警告，其 JSON 中 ZScoreDefined 为 false，run 汇总表的 n_constant_maps 计入。组统计时请排除这些 run，或降低阈值。"},
 "*.smooth_fwhm": {"label": "平滑结果图", "help": "用此 FWHM（mm）的高斯核平滑最终的图，如 6（默认）或 4。平滑副本的文件名带 Sm<fwhm>（desc-degPosBinR0p2Sm6）；未平滑的图总会保留。\n\n网络本身由未平滑的序列构建，只平滑结果图，这正是组统计通常需要的。取消 On 则不平滑。三个值（如 6 6 8）可给各轴不同的 FWHM。"},
 "gradient.input_dir": {"label": "Derivatives 文件夹", "help": "Preprocessing 或 fMRIPrep 页写出的 SeeCAT derivatives 文件夹，如 D:/study/bids/derivatives/seecat。使用其中全部 run（或 Selection 中选定的），由于各 run 的梯度要相互对齐，所以一起分析。"},
 "gradient.input": {"label": "输入序列", "help": "每个 run 使用哪个序列：denoised（默认，未平滑）或其他 desc 标签，如 denoisedSm6。体素节点本身是对其中体素取平均，平滑意义不大。"},

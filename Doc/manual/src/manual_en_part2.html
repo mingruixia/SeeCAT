@@ -218,7 +218,7 @@ sub-CSUHC0002_T1w         T1w   0                           cnr outlier         
 <p>Later steps match files to this list by the entities that identify an acquisition (sub, ses, task, acq, ce, rec, dir, run, echo), so every map derived from an excluded run, and the VBM maps of an excluded T1w, are left out. Editing the list does not make finished units run again.</p>
 
 <h3>Seed FC</h3>
-<p>Seed-based functional connectivity. For each run and seed, the mean signal of the seed's voxels (inside the brain mask, on the frames kept after censoring) is correlated with every voxel; the result is written as a Pearson r map and a Fisher z map (z = atanh r). Use the z maps in Harmonize and Statistics.</p>
+<p>Seed-based functional connectivity. For each run and seed, the mean signal of the seed's voxels (those with signal, on the frames kept after censoring) is correlated with every voxel of the map mask (Mask: the brain mask by default, grey matter or a mask file; see Masks below); the result is written as a Pearson r map and a Fisher z map (z = atanh r). Use the z maps in Harmonize and Statistics.</p>
 {{IMG fc_page.png | Seed FC with two spheres (PCC and mPFC). Spheres and masks can be mixed in the table; the Check column says what a row still needs.}}
 <h4>Seeds</h4>
 <ul>
@@ -226,11 +226,19 @@ sub-CSUHC0002_T1w         T1w   0                           cnr outlier         
 <li><b>Mask</b>: a NIfTI image in MNI space (any voxel size; voxels above 0 are the seed), resampled to the data by nearest neighbour. <b>Add mask files</b> adds one row per chosen file, named after it.</li>
 </ul>
 <p>Names are letters and digits; they become the <code>desc</code> of the output maps.</p>
-{{PARAMS fc Input|Seeds}}
+{{PARAMS fc Input|Seeds|Maps}}
+<h4>Masks</h4>
+<p>Seed FC, Degree and Gradients share one choice, <b>Mask mode</b> (<code>mask_mode</code>), for how the analysis mask (Mask, or for Gradients the nodes) meets the brain mask of each run:</p>
+<ul>
+<li><b>Within each run's brain mask</b> (<code>run</code>, default): the mask is limited to the run's own brain mask, so the voxels differ a little between runs with their field of view and segmentation.</li>
+<li><b>Within the group mask</b> (<code>group</code>): only the voxels inside the brain mask of every selected run, so every run uses the same voxels. The group mask is written to <code>group/masks/</code> in the output folder, with the list of runs in its .json; adding or leaving out runs changes it, and the results are then computed again. A run with poor coverage makes it smaller for everyone: check the QC report first.</li>
+<li><b>As given</b> (<code>given</code>): every voxel of the mask, without any brain mask, e.g. a mask made for the whole group. Needs grey matter or a mask file as the Mask (not the brain mask). Outside a run's brain mask or field of view the denoised series is 0: those voxels get 0 in the maps (Gradients leaves them out of the node means), and the log of each run says how many there are.</li>
+</ul>
+<p>The JSON sidecars record the choice: <code>Mask</code>, <code>MaskMode</code>, <code>GroupMask</code> (the group mask file, when used) and, for Degree, <code>VoxelsWithSignal</code>.</p>
 <h4>Outputs</h4>
 <pre><code>sub-01/func/sub-01_task-rest_space-IXI549Space_res-3_desc-PCC_stat-r_connectivity.nii.gz (+ .json)
 sub-01/func/sub-01_task-rest_space-IXI549Space_res-3_desc-PCC_stat-z_connectivity.nii.gz (+ .json)</code></pre>
-<p>The sidecar records the seed (centre and radius, or file), the input series and the frames used.</p>
+<p>The sidecar records the seed (centre and radius, or file), the input series, the frames used and the mask (<code>Mask</code>, <code>MaskMode</code>, <code>GroupMask</code>).</p>
 <pre><code>cfg = seecat.config('fc');
 cfg.input_dir = 'D:/study/bids/derivatives/seecat';
 cfg.seeds = struct('name', {'PCC', 'Amygdala'}, 'center', {[0 -53 26], []}, ...
@@ -238,7 +246,7 @@ cfg.seeds = struct('name', {'PCC', 'Amygdala'}, 'center', {[0 -53 26], []}, ...
 seecat.run(cfg);</code></pre>
 
 <h3>Degree</h3>
-<p>Voxel-wise degree centrality. Every voxel of the mask is a node of the correlation network of a run (frames kept after censoring). The binary degree of a voxel counts its connections whose correlation reaches the threshold; the weighted degree (strength) sums their r values. As in SeeCAT 1.0: correlations from z-scored series, the sign rule applied (absolute: |r|; negative: −r), values below the threshold set to 0. Optionally connections shorter than a distance are ignored, or split into distance bins (short- and long-range degree). Maps are written raw and z-scored within the mask, and smoothed afterwards if asked (the network is built from unsmoothed data).</p>
+<p>Voxel-wise degree centrality. Every voxel of the mask is a node of the correlation network of a run (frames kept after censoring). The binary degree of a voxel counts its connections whose correlation reaches the threshold; the weighted degree (strength) sums their r values. As in SeeCAT 1.0: correlations from z-scored series, the sign rule applied (absolute: |r|; negative: −r), values below the threshold set to 0. Optionally connections shorter than a distance are ignored, or split into distance bins (short- and long-range degree). Which voxels form the network follows Mask and Mask mode (see Masks under Seed FC). Maps are written raw and z-scored within the mask (over the voxels with signal), and smoothed afterwards if asked (the network is built from unsmoothed data).</p>
 {{IMG degree_page.png | The Degree page.}}
 {{PARAMS degree Input|Network|Output maps}}
 <h4>Outputs</h4>
@@ -246,12 +254,13 @@ seecat.run(cfg);</code></pre>
 …_desc-degPosBinR0p2_stat-z_connectivity.nii.gz        the same, z-scored within the mask
 …_desc-degPosWeiR0p2Sm6_stat-z_connectivity.nii.gz     strength, z-scored, smoothed 6 mm
 …_desc-degPosBinR0p2D0to75_stat-raw_connectivity.nii.gz  with distance bins [0 75 Inf]</code></pre>
+<p>When a map has one value in every voxel with signal (e.g. no connection reaches the threshold), its z map is undefined: it is written as 0, the log warns, its JSON has <code>ZScoreDefined</code> false and <code>n_constant_maps</code> in the run summary counts it. Leave such runs out of group statistics, or lower the threshold.</p>
 <p>Time and memory grow with the square of the number of voxels: about 50 000 grey-matter voxels at 3 mm take seconds to a minute per run; at 2 mm there are 3.4 times as many voxels and over ten times the work.</p>
 
 <h3>Gradients</h3>
 <p>Connectivity gradients (Margulies et al. 2016): the main axes along which connectivity profiles change across the cortex, the first usually running from sensory and motor cortex to the default-mode network. For each run:</p>
 <ol>
-<li>the node series: the mean of the run's brain-mask voxels in each node (voxels of a coarser MNI grid, or parcels of an atlas), frames kept after censoring;</li>
+<li>the node series: the mean of the run's brain-mask voxels in each node (with Mask mode, the group-mask voxels, or the mask or atlas voxels with signal; see Masks under Seed FC) (voxels of a coarser MNI grid, or parcels of an atlas), frames kept after censoring;</li>
 <li>the connectivity matrix: Pearson r between nodes;</li>
 <li>each row keeps its strongest 10 % (sparsity 0.9) and the rest is set to 0;</li>
 <li>the affinity between rows: normalised angle (1 − angle/π of their cosine similarity) or cosine;</li>

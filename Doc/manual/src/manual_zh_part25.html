@@ -75,7 +75,7 @@ sub-CSUHC0002_T1w         T1w   0                           cnr outlier         
 <p>后续步骤按标识一次采集的实体（sub、ses、task、acq、ce、rec、dir、run、echo）把文件与该列表对应起来，因此由被剔除 run 得到的所有图，以及被剔除 T1 的 VBM 图，都不会参与分析。修改列表不会让已完成的单元重新计算。</p>
 
 <h3>Seed FC</h3>
-<p>基于种子点的功能连接。对每个 run 和每个种子点，计算种子点体素（脑 mask 内，使用剔除后保留的帧）的平均信号与每个体素的相关，写出 Pearson r 图和 Fisher z 图（z = atanh r）。Harmonize 和 Statistics 请使用 z 图。</p>
+<p>基于种子点的功能连接。对每个 run 和每个种子点，计算种子点体素（有信号的体素，使用剔除后保留的帧）的平均信号与结果 mask 内每个体素的相关（Mask：默认为脑 mask，也可选灰质或 mask 文件；见下文“掩膜”），写出 Pearson r 图和 Fisher z 图（z = atanh r）。Harmonize 和 Statistics 请使用 z 图。</p>
 {{IMG fc_page.png | 两个球形种子点（PCC 和 mPFC）的 Seed FC。表格中球形和 mask 可以混合；Check 列显示某行还缺什么。}}
 <h4>种子点</h4>
 <ul>
@@ -83,11 +83,19 @@ sub-CSUHC0002_T1w         T1w   0                           cnr outlier         
 <li><b>Mask</b>：MNI 空间的 NIfTI 图像（任意体素大小，大于 0 的体素即种子点），以最近邻方式重采样到数据。<b>Add mask files</b> 为每个选中的文件添加一行，并以文件名命名。</li>
 </ul>
 <p>名称只能是字母和数字，会成为输出图的 <code>desc</code>。</p>
-{{PARAMS fc Input|Seeds}}
+{{PARAMS fc Input|Seeds|Maps}}
+<h4>掩膜</h4>
+<p>Seed FC、Degree 和 Gradients 共用一个选项 <b>Mask mode（掩膜方式）</b>（<code>mask_mode</code>），决定分析 mask（Mask；Gradients 为节点）如何与每个 run 的脑 mask 结合：</p>
+<ul>
+<li><b>在各 run 脑 mask 内</b>（<code>run</code>，默认）：mask 限制在该 run 自己的脑 mask 内，因此不同 run 的体素会因视野和分割略有差异。</li>
+<li><b>在组 mask 内</b>（<code>group</code>）：只用所有入选 run 的脑 mask 都包含的体素，每个 run 的体素完全相同。组 mask 写在输出目录的 <code>group/masks/</code> 下，其 .json 列出所用的 run；增减 run 会改变组 mask，结果随之重新计算。覆盖差的 run 会让所有人的组 mask 变小，请先查看 QC 报告。</li>
+<li><b>按原样</b>（<code>given</code>）：使用 mask 的全部体素，不与任何脑 mask 求交集，例如为全组制作的 mask。Mask 须为灰质或 mask 文件（不能是脑 mask）。在某个 run 的脑 mask 或视野之外，去噪后的序列为 0：这些体素在结果图中为 0（Gradients 不把它们计入节点平均），每个 run 的日志会给出其数量。</li>
+</ul>
+<p>JSON sidecar 记录所做的选择：<code>Mask</code>、<code>MaskMode</code>、<code>GroupMask</code>（使用组 mask 时为其文件），Degree 另有 <code>VoxelsWithSignal</code>。</p>
 <h4>输出文件</h4>
 <pre><code>sub-01/func/sub-01_task-rest_space-IXI549Space_res-3_desc-PCC_stat-r_connectivity.nii.gz（及 .json）
 sub-01/func/sub-01_task-rest_space-IXI549Space_res-3_desc-PCC_stat-z_connectivity.nii.gz（及 .json）</code></pre>
-<p>sidecar 记录种子点（中心和半径，或文件）、输入序列和使用的帧。</p>
+<p>sidecar 记录种子点（中心和半径，或文件）、输入序列、使用的帧和 mask（<code>Mask</code>、<code>MaskMode</code>、<code>GroupMask</code>）。</p>
 <pre><code>cfg = seecat.config('fc');
 cfg.input_dir = 'D:/study/bids/derivatives/seecat';
 cfg.seeds = struct('name', {'PCC', 'Amygdala'}, 'center', {[0 -53 26], []}, ...
@@ -95,7 +103,7 @@ cfg.seeds = struct('name', {'PCC', 'Amygdala'}, 'center', {[0 -53 26], []}, ...
 seecat.run(cfg);</code></pre>
 
 <h3>Degree</h3>
-<p>体素水平的度中心性。mask 中的每个体素都是该 run 相关网络（使用剔除后保留的帧）的一个节点。体素的二值度是相关达到阈值的连接数；加权度（强度）是这些连接 r 值之和。与 SeeCAT 1.0 的定义相同：由 z 分数化后的序列计算相关，按正负规则处理（absolute 取 |r|，negative 取 −r），低于阈值的置 0。可选择忽略短于某距离的连接，或按距离分段（短程和长程度中心性）。结果图以原始值和 mask 内 z 分数两种形式写出，可选再平滑（网络由未平滑的数据构建）。</p>
+<p>体素水平的度中心性。mask 中的每个体素都是该 run 相关网络（使用剔除后保留的帧）的一个节点。体素的二值度是相关达到阈值的连接数；加权度（强度）是这些连接 r 值之和。与 SeeCAT 1.0 的定义相同：由 z 分数化后的序列计算相关，按正负规则处理（absolute 取 |r|，negative 取 −r），低于阈值的置 0。可选择忽略短于某距离的连接，或按距离分段（短程和长程度中心性）。网络由哪些体素构成取决于 Mask 和 Mask mode（见 Seed FC 下的“掩膜”）。结果图以原始值和 mask 内 z 分数（在有信号的体素上计算）两种形式写出，可选再平滑（网络由未平滑的数据构建）。</p>
 {{IMG degree_page.png | Degree 页。}}
 {{PARAMS degree Input|Network|Output maps}}
 <h4>输出文件</h4>
@@ -103,12 +111,13 @@ seecat.run(cfg);</code></pre>
 …_desc-degPosBinR0p2_stat-z_connectivity.nii.gz        同上，mask 内 z 分数
 …_desc-degPosWeiR0p2Sm6_stat-z_connectivity.nii.gz     强度，z 分数，6 mm 平滑
 …_desc-degPosBinR0p2D0to75_stat-raw_connectivity.nii.gz  距离分段 [0 75 Inf]</code></pre>
+<p>若某张图在所有有信号的体素上取值相同（例如没有连接达到阈值），其 z 图无定义：写为 0，日志给出警告，JSON 中 <code>ZScoreDefined</code> 为 false，run 汇总表的 <code>n_constant_maps</code> 计入。组统计时请排除这些 run，或降低阈值。</p>
 <p>时间和内存随体素数的平方增长：3 mm 时灰质约 5 万个体素，每个 run 几秒到一分钟；2 mm 时体素数是其 3.4 倍，计算量超过 10 倍。</p>
 
 <h3>Gradients</h3>
 <p>连接梯度（Margulies et al. 2016）：连接模式在皮层上变化的主要轴线，第一梯度通常从感觉运动皮层延伸到默认网络。对每个 run：</p>
 <ol>
-<li>节点信号：每个节点（更粗的 MNI 网格中的体素，或图谱分区）内该 run 脑 mask 体素的平均，使用剔除后保留的帧；</li>
+<li>节点信号：每个节点（更粗的 MNI 网格中的体素，或图谱分区）内该 run 脑 mask 体素的平均（按 Mask mode，也可以是组 mask 体素，或 mask/图谱中有信号的体素；见 Seed FC 下的“掩膜”），使用剔除后保留的帧；</li>
 <li>连接矩阵：节点间的 Pearson r；</li>
 <li>每行只保留最强的 10%（稀疏度 0.9），其余置 0；</li>
 <li>行与行之间的亲和度：归一化角度（余弦相似度对应夹角的 1 − 角度/π）或余弦；</li>
