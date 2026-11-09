@@ -5,7 +5,10 @@ function result = run_unit(unit, cfg, log)
 % Writes, per sign x weight x distance bin,
 %   *_desc-deg<Pos|Abs|Neg><Bin|Wei>R<thr>[D<lo>to<hi>]_stat-raw_connectivity.nii.gz
 %   ... stat-z (z-scored within the analysis mask, over the voxels with
-%       signal; cfg.zscore)
+%       signal; cfg.zscore). When a map has one value over those voxels
+%       (e.g. no connection passes the threshold), its z map is 0, the log
+%       warns, ZScoreDefined is false in its JSON and n_constant_maps in the
+%       result counts it.
 %   ... desc-...Sm<fwhm> versions of both (cfg.smooth_fwhm > 0)
 % in the run's space, with JSON sidecars of the settings.
 
@@ -34,6 +37,7 @@ signs = struct('positive', 'Pos', 'absolute', 'Abs', 'negative', 'Neg');
 weights = struct('binary', 'Bin', 'weighted', 'Wei');
 measure = struct('binary', 'degree', 'weighted', 'strength');
 num = @seecat.util.number_label;
+nConst = 0;
 for k = 1:numel(maps)
     m = maps(k);
     desc = ['deg' signs.(m.sign) weights.(m.weight) 'R' num(cfg.threshold)];
@@ -41,10 +45,19 @@ for k = 1:numel(maps)
         desc = [desc 'D' num(m.lo) 'to' num(m.hi)]; %#ok<AGROW>
     end
     out = {'raw', D(:, k)};
+    zOk = true;
     if cfg.zscore
         d = D(:, k);
         zd = zeros(size(d));                       % over the voxels with signal; 0 elsewhere
-        zd(live) = (d(live) - mean(d(live))) / std(d(live));
+        sd = std(d(live));
+        zOk = nnz(live) >= 2 && isfinite(sd) && sd > 0;
+        if zOk
+            zd(live) = (d(live) - mean(d(live))) / sd;
+        else                                       % e.g. no connection passes the threshold
+            nConst = nConst + 1;
+            log(['warning: %s has the same value (%g) in every voxel with signal; its z map ' ...
+                'is undefined and written as 0 (ZScoreDefined false in its JSON)'], desc, mean(d(live)));
+        end
         out(end+1, :) = {'z', zd}; %#ok<AGROW>
     end
     meta = struct('Measure', measure.(m.weight), 'Sign', m.sign, 'Threshold', cfg.threshold, ...
@@ -52,11 +65,19 @@ for k = 1:numel(maps)
         'Mask', cfg.mask, 'MaskMode', seecat.conn.mask_mode(cfg), 'GroupMask', seecat.conn.group_mask_uri(unit, cfg), 'Voxels', nnz(S.in), 'VoxelsWithSignal', nnz(live), 'Sources', {{src}}, 'FramesUsed', S.n_kept, 'FramesTotal', S.n_frames, ...
         'Software', ['SeeCAT ' seecat.version()]);
     for q = 1:size(out, 1)
+        if ~all(isfinite(out{q, 2}))
+            error('SeeCAT:degree', '%s (%s) has values that are not finite.', desc, out{q, 1});
+        end
         vol = zeros(S.hdr.dim, 'single');
         vol(idx) = out{q, 2};
         f = fullfile(unit.work_dir, sprintf('%s_%s.nii', desc, out{q, 1}));
         seecat.io.write_nii(vol, S.hdr, f);
         meta.Statistic = out{q, 1};
+        if strcmp(out{q, 1}, 'z')
+            meta.ZScoreDefined = zOk;
+        elseif isfield(meta, 'ZScoreDefined')
+            meta = rmfield(meta, 'ZScoreDefined');
+        end
         name = @(dsc) seecat.bids.deriv_name(unit.bold, 'desc', dsc, 'stat', out{q, 1}, ...
             'suffix', 'connectivity', 'ext', '.nii.gz');
         seecat.util.publish_output(f, name(desc), meta, opt);
@@ -68,7 +89,7 @@ for k = 1:numel(maps)
         end
     end
 end
-result = struct('n_kept', S.n_kept, 'n_voxels', nnz(S.in));
+result = struct('n_kept', S.n_kept, 'n_voxels', nnz(S.in), 'n_constant_maps', nConst);
 end
 
 function f = smoothMap(vol, hdr, fwhm, idx, f)

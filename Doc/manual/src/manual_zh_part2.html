@@ -41,7 +41,7 @@
 <li><b>写出。</b>
 <ul>
 <li>图像以 .nii.gz 及其说明文件写到 <code>sub-&lt;label&gt;/[ses-&lt;label&gt;/]anat|func|fmap|dwi</code>。</li>
-<li>说明文件复制时去掉姓名、ID、出生日期等可识别个人身份的字段。保留下来的文本字段（SeriesDescription、ProtocolName 及嵌套字段）和无说明文件图像的描述中，也会去掉被试姓名。姓名的来源有三处：PatientName；被试文件夹名中编号后面的词（<code>sub173_zhangsan</code>）；文件名开头编号后面、其他被试的文件中都没有的词（<code>sub173_zhangsan_rest.nii</code> 与 <code>sub174_lisi_rest.nii</code> 并存时）。其他写法的姓名（<code>zhangsan_173</code>，或与其他词连写）无法识别，其他自由文本也原样保留，共享数据集前请检查报告和说明文件。participants.tsv 加入该被试；说明文件中有相应信息时，同时写入 <code>sex</code> 和扫描时的 <code>age</code>。</li>
+<li>说明文件复制时去掉姓名、ID、出生日期等可识别个人身份的字段。保留下来的文本字段（SeriesDescription、ProtocolName 及嵌套字段）和无说明文件图像的描述中，也会去掉被试姓名。姓名的来源有三处：PatientName；被试文件夹名中编号后面的词（<code>sub173_zhangsan</code>）；文件名开头编号后面、其他被试的文件中都没有的词（<code>sub173_zhangsan_rest.nii</code> 与 <code>sub174_lisi_rest.nii</code> 并存时）。这样的文件名词也可能是任务名（<code>S01_memory_bold.nii</code> 与 <code>S02_motor_bold.nii</code> 并存时）：它同样不会写入数据集；若没有其他词能给出任务名，该 run 命名为 <code>task-unknown</code>，说明栏显示 <i>task not known</i>，不会猜成 rest。请在转换前于 <code>bids</code> 列填写任务名。其他写法的姓名（<code>zhangsan_173</code>，或与其他词连写）无法识别，其他自由文本也原样保留，共享数据集前请检查报告和说明文件。participants.tsv 加入该被试；说明文件中有相应信息时，同时写入 <code>sex</code> 和扫描时的 <code>age</code>。</li>
 <li>缺少 <code>dataset_description.json</code> 时会写出。</li>
 <li>已在数据集中的图像保留，因此重新整理只补充缺少的部分。</li>
 <li>每张图像的去向记录在 <code>code/seecat/from_nifti_sub-&lt;label&gt;.tsv</code>（DICOM 为 <code>from_dicom_…</code>）。表中被试文件夹或文件名开头的编号显示为 <code>sub-&lt;label&gt;</code>，按上述方式识别出的姓名不出现在路径和描述中。原始路径只出现在窗口 Preview names 的表格和 <code>seecat.bids.from_nifti</code> 返回的表中，不写入数据集。</li>

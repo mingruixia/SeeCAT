@@ -263,6 +263,78 @@ mf = fullfile(in, 'mymask.nii');
 seecat.io.write_nii(uint8(m), V(1), mf, 'DataType', 'uint8');
 end
 
+function testGroupMaskFollowsTheGrid(tc)
+% Moving every run 100 mm along x (same arrays, same paths) must rewrite
+% the group mask on the new grid: the results then equal those of a fresh
+% output folder (2026-11-09 review, C01)
+in = tempname;
+c = onCleanup(@() rmdir(in, 's'));
+makeRun(in, '01');
+makeRun(in, '02');
+cfg = seecat.config('fc');
+cfg.input_dir = in;
+cfg.mask_mode = 'group';
+cfg.seeds = struct('name', 'A', 'center', [0 0 0], 'radius', 6);
+S = quiet(@() seecat.run(cfg));
+tc.verifyEqual(S.empty_seeds, [0; 0]);
+for s = {'01', '02'}
+    for f = {'desc-denoised_bold', 'desc-brain_mask'}
+        p = fullfile(in, ['sub-' s{1}], 'func', ['sub-' s{1} '_task-rest_space-IXI549Space_res-3_' f{1} '.nii.gz']);
+        [Y, V] = seecat.io.read_nii(p);
+        V = V(1);
+        V.mat(1, 4) = V.mat(1, 4) + 100;
+        if contains(f{1}, 'mask')
+            seecat.io.write_nii(uint8(Y), V, p, 'DataType', 'uint8');
+        else
+            seecat.io.write_nii(Y, V, p);
+        end
+    end
+end
+cfg.seeds.center = [100 0 0];
+S = quiet(@() seecat.run(cfg));
+tc.verifyEqual(S.status, {'ok'; 'ok'});
+tc.verifyEqual(S.empty_seeds, [0; 0]);
+g = dir(fullfile(in, 'group', 'masks', '*_desc-group*_mask.nii.gz'));
+tc.verifyNumElements(g, 1);
+[~, Vg] = seecat.io.read_nii(fullfile(g.folder, g.name));
+tc.verifyEqual(Vg(1).mat(1, 4), 109, 'AbsTol', 1e-4);
+tc.verifyEmpty(dir(fullfile(g.folder, 'tmp*')));        % no temporary file left
+fresh = fullfile(in, 'fresh');
+cfg.output_dir = fresh;
+S = quiet(@() seecat.run(cfg));
+tc.verifyEqual(S.status, {'ok'; 'ok'});
+rel = fullfile('sub-01', 'func', 'sub-01_task-rest_space-IXI549Space_res-3_desc-A_stat-z_connectivity.nii.gz');
+tc.verifyEqual(seecat.io.read_nii(fullfile(in, rel)), seecat.io.read_nii(fullfile(fresh, rel)), 'AbsTol', 1e-6);
+end
+
+function testDegreeConstantMapsAreNotNaN(tc)
+% No connection reaches r = 0.9999: every degree is 0, so the z map is
+% undefined; it is written as 0 and flagged, never as NaN (review C02)
+in = tempname;
+c = onCleanup(@() rmdir(in, 's'));
+makeRun(in, '01');
+cfg = seecat.config('degree');
+cfg.input_dir = in;
+cfg.mask = 'brain';
+cfg.threshold = 0.9999;
+cfg.weight = {'binary'};
+cfg.smooth_fwhm = 0;
+S = quiet(@() seecat.run(cfg));
+tc.verifyEqual(S.status, {'ok'});
+tc.verifyEqual(S.n_constant_maps, 1);
+f = fullfile(in, 'sub-01', 'func', 'sub-01_task-rest_space-IXI549Space_res-3_desc-degPosBinR0p9999_stat-z_connectivity');
+z = seecat.io.read_nii([f '.nii.gz']);
+tc.verifyTrue(all(isfinite(z(:))));
+tc.verifyTrue(all(z(:) == 0));
+j = jsondecode(fileread([f '.json']));
+tc.verifyFalse(j.ZScoreDefined);
+cfg.threshold = 0.2;                       % a normal network: defined
+S = quiet(@() seecat.run(cfg));
+tc.verifyEqual(S.n_constant_maps, 0);
+j = jsondecode(fileread(strrep([f '.json'], 'R0p9999', 'R0p2')));
+tc.verifyTrue(j.ZScoreDefined);
+end
+
 function testSeedsFromJsonConfig(tc)
 f = [tempname '.json'];
 c = onCleanup(@() delete(f));

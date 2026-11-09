@@ -232,6 +232,30 @@ tc.verifyEqual({G{1}.public, G{2}.public}, {'sub-S01_rest.nii', 'sub-S02_nback.n
 tc.verifyEqual({G{1}.desc, G{2}.desc}, {'rest', 'nback'});
 end
 
+function testTaskWordsThatMayBeNames(tc)
+% S01_memory_bold next to S02_motor_bold: the words may be names, so they
+% stay out of the dataset, but the task is "unknown" with a note, not rest
+% (2026-11-09 review, C03); a task shared by the subjects is kept
+src = tc.TestData.src;
+img4d(fullfile(src, 'S01_memory_bold.nii'), [6 6 4], 20);
+img4d(fullfile(src, 'S02_motor_bold.nii'), [6 6 4], 20);
+T = quiet(@() seecat.bids.from_nifti(src, tc.TestData.bids, 'tr', 2, 'dryrun', true));
+tc.verifyEqual(sort(T.bids), {'sub-S01/func/sub-S01_task-unknown_bold.nii.gz'; ...
+    'sub-S02/func/sub-S02_task-unknown_bold.nii.gz'});
+tc.verifyTrue(all(contains(T.note, 'task not known')));
+rmdir(src, 's');
+img4d(fullfile(src, 'S01_zhangsan_rest.nii'), [6 6 4], 20);    % a name and a task word: rest
+img4d(fullfile(src, 'S02_lisi_rest.nii'), [6 6 4], 20);
+img4d(fullfile(src, 'S01_memory_bold.nii'), [6 6 4], 20);       % shared by both: a task
+img4d(fullfile(src, 'S02_memory_bold.nii'), [6 6 4], 20);
+T = quiet(@() seecat.bids.from_nifti(src, tc.TestData.bids, 'tr', 2, 'dryrun', true));
+tc.verifyEqual(sort(T.bids), sort({'sub-S01/func/sub-S01_task-rest_bold.nii.gz'; ...
+    'sub-S02/func/sub-S02_task-rest_bold.nii.gz'; 'sub-S01/func/sub-S01_task-memory_bold.nii.gz'; ...
+    'sub-S02/func/sub-S02_task-memory_bold.nii.gz'}));
+tc.verifyFalse(any(contains(T.note, 'task not known')));
+tc.verifyFalse(any(contains(T.description, {'zhangsan', 'lisi'})));
+end
+
 function testSessionFoldersAndBidsLikeTree(tc)
 src = tc.TestData.src;
 for v = {'pre', 'post'}

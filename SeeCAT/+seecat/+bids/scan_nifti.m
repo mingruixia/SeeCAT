@@ -37,8 +37,12 @@ function [T, groups, info] = scan_nifti(src, varargin)
 % next to sub174_lisi_rest.nii), and the sidecars' PatientName are taken
 % out of the descriptions and of the paths written to the dataset (field
 % public), and organize removes them from the sidecars (field names). A
-% name written in another way (zhangsan_173, or glued to other words) is
-% not recognised: check the report before sharing the dataset.
+% file-name word could also be a task (S01_memory_bold next to
+% S02_motor_bold); when taking it out leaves a BOLD run without a task
+% word, organize names the task "unknown" with a note to set it (field
+% name_cut), rather than guessing rest. A name written in another way
+% (zhangsan_173, or glued to other words) is not recognised: check the
+% report before sharing the dataset.
 %
 % Sessions: folders named ses-<label>, or pre/post/baseline/followup/
 % visit1/v1/time1/t1 ..., give the session label. Otherwise images are
@@ -104,14 +108,21 @@ end
 % descriptions of images without a sidecar; the path as it may be shown in
 % the dataset, with the subject's folder (often an ID and a name) as
 % sub-<label>; both without the names of people
-words = personalWords(R, parts, level, lab);
+[words, weak] = personalWords(R, parts, level, lab);
 [R.public] = deal('');
 [R.names] = deal({});
+[R.name_cut] = deal(false);
 for i = 1:numel(R)
     if isempty(R(i).json)
         R(i).desc = description(R(i), parts{i}, level(i), lab{i});
     end
-    R(i).desc = seecat.bids.scrub_names(R(i).desc, words{i});
+    d0 = R(i).desc;
+    R(i).desc = seecat.bids.scrub_names(d0, words{i});
+    % a file-name word taken out only because no other subject has it may
+    % be a task (S01_memory_bold next to S02_motor_bold): organize then
+    % leaves the task to the user instead of guessing rest
+    R(i).name_cut = ~isempty(weak{i}) && ...
+        ~strcmp(seecat.bids.scrub_names(d0, setdiff(words{i}, weak{i})), R(i).desc);
     if isempty(R(i).json)
         R(i).meta.SeriesDescription = R(i).desc;
     end
@@ -492,11 +503,13 @@ d = strjoin([keep, {stem}], '/');
 d = regexprep(d, '/+$', '');
 end
 
-function w = personalWords(R, parts, level, lab)
+function [w, weak] = personalWords(R, parts, level, lab)
 % Per image: the words that are (probably) the subject's name, for all the
-% images of that subject
+% images of that subject. WEAK: those found only as a file-name word that
+% no other subject has (they could also be a task name)
 n = numel(R);
 w = repmat({{}}, n, 1);
+weak = repmat({{}}, n, 1);
 [~, stems] = cellfun(@(s) fileparts(regexprep(s, '\.gz$', '')), {R.source}, 'UniformOutput', false);
 tok = regexp(stems, '[^_\-\s.]+', 'match');
 subs = unique(lab);
@@ -512,6 +525,7 @@ for i = 1:n
                 break
             end
             w{i}{end+1} = t{j};                               % sub173_zhangsan_rest
+            weak{i}{end+1} = t{j};
         end
     end
     pn = char(string(field(R(i).meta, 'PatientName', '')));
@@ -524,7 +538,12 @@ for s = reshape(subs, 1, [])
     k = strcmp(lab, s{1});
     u = unique([w{k}]);
     u = u(cellfun(@numel, u) >= 2);
+    strong = {};
+    for i = reshape(find(k), 1, [])
+        strong = [strong, reshape(setdiff(w{i}, weak{i}), 1, [])]; %#ok<AGROW>
+    end
     w(k) = {u};
+    weak(k) = {setdiff(intersect(u, [weak{k}]), strong)};   % also a folder or PatientName word: not weak
 end
 end
 

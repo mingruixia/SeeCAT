@@ -84,6 +84,14 @@ else
     end
 end
 idx = find(base(:));
+if isempty(idx)
+    if maskOnly
+        error('SeeCAT:conn', 'The mask has no voxel on the grid of %s; check its space.', unit.bold);
+    end
+    error('SeeCAT:conn', ['No voxel of the brain mask%s of %s lies on its BOLD grid; check the ' ...
+        'space of the masks.'], ternary(isfield(unit, 'group_mask') && ~isempty(unit.group_mask), ...
+        ' and group mask', ''), unit.bold);
+end
 in = m(idx);
 if only
     idx = idx(in);
@@ -100,4 +108,12 @@ S.hdr = hdr;
 S.xyz = hdr.mat(1:3, :) * [i j k ones(numel(idx), 1)]';
 S.n_frames = height(T);
 S.n_kept = nnz(keep);
+end
+
+function s = ternary(c, a, b)
+if c
+    s = a;
+else
+    s = b;
+end
 end

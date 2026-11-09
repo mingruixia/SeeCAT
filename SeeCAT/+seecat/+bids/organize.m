@@ -270,11 +270,16 @@ if looksBold(r)
     [task, guessed] = taskFrom(desc);
     a.datatype = 'func';
     a.suffix = 'bold';
-    a.ent = struct('task', task);
     a.how = 'task from the series name';
-    if guessed
+    if guessed && isfield(r, 'name_cut') && r.name_cut
+        task = 'unknown';                  % the only word left out as a possible name
+        a.note = ['task not known: a word of the file name that differs between subjects was ' ...
+            'taken out as a possible name; set the task in the bids column (Preview names) or ' ...
+            'add a rule'];
+    elseif guessed
         a.note = 'task name guessed; check it';
     end
+    a.ent = struct('task', task);
     return
 end
 a.note = noRule(r);

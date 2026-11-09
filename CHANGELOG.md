@@ -73,6 +73,25 @@
   labels (`rest, nback` in the window, `{'rest', 'nback'}` in a config). The
   analysis pages still take one task.
 
+### Fixed (2026-11-09 review; tests in tests/unit/test_conn.m and test_nifti.m)
+- *A group mask was reused on the wrong grid.* `seecat.conn.group_mask`
+  kept an existing file when its voxels matched, even if the runs had moved
+  to another grid (same arrays, new affine); the seeds and maps then fell
+  outside it and came out as zeros with status ok. The file is now kept only
+  when its dimensions and affine (to 1e-4 mm) also match, and it is written
+  to a temporary file and moved into place. `seecat.conn.load_series` stops
+  with an error when no voxel of the masks lies on a run's grid.
+- *Degree wrote z maps of NaN.* When a map has one value in every voxel with
+  signal (e.g. no connection reaches the threshold), the z map is now 0
+  with `ZScoreDefined` false in its JSON, a warning in the log and the
+  count in the result (`n_constant_maps`). Every map is checked to be
+  finite before it is written.
+- *Import named possible task words as rest.* A word after the subject ID
+  that no other subject has is still treated as a possible name and kept
+  out of the dataset, but when it was the only task word
+  (`S01_memory_bold`, `S02_motor_bold`), the run is named `task-unknown`
+  with the note "task not known" instead of `task-rest`.
+
 ### Fixed (2026-11-07 review; tests in tests/unit/test_review3.m and test_nifti.m)
 - *Numbered 3D volumes of different subjects or runs were merged.* Only the
   number at the end of a file name may change within a series

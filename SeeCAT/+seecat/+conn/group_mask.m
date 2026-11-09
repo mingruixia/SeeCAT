@@ -8,9 +8,11 @@ function [f, n] = group_mask(units, cfg)
 %   <output_dir>/group/masks/space-<space>[_res-<res>]_desc-group<id>_mask.nii.gz
 % with a JSON sidecar listing the runs. <id> is 8 characters of a hash of
 % the list of masks, so another selection gets a file of its own and does
-% not change this one. The file is written again only when its voxels
-% changed, so units that use it are redone only then. N is its number of
-% voxels; an empty intersection is an error.
+% not change this one. The file is written again when its voxels or its
+% grid (dimensions and affine, to 1e-4 mm) changed, so units that use it
+% are redone only then; it is written to a temporary file first and then
+% moved into place. N is its number of voxels; an empty intersection is an
+% error.
 
 if isempty(units)
     error('SeeCAT:conn', 'No runs to make a group mask from.');
@@ -38,19 +40,34 @@ end
 d = fullfile(cfg.output_dir, 'group', 'masks');
 f = fullfile(d, sprintf('%s_desc-group%s_mask.nii.gz', name, id(1:8)));
 if exist(f, 'file') == 2
-    old = seecat.io.read_nii(f) > 0;
-    if isequal(size(old), size(g)) && isequal(old, g)
+    [old, Vo] = seecat.io.read_nii(f);
+    Vo = Vo(1);
+    if isequal(Vo.dim(1:3), V0.dim(1:3)) && max(abs(Vo.mat(:) - V0.mat(:))) < 1e-4 && ...
+            isequal(old > 0, g)
         return
     end
 end
 if ~exist(d, 'dir')
     mkdir(d);
 end
-seecat.io.write_nii(uint8(g), V0, f, 'DataType', 'uint8');
-seecat.util.write_json(strrep(f, '.nii.gz', '.json'), struct( ...
+h = seecat.util.hash(tempname);
+tmp = fullfile(d, sprintf('tmp%s_%s', h(1:8), name));
+c = onCleanup(@() deleteIf({[tmp '_mask.nii.gz'], [tmp '.json']}));
+seecat.io.write_nii(uint8(g), V0, [tmp '_mask.nii.gz'], 'DataType', 'uint8');
+seecat.util.write_json([tmp '.json'], struct( ...
     'Description', 'Voxels inside the brain mask of every run listed in Sources', ...
     'Voxels', n, 'NumberOfRuns', numel(masks), 'Sources', {strcat('bids:seecat:', rel(:))}, ...
     'Software', ['SeeCAT ' seecat.version()]));
+movefile([tmp '.json'], strrep(f, '.nii.gz', '.json'), 'f');
+movefile([tmp '_mask.nii.gz'], f, 'f');
+end
+
+function deleteIf(files)
+for i = 1:numel(files)
+    if exist(files{i}, 'file') == 2
+        delete(files{i});
+    end
+end
 end
 
 function r = relTo(f, root)

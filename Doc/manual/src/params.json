@@ -1118,7 +1118,7 @@
       "advanced": false,
       "widget": "flag",
       "default": "true",
-      "help": "Also write each map z-scored within the mask (minus the mean, divided by the standard deviation over the mask voxels), as stat-z next to the stat-raw maps.\n\nRaw degree depends on the number of voxels and the data quality of each subject; z-scored maps are easier to compare between subjects and are the usual input to group statistics.",
+      "help": "Also write each map z-scored within the mask (minus the mean, divided by the standard deviation over the mask voxels), as stat-z next to the stat-raw maps.\n\nRaw degree depends on the number of voxels and the data quality of each subject; z-scored maps are easier to compare between subjects and are the usual input to group statistics.\n\nWhen a map has the same value in every voxel (e.g. no connection reaches the r threshold), z is undefined: the z map is written as 0, the log warns, its JSON has ZScoreDefined false and the run's n_constant_maps counts it. Leave such runs out of group statistics, or lower the threshold.",
       "choices": []
     },
     {
