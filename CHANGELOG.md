@@ -73,6 +73,18 @@
   labels (`rest, nback` in the window, `{'rest', 'nback'}` in a config). The
   analysis pages still take one task.
 
+### Fixed (2026-11-10 review; tests in tests/unit/test_conn.m)
+- *An empty analysis mask gave maps of zeros with status ok.* A mask file
+  in another space could miss the BOLD grid while the brain or group mask
+  (or, with the mask as given, the seeds of Seed FC) kept the check of
+  `seecat.conn.load_series` happy. It now checks the analysis mask itself
+  within the voxels the maps cover, in every mask mode, and the run fails
+  without maps; the message gives the voxels in the file, on the grid and
+  in the base. A seed outside a non-empty mask is still valid.
+- *Runs with 0 or 1 frame left after censoring gave maps of zeros with
+  status ok.* `seecat.conn.load_series` now stops when fewer than 2 frames
+  are kept, giving the frames kept, total and censored.
+
 ### Fixed (2026-11-09 review; tests in tests/unit/test_conn.m and test_nifti.m)
 - *A group mask was reused on the wrong grid.* `seecat.conn.group_mask`
   kept an existing file when its voxels matched, even if the runs had moved

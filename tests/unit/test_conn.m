@@ -335,6 +335,92 @@ j = jsondecode(fileread(strrep([f '.json'], 'R0p9999', 'R0p2')));
 tc.verifyTrue(j.ZScoreDefined);
 end
 
+function testEmptyAnalysisMaskFails(tc)
+% A mask that lies 1000 mm away has no voxel on the BOLD grid: every mask
+% mode of Degree and Seed FC fails, without maps (2026-11-10 review, C04)
+root = tempname;
+c = onCleanup(@() rmdir(root, 's'));
+in = fullfile(root, 'in');
+makeRun(in, '01');
+makeRun(in, '02');
+M = [-3 0 0 1009; 0 3 0 -9; 0 0 3 -9; 0 0 0 1];
+far = fullfile(root, 'far_mask.nii');
+seecat.io.write_nii(uint8(ones(6, 6, 6)), struct('dim', [6 6 6], 'mat', M), far, 'DataType', 'uint8');
+for p = {'degree', 'fc'}
+    for mode = {'run', 'group', 'given'}
+        cfg = seecat.config(p{1});
+        cfg.input_dir = in;
+        cfg.output_dir = fullfile(root, [p{1} '-' mode{1}]);
+        cfg.mask = far;
+        cfg.mask_mode = mode{1};
+        if strcmp(p{1}, 'degree')
+            cfg.smooth_fwhm = 0;
+        else
+            cfg.seeds = struct('name', 'A', 'center', [0 0 0], 'radius', 6);   % a valid seed
+        end
+        S = quiet(@() seecat.run(cfg));
+        tc.verifyEqual(S.status, {'failed'; 'failed'}, [p{1} ' ' mode{1}]);
+        tc.verifyTrue(all(contains(S.message, 'analysis mask')), [p{1} ' ' mode{1}]);
+        tc.verifyEmpty(dir(fullfile(cfg.output_dir, 'sub-*', 'func', '*_connectivity.nii.gz')), [p{1} ' ' mode{1}]);
+    end
+end
+% A seed outside a small but non-empty target mask is still valid
+small = false(6, 6, 6);
+small(2:3, 2:5, 2:5) = true;
+[~, V] = seecat.io.read_nii(fullfile(in, 'sub-01', 'func', 'sub-01_task-rest_space-IXI549Space_res-3_desc-brain_mask.nii.gz'));
+mf = fullfile(root, 'small_mask.nii');
+seecat.io.write_nii(uint8(small), V(1), mf, 'DataType', 'uint8');
+cfg = seecat.config('fc');
+cfg.input_dir = in;
+cfg.output_dir = fullfile(root, 'small');
+cfg.mask = mf;
+cfg.seeds = struct('name', 'A', 'center', [-6 0 0], 'radius', 1);           % voxel (5, 3, 3)
+for mode = {'run', 'given'}
+    cfg.mask_mode = mode{1};
+    S = quiet(@() seecat.run(cfg));
+    tc.verifyEqual(S.status, {'ok'; 'ok'}, mode{1});
+    tc.verifyEqual(S.empty_seeds, [0; 0], mode{1});
+end
+end
+
+function testTooFewFramesFail(tc)
+% With 0 or 1 frame left after censoring no correlation can be computed:
+% the run fails without maps; 2 frames are the minimum (review C05)
+root = tempname;
+c = onCleanup(@() rmdir(root, 's'));
+in = fullfile(root, 'in');
+makeRun(in, '01');
+tsv = fullfile(in, 'sub-01', 'func', 'sub-01_task-rest_desc-confounds_timeseries.tsv');
+T0 = seecat.io.read_tsv(tsv);
+for kept = [0 1 2]
+    T = T0;
+    T.censor = ones(height(T), 1);
+    T.censor(1:kept) = 0;
+    seecat.io.write_tsv(T, tsv);
+    for p = {'degree', 'fc'}
+        cfg = seecat.config(p{1});
+        cfg.input_dir = in;
+        cfg.output_dir = fullfile(root, sprintf('%s-%d', p{1}, kept));
+        cfg.mask = 'brain';
+        if strcmp(p{1}, 'degree')
+            cfg.smooth_fwhm = 0;
+        else
+            cfg.seeds = struct('name', 'A', 'center', [0 0 0], 'radius', 6);
+        end
+        S = quiet(@() seecat.run(cfg));
+        out = dir(fullfile(cfg.output_dir, 'sub-01', 'func', '*_connectivity.nii.gz'));
+        if kept < 2
+            tc.verifyEqual(S.status, {'failed'}, sprintf('%s %d', p{1}, kept));
+            tc.verifyTrue(contains(S.message{1}, sprintf('keeps %d of 50 frames', kept)));
+            tc.verifyEmpty(out);
+        else
+            tc.verifyEqual(S.status, {'ok'}, sprintf('%s %d', p{1}, kept));
+            tc.verifyNotEmpty(out);
+        end
+    end
+end
+end
+
 function testSeedsFromJsonConfig(tc)
 f = [tempname '.json'];
 c = onCleanup(@() delete(f));

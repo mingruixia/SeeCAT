@@ -33,6 +33,10 @@ function S = load_series(unit, maskSpec, only, opt)
 %   index  V x 1 linear indices into the volume
 %   hdr    spm_vol header of the first volume (the output grid)
 %   n_frames, n_kept
+%
+% Errors when fewer than 2 frames are kept, or when the analysis mask has
+% no voxel among the base voxels (seed voxels added by OPT.extra do not
+% count), e.g. a mask in another space.
 
 if nargin < 3 || isempty(only)
     only = false;
@@ -45,6 +49,10 @@ T = seecat.io.read_tsv(unit.confounds);
 keep = true(height(T), 1);
 if ismember('censor', T.Properties.VariableNames)
     keep = T.censor == 0;
+end
+if nnz(keep) < 2                                   % no correlation from 0 or 1 frame
+    error('SeeCAT:conn', ['%s keeps %d of %d frames (%d censored); at least 2 are needed ' ...
+        'to compute connectivity.'], unit.bold, nnz(keep), numel(keep), nnz(~keep));
 end
 [Y, V] = seecat.io.read_nii(unit.bold, 'Class', 'single');
 if size(Y, 4) ~= height(T)
@@ -86,13 +94,16 @@ end
 idx = find(base(:));
 if isempty(idx)
     if maskOnly
-        error('SeeCAT:conn', 'The mask has no voxel on the grid of %s; check its space.', unit.bold);
+        emptyMask(maskSpec, m, base, true, unit);
     end
     error('SeeCAT:conn', ['No voxel of the brain mask%s of %s lies on its BOLD grid; check the ' ...
         'space of the masks.'], ternary(isfield(unit, 'group_mask') && ~isempty(unit.group_mask), ...
         ' and group mask', ''), unit.bold);
 end
 in = m(idx);
+if ~any(in)                                        % e.g. a mask in another space
+    emptyMask(maskSpec, m, base, maskOnly, unit);
+end
 if only
     idx = idx(in);
     in = true(numel(idx), 1);
@@ -108,6 +119,24 @@ S.hdr = hdr;
 S.xyz = hdr.mat(1:3, :) * [i j k ones(numel(idx), 1)]';
 S.n_frames = height(T);
 S.n_kept = nnz(keep);
+end
+
+function emptyMask(maskSpec, m, base, maskOnly, unit)
+% Error for an analysis mask without a voxel where the maps are computed
+n0 = '';
+if ~any(strcmp(maskSpec, {'brain', 'gm'}))
+    n0 = sprintf('%d voxels in the file, ', nnz(seecat.io.read_nii(maskSpec) > 0));
+end
+if maskOnly
+    where = 'on the BOLD grid';
+else
+    where = 'within the brain mask';
+    if isfield(unit, 'group_mask') && ~isempty(unit.group_mask)
+        where = 'within the brain and group masks';
+    end
+end
+error('SeeCAT:conn', ['The analysis mask %s has no voxel %s of %s (%s%d on the BOLD grid, ' ...
+    '%d base voxels); check its space and coverage.'], maskSpec, where, unit.bold, n0, nnz(m), nnz(base));
 end
 
 function s = ternary(c, a, b)
