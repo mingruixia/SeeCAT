@@ -5,7 +5,7 @@ function [cfg, spec] = defaults()
 % Use seecat.config('fc'). Input is a SeeCAT derivatives folder (from the
 % prep or fmriprep pipeline). For each run, each seed's mean series (voxels
 % with signal) is correlated with every voxel of the subject brain mask
-% (or of cfg.mask within it; with cfg.mask_only, of cfg.mask as given),
+% (or of cfg.mask within it; see cfg.mask_mode),
 % on the frames kept after censoring. Seeds are a struct array with a name
 % (letters and digits) and either center (mm) + radius (mm), or file (a
 % mask image):
@@ -21,8 +21,7 @@ cfg.space = '';              % needed only when several spaces are present
 cfg.res = '';                % res label, needed only when there are several
 cfg.seeds = struct('name', {}, 'center', {}, 'radius', {}, 'file', {});
 cfg.mask = 'brain';          % voxels of the maps: 'brain' (subject), 'gm' or a mask file
-cfg.group_mask = false;      % only voxels in the brain mask of every run
-cfg.mask_only = false;       % use the mask as given, not limited to the brain mask
+cfg.mask_mode = 'run';       % mask within: 'run' brain mask, 'group' mask, or 'given' as is
 
 cfg.qc_exclusions = true;         % leave out runs excluded in reports/qc_exclusions.tsv
 v = seecat.util.validators;
@@ -35,8 +34,7 @@ spec = [
     'res',       v.text,                                          'empty or a res label'
     'seeds',     @validSeeds,                                     'a non-empty struct array of seeds: name + center + radius, or name + file'
     'mask',      @(x) v.text(x) && (any(strcmp(x, {'gm', 'brain'})) || exist(x, 'file') == 2), '''brain'', ''gm'' or a mask file'
-    'group_mask', v.flag,                                         'true or false'
-    'mask_only', v.flag,                                          'true or false'
+    'mask_mode', @(x) ischar(x) && any(strcmp(x, {'run', 'group', 'given'})), '''run'', ''group'' or ''given'''
     'qc_exclusions', v.flag, 'true or false'
     }
     spec];

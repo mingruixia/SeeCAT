@@ -1,7 +1,7 @@
 function F = qc_options(withIqm)
 % QC_OPTIONS  Form entries of cfg.qc (seecat.util.qc_defaults).
 f = @seecat.gui.field;
-F = struct('path', {}, 'label', {}, 'widget', {}, 'section', {}, 'help', {}, 'advanced', {}, 'choices', {}, 'scan', {});
+F = struct('path', {}, 'label', {}, 'widget', {}, 'section', {}, 'help', {}, 'advanced', {}, 'choices', {}, 'scan', {}, 'labels', {});
 if withIqm
     F(end+1) = f('qc.iqm', 'Image quality metrics (IQM)', 'flag', 'Quality control', 'help', sprintf([ ...
         'Compute MRIQC''s image quality metrics of the raw T1w and BOLD data while preprocessing ' ...

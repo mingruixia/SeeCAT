@@ -11,7 +11,7 @@ function N = nodes(cfg)
 % N fields: kind, dim, mat (the grid the maps are written on), index
 % (linear indices of the nodes in that grid; voxels) or labels and vol
 % (atlas), n (number of nodes), tag (for file names, e.g. 'Vox4'), mask_file
-% (the mask or atlas image: with cfg.mask_only, its voxels > 0 are the
+% (the mask or atlas image: with cfg.mask_mode = 'given', its voxels > 0 are the
 % voxels the nodes average).
 
 here = fileparts(fileparts(fileparts(mfilename('fullpath'))));       % SeeCAT/

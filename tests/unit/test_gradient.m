@@ -124,7 +124,7 @@ cfg = seecat.config('gradient');
 cfg.input_dir = in;
 cfg.nodes = 'atlas';
 cfg.atlas = af;
-cfg.group_mask = true;
+cfg.mask_mode = 'group';
 units = seecat.gradient.plan(seecat.config(cfg));
 g = units.runs(1).group_mask;
 tc.verifyEqual(nnz(seecat.io.read_nii(g) > 0), 180);
@@ -165,7 +165,7 @@ cfg = seecat.config('gradient');
 cfg.input_dir = in;
 cfg.nodes = 'atlas';
 cfg.atlas = af;
-cfg.mask_only = true;
+cfg.mask_mode = 'given';
 units = seecat.gradient.plan(seecat.config(cfg));
 N = units.nodes;
 S3 = seecat.conn.load_series(units.runs(3), N.mask_file, true, struct('mask_only', true));
@@ -180,9 +180,7 @@ tc.verifyEqual(S.status, {'ok'}, S.message{1});
 tc.verifyEqual(S.n_common_nodes, 108);
 j = jsondecode(fileread(fullfile(in, 'sub-03', 'func', ...
     'sub-03_task-rest_space-IXI549Space_res-3_desc-grad1Atlasatlas_connectivity.json')));
-tc.verifyTrue(j.MaskOnly);
-cfg.group_mask = true;
-tc.verifyError(@() seecat.gradient.plan(seecat.config(cfg)), 'SeeCAT:conn');
+tc.verifyEqual(j.MaskMode, 'given');
 end
 
 function v = valuesAt(file, mm)

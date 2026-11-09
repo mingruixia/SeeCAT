@@ -163,8 +163,14 @@ switch f.widget
     case 'flag'
         c = uicheckbox(cg, 'Text', '', 'Value', logical(v), 'Tooltip', tipText, 'ValueChangedFcn', @(~, ~) help());
     case 'choice'
-        holder = row(cg, {220, '1x'}, T);
-        c = uidropdown(holder, 'Items', f.choices, 'Value', char(v), 'BackgroundColor', T.panel, ...
+        items = f.choices;
+        w = 220;
+        if isfield(f, 'labels') && ~isempty(f.labels)
+            items = f.labels;                     % shown; the value is the choice
+            w = 380;
+        end
+        holder = row(cg, {w, '1x'}, T);
+        c = uidropdown(holder, 'Items', items, 'ItemsData', f.choices, 'Value', char(v), 'BackgroundColor', T.panel, ...
             'FontColor', T.text, 'Tooltip', tipText, 'ValueChangedFcn', @(~, ~) help());
     case 'number'
         holder = row(cg, {90, '1x'}, T);

@@ -9,7 +9,7 @@ function result = run_unit(unit, cfg, log)
 %   ... desc-...Sm<fwhm> versions of both (cfg.smooth_fwhm > 0)
 % in the run's space, with JSON sidecars of the settings.
 
-maskOnly = isfield(cfg, 'mask_only') && cfg.mask_only;
+maskOnly = strcmp(seecat.conn.mask_mode(cfg), 'given');
 S = seecat.conn.load_series(unit, cfg.mask, true, struct('mask_only', maskOnly));
 if isfield(unit, 'group_mask') && ~isempty(unit.group_mask)
     log('group mask: %s', unit.group_mask);
@@ -49,7 +49,7 @@ for k = 1:numel(maps)
     end
     meta = struct('Measure', measure.(m.weight), 'Sign', m.sign, 'Threshold', cfg.threshold, ...
         'ExcludeLocalMM', cfg.exclude_local_mm, 'DistanceMM', [m.lo min(m.hi, realmax)], ...
-        'Mask', cfg.mask, 'MaskOnly', maskOnly, 'GroupMask', seecat.conn.group_mask_uri(unit, cfg), 'Voxels', nnz(S.in), 'VoxelsWithSignal', nnz(live), 'Sources', {{src}}, 'FramesUsed', S.n_kept, 'FramesTotal', S.n_frames, ...
+        'Mask', cfg.mask, 'MaskMode', seecat.conn.mask_mode(cfg), 'GroupMask', seecat.conn.group_mask_uri(unit, cfg), 'Voxels', nnz(S.in), 'VoxelsWithSignal', nnz(live), 'Sources', {{src}}, 'FramesUsed', S.n_kept, 'FramesTotal', S.n_frames, ...
         'Software', ['SeeCAT ' seecat.version()]);
     for q = 1:size(out, 1)
         vol = zeros(S.hdr.dim, 'single');

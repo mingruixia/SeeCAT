@@ -3,7 +3,7 @@ function result = run_unit(unit, cfg, log)
 %   result = seecat.gradient.run_unit(unit, cfg, log)
 %
 % 1. Node series of each run (mean of the run's brain-mask voxels in each
-%    node, or with cfg.mask_only of the mask or atlas voxels with signal;
+%    node, or with mask_mode 'given' of the mask or atlas voxels with signal;
 %    censored frames left out), kept in the work folder.
 % 2. Per run: Pearson r between nodes, seecat.gradient.embed. With
 %    align = 'group', Fisher z of r is also summed over runs.
@@ -33,7 +33,7 @@ checkMemory(N.n, cfg);
 present = false(N.n, nr);
 frames = zeros(nr, 2);
 files = cell(nr, 1);
-maskOnly = isfield(cfg, 'mask_only') && cfg.mask_only;
+maskOnly = strcmp(seecat.conn.mask_mode(cfg), 'given');
 for r = 1:nr
     if maskOnly                                    % the mask or atlas voxels as given
         S = seecat.conn.load_series(runs(r), N.mask_file, true, struct('mask_only', true));
@@ -97,7 +97,7 @@ opt = struct('output_dir', cfg.output_dir, 'work_dir', unit.work_dir, 'manifest'
 base = struct('Nodes', cfg.nodes, 'NodeTag', N.tag, 'Kernel', cfg.kernel, 'Sparsity', cfg.sparsity, ...
     'Alpha', cfg.alpha, 'Components', cfg.n_components, 'Alignment', cfg.align, ...
     'Software', ['SeeCAT ' seecat.version()]);
-base.MaskOnly = isfield(cfg, 'mask_only') && cfg.mask_only;
+base.MaskMode = seecat.conn.mask_mode(cfg);
 if strcmp(cfg.nodes, 'voxels')
     base.NodeSizeMM = cfg.node_size;
     base.Mask = cfg.mask;

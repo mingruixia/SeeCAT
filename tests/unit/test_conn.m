@@ -106,7 +106,7 @@ cfg.weight = {'binary'};
 cfg.smooth_fwhm = 0;
 S = quiet(@() seecat.run(cfg));
 tc.verifyEqual(S.n_voxels, [64; 48]);
-cfg.group_mask = true;
+cfg.mask_mode = 'group';
 S = quiet(@() seecat.run(cfg));
 tc.verifyEqual(S.status, {'ok'; 'ok'});
 tc.verifyEqual(S.n_voxels, [48; 48]);
@@ -151,7 +151,7 @@ map = @(s) seecat.io.read_nii(fullfile(in, ['sub-' s], 'func', ...
 S = quiet(@() seecat.run(cfg));
 tc.verifyEqual(S.status, {'ok'; 'ok'});
 tc.verifyEqual(nnz(map('01')), 64);
-cfg.group_mask = true;
+cfg.mask_mode = 'group';
 S = quiet(@() seecat.run(cfg));
 tc.verifyEqual(S.status, {'ok'; 'ok'});
 g = dir(fullfile(in, 'group', 'masks', '*_desc-group*_mask.nii.gz'));
@@ -176,7 +176,7 @@ cfg.weight = {'binary'};
 cfg.smooth_fwhm = 0;
 S = quiet(@() seecat.run(cfg));
 tc.verifyEqual(S.n_voxels, [64; 64]);          % the mask within each brain mask
-cfg.mask_only = true;
+cfg.mask_mode = 'given';
 S = quiet(@() seecat.run(cfg));
 tc.verifyEqual(S.status, {'ok'; 'ok'});
 tc.verifyEqual(S.n_voxels, [80; 80]);          % the mask as given
@@ -192,14 +192,22 @@ z = z1(2:5, 2:5, 2:5);
 tc.verifyEqual(double(z(:)), (double(d(:)) - mean(d(:))) / std(double(d(:))), 'AbsTol', 1e-4);  % over voxels with signal
 tc.verifyTrue(all(z1(6, 2:5, 2:5) == 0, 'all'));
 j = jsondecode(fileread(strrep(file('01', 'raw'), '.nii.gz', '.json')));
-tc.verifyTrue(j.MaskOnly);
+tc.verifyEqual(j.MaskMode, 'given');
 tc.verifyEqual([j.Voxels j.VoxelsWithSignal], [80 64]);
-% settings that cannot go with it
-cfg.group_mask = true;
-tc.verifyError(@() quiet(@() seecat.run(cfg)), 'SeeCAT:conn');
-cfg.group_mask = false;
+% 'given' needs a mask other than the subject's brain mask
 cfg.mask = 'brain';
 tc.verifyError(@() quiet(@() seecat.run(cfg)), 'SeeCAT:conn');
+% the flags of earlier 2.1 development builds become mask_mode
+old = rmfield(cfg, 'mask_mode');
+old.mask_only = true;
+tc.verifyEqual(seecat.config(old).mask_mode, 'given');
+old = rmfield(old, 'mask_only');
+old.group_mask = true;
+c2 = seecat.config(old);
+tc.verifyEqual(c2.mask_mode, 'group');
+tc.verifyFalse(isfield(c2, 'group_mask'));
+cfg.mask_mode = 'other';
+tc.verifyError(@() quiet(@() seecat.run(cfg)), ?MException);
 end
 
 function testSeedFcMaskAsGiven(tc)
@@ -219,7 +227,7 @@ cfg.seeds = struct('name', 'A', 'center', [0 0 0], 'radius', 6);
 S = quiet(@() seecat.run(cfg));
 tc.verifyEqual(S.empty_seeds, [0; 0]);
 tc.verifyEqual(nnz(map('02')), 64);              % the mask within the brain mask
-cfg.mask_only = true;
+cfg.mask_mode = 'given';
 cfg.seeds = struct('name', 'A', 'center', [-9 0 0], 'radius', 1);
 S = quiet(@() seecat.run(cfg));
 tc.verifyEqual(S.status, {'ok'; 'ok'});
@@ -229,7 +237,7 @@ tc.verifyEqual(nnz(m2), 80);                     % the whole mask
 tc.verifyGreaterThan(m2(6, 3, 3), 3);            % the seed itself
 j = jsondecode(fileread(fullfile(in, 'sub-02', 'func', ...
     'sub-02_task-rest_space-IXI549Space_res-3_desc-A_stat-z_connectivity.json')));
-tc.verifyTrue(j.MaskOnly);
+tc.verifyEqual(j.MaskMode, 'given');
 cfg.seeds = struct('name', 'A', 'center', [0 0 0], 'radius', 6);
 S = quiet(@() seecat.run(cfg));
 m1 = map('01');

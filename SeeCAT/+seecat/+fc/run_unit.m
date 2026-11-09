@@ -7,7 +7,7 @@ function result = run_unit(unit, cfg, log)
 % with a JSON sidecar giving the seed, the input series and the frames used.
 %
 % The seeds take their voxels from the brain mask (and the group mask); the
-% maps cover cfg.mask within it. With cfg.mask_only, the maps cover cfg.mask
+% maps cover cfg.mask within it. With cfg.mask_mode = 'given', the maps cover cfg.mask
 % as given and the seeds their own voxels, without the brain mask; voxels
 % without signal (outside the run's brain mask or field of view) are 0.
 
@@ -15,7 +15,7 @@ mask = 'brain';
 if isfield(cfg, 'mask')
     mask = cfg.mask;
 end
-maskOnly = isfield(cfg, 'mask_only') && cfg.mask_only;
+maskOnly = strcmp(seecat.conn.mask_mode(cfg), 'given');
 opt = struct('mask_only', maskOnly);
 if maskOnly
     opt.extra = @(hdr) seedVolume(cfg.seeds, hdr);
@@ -59,7 +59,7 @@ for s = 1:nS
         f = fullfile(unit.work_dir, sprintf('%s_%s.nii', cfg.seeds(s).name, stats{q, 1}));
         seecat.io.write_nii(vol, S.hdr, f);
         meta = struct('Seed', defs{s}, 'Statistic', stats{q, 1}, 'Sources', {{src}}, ...
-            'Mask', mask, 'MaskOnly', maskOnly, 'GroupMask', seecat.conn.group_mask_uri(unit, cfg), 'FramesUsed', S.n_kept, 'FramesTotal', S.n_frames, 'Software', ['SeeCAT ' seecat.version()]);
+            'Mask', mask, 'MaskMode', seecat.conn.mask_mode(cfg), 'GroupMask', seecat.conn.group_mask_uri(unit, cfg), 'FramesUsed', S.n_kept, 'FramesTotal', S.n_frames, 'Software', ['SeeCAT ' seecat.version()]);
         rel = seecat.bids.deriv_name(unit.bold, 'desc', cfg.seeds(s).name, 'stat', stats{q, 1}, ...
             'suffix', 'connectivity', 'ext', '.nii.gz');
         seecat.util.publish_output(f, rel, meta, opt);

@@ -41,23 +41,26 @@
   sessions and tasks of its BOLD runs with the number of runs per task, and
   the empty Subjects and Task fields show what they will take
   (`seecat.bids.summary`).
-- **Degree, Seed FC and Gradients: same voxels in every run** (`group_mask`,
-  default off). The brain masks of all selected runs are intersected into a
-  group mask (`seecat.conn.group_mask`, written to group/masks/ with the list
-  of runs), and each run uses only those voxels: Degree's network (combined
-  with Mask), Seed FC's seeds and maps, and Gradients' node averages (voxel
-  grid or atlas). Without it, the voxel count differs a little between
-  subjects with their field of view and segmentation.
-- **Degree, Seed FC and Gradients: use the mask as given** (`mask_only`,
-  default off). The voxels of the chosen mask (gm or a mask file; for
-  Gradients also the atlas) are used without the brain mask of each run, so
-  every run has exactly those voxels. Voxels without signal (outside a run's
-  brain mask or field of view) get degree 0 or r = 0, and Gradients leaves
-  them out of the node averages; Degree's z-scored maps are computed over
-  the voxels with signal. It cannot be combined with `group_mask`. Seed FC
-  has a new `mask` (`brain`, default, `gm` or a file) for the voxels its
-  maps cover. JSON sidecars record `MaskOnly` (Degree also
-  `VoxelsWithSignal`).
+- **Degree, Seed FC and Gradients: Mask mode** (`mask_mode`, a drop-down).
+  How the mask meets the runs' brain masks:
+  - `run` (default): within each run's brain mask, as before; the voxel
+    count differs a little between subjects with their field of view and
+    segmentation.
+  - `group`: within the group mask, the intersection of the brain masks of
+    all selected runs (`seecat.conn.group_mask`, written to group/masks/
+    with the list of runs). Every run uses the same voxels: Degree's
+    network, Seed FC's seeds and maps, and Gradients' node averages (voxel
+    grid or atlas).
+  - `given`: the mask as given (gm or a mask file; for Gradients also the
+    atlas), without any brain mask. Voxels without signal (outside a run's
+    brain mask or field of view) get degree 0 or r = 0, and Gradients
+    leaves them out of the node averages. Degree's z-scored maps are
+    computed over the voxels with signal.
+  Seed FC has a new `mask` (`brain`, default, `gm` or a file) for the voxels
+  its maps cover. JSON sidecars record `MaskMode` and `GroupMask` (Degree
+  also `VoxelsWithSignal`). The flags `group_mask` and `mask_only` of
+  earlier 2.1 development builds are read as `mask_mode`. Choice fields can
+  show labels (`seecat.gui.field` option `labels`).
 - Tests: tests/unit/test_nifti.m on synthetic exports
   (tests/data/make_nifti_demo.m); test_dicom covers auto naming and dry runs.
 

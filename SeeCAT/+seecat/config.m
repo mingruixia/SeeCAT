@@ -27,7 +27,24 @@ end
 if ~isstruct(source) || ~isscalar(source) || ~isfield(source, 'pipeline')
     error('SeeCAT:config', 'A config needs a "pipeline" field, e.g. "prep".');
 end
+source = maskFlags(source);
 cfg = merge(seecat.util.pipeline_defaults(source.pipeline), source);
+end
+
+function s = maskFlags(s)
+% group_mask / mask_only (2.1 development builds) became mask_mode
+if ~any(strcmp(char(s.pipeline), {'degree', 'fc', 'gradient'}))
+    return
+end
+on = @(f) isfield(s, f) && isscalar(s.(f)) && logical(s.(f));
+if ~isfield(s, 'mask_mode')
+    if on('mask_only')
+        s.mask_mode = 'given';
+    elseif on('group_mask')
+        s.mask_mode = 'group';
+    end
+end
+s = rmfield(s, intersect(fieldnames(s), {'group_mask', 'mask_only'}));
 end
 
 function out = merge(def, in)
