@@ -6,6 +6,8 @@ function cfg = config(source)
 %
 % Edit the returned struct and pass it to seecat.run. seecat.check_config
 % reports invalid values; seecat.save_config writes the struct as JSON.
+% Fields a plan added to a config (seecat.util.plan_fields, e.g. few_frames)
+% are dropped: every plan works them out again.
 
 if isstring(source)
     source = char(source);
@@ -28,7 +30,8 @@ if ~isstruct(source) || ~isscalar(source) || ~isfield(source, 'pipeline')
     error('SeeCAT:config', 'A config needs a "pipeline" field, e.g. "prep".');
 end
 source = maskFlags(source);
-cfg = merge(seecat.util.pipeline_defaults(source.pipeline), source);
+source = seecat.util.plan_fields(source);       % left by an earlier plan: worked out again
+cfg =merge(seecat.util.pipeline_defaults(source.pipeline), source);
 end
 
 function s = maskFlags(s)

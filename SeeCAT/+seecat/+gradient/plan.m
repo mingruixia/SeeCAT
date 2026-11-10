@@ -16,7 +16,9 @@ end
 mode = seecat.conn.mask_mode(cfg);           % mask 'brain' here is the template brain mask
 [runs, cfg] = seecat.bids.derivative_units(cfg, cfg.input);
 % Runs with fewer kept frames than min_frames are left out (listed in
-% cfg.few_frames and in the log), before the group mask is built
+% cfg.few_frames and in the log), before the group mask is built. The list
+% is this plan's: one left in cfg by an earlier plan is dropped
+cfg = rmfield(cfg, intersect(fieldnames(cfg), {'few_frames'}));
 few = false(size(runs));
 for r = 1:numel(runs)
     few(r) = seecat.conn.kept_frames(runs(r)) < cfg.min_frames;

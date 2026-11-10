@@ -253,6 +253,9 @@ table; frames with `censor = 1` are dropped (D3).
 - `min_frames` (all three, default 50, at least 2): runs keeping fewer
   frames after censoring fail in `fc` / `degree` (`load_series`) and are
   left out by `gradient`'s plan (`cfg.few_frames`, logged by `seecat.run`).
+  `few_frames` and `qc_excluded` are results of a plan, not options
+  (`seecat.util.plan_fields`): they are not saved in logs/<run>_config.json,
+  `seecat.config` drops them, and every plan works them out again.
 - Degree z maps are z-scored over the voxels with signal; a map with one
   value there gets z = 0, `ZScoreDefined` false and is counted in
   `n_constant_maps`.

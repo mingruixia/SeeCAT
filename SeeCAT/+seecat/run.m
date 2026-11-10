@@ -62,7 +62,8 @@ if ~exist(logDir, 'dir')
     mkdir(logDir);
 end
 runId = newRunId(logDir, p);
-seecat.save_config(cfg, fullfile(logDir, [runId '_config.json']));
+[options, planned] = seecat.util.plan_fields(cfg);   % the options, without the runs the plan left out
+seecat.save_config(options, fullfile(logDir, [runId '_config.json']));
 mainLog = fullfile(logDir, [runId '.log']);
 log = @(varargin) seecat.util.log_msg(mainLog, varargin{:});
 log('SeeCAT %s, pipeline "%s", %d unit(s)', seecat.version(), p, numel(units));
@@ -84,7 +85,7 @@ if isfield(cfg, 'few_frames') && ~isempty(cfg.few_frames)
     log('Left out: fewer than min_frames (%d) frames kept after censoring: %s', cfg.min_frames, ...
         strjoin(cfg.few_frames, ', '));
 end
-hashCfg = rmfield(cfg, intersect(fieldnames(cfg), {'n_workers', 'overwrite', 'keep_work', 'qc_excluded', 'few_frames'}));
+hashCfg = rmfield(cfg, intersect(fieldnames(cfg), [{'n_workers', 'overwrite', 'keep_work'}, planned]));
 cfgHash = seecat.util.hash(hashCfg);
 codeHash = seecat.util.code_fingerprint();
 n = numel(units);

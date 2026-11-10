@@ -80,6 +80,27 @@
   labels (`rest, nback` in the window, `{'rest', 'nback'}` in a config). The
   analysis pages still take one task.
 
+### Fixed (2026-11-11 review; tests in tests/unit/test_review4.m)
+- *The config saved by a run could not be run again.* When a plan left
+  runs out, it added their names to the config (`few_frames`, Gradients
+  below `min_frames`; `qc_excluded`, runs excluded by QC), `seecat.run`
+  wrote them to logs/<run>_config.json, and `seecat.check_config` then
+  refused the file as holding an unknown option. These lists are results of
+  a plan, not options (`seecat.util.plan_fields`): the saved config no
+  longer holds them, `seecat.config` drops them from a struct or an older
+  file, and each plan starts from an empty list, so no stale name is left
+  when `min_frames` or the QC table changes. Misspelt options are refused
+  as before.
+- *The manual said Gradients leaves out a run whose analysis mask is
+  empty.* Only runs below `min_frames` are left out; an empty analysis mask
+  in any run stops the gradient analysis with the message and writes no
+  map. The Masks note (English and Chinese) now says so.
+- *Count options accepted Inf.* `min_frames = Inf` passed "an integer >=
+  2" (Inf equals its rounded value). The `count` check of
+  `seecat.util.validators` now needs a real, finite number, for every
+  option using it (`min_frames`, `n_workers`, `dummy_scans`, `n_components`,
+  `n_maps`, `tfce.n_perm`, `censor.before`/`after` and others).
+
 ### Fixed (2026-11-10 review; tests in tests/unit/test_conn.m)
 - *An empty analysis mask gave maps of zeros with status ok.* A mask file
   in another space could miss the BOLD grid while the brain or group mask

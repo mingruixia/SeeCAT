@@ -30,6 +30,7 @@ B = seecat.bids.query(L, 'suffix', 'bold', 'desc', desc, 'ext', img, ...
 if isempty(B)
     raise({sprintf('No *_desc-%s_bold images in %s for this selection.', desc, L.root)});
 end
+cfg = rmfield(cfg, intersect(fieldnames(cfg), {'qc_excluded'}));   % this plan's list, not an earlier one's
 if isfield(cfg, 'qc_exclusions') && cfg.qc_exclusions          % runs excluded by QC
     ex = seecat.qc.exclusions(L.root);
     if ~isempty(ex)
