@@ -9,6 +9,15 @@ from a BIDS dataset to BIDS-derivatives outputs.
 Version 2.0 is a rewrite. It needs only SPM, and no longer uses other toolboxes or
 the `FunImgARW…` folder layout of 1.x.
 
+## Development
+
+| Version | When |
+|---|---|
+| 1.0 beta | working copy of March 2024 |
+| 2.0 rewrite | started 30 October 2026 |
+| 2.0.0 | released 6 November 2026 |
+| 2.1 | in development since November 2026 |
+
 ## Requirements
 
 - MATLAB. SeeCAT is developed and tested on R2025a; older releases are not
