@@ -855,6 +855,16 @@
       "choices": []
     },
     {
+      "path": "min_frames",
+      "label": "Minimum frames",
+      "section": "Input",
+      "advanced": true,
+      "widget": "number",
+      "default": "50",
+      "help": "The fewest frames a run must keep after censoring (frames flagged for high motion are dropped before correlating). A run with fewer fails and writes no maps (its log and the summary say why).\n\n50 (default): with fewer frames the correlations are too noisy to use; with 50 frames the standard error of r is about 0.15. Lowest allowed: 2.\n\nThis is a hard lower limit. The scientific rule is the QC one: runs keeping less than censor.min_minutes (5 min by default) of data are suggested for exclusion on the QC reports page.",
+      "choices": []
+    },
+    {
       "path": "seeds",
       "label": "Seeds",
       "section": "Seeds",
@@ -1028,6 +1038,16 @@
       "widget": "text",
       "default": "",
       "help": "The res-<label> of the files, e.g. 2. Needed only when the derivatives hold the same runs at more than one resolution (e.g. fMRIPrep res-1 and res-2). Empty: the only one present.",
+      "choices": []
+    },
+    {
+      "path": "min_frames",
+      "label": "Minimum frames",
+      "section": "Input",
+      "advanced": true,
+      "widget": "number",
+      "default": "50",
+      "help": "The fewest frames a run must keep after censoring (frames flagged for high motion are dropped before correlating). A run with fewer fails and writes no maps (its log and the summary say why).\n\n50 (default): with fewer frames the correlations are too noisy to use; with 50 frames the standard error of r is about 0.15. Lowest allowed: 2.\n\nThis is a hard lower limit. The scientific rule is the QC one: runs keeping less than censor.min_minutes (5 min by default) of data are suggested for exclusion on the QC reports page.",
       "choices": []
     },
     {
@@ -1271,6 +1291,16 @@
       "widget": "text",
       "default": "",
       "help": "The res-<label> of the files, e.g. 2. Needed only when the derivatives hold the same runs at more than one resolution (e.g. fMRIPrep res-1 and res-2). Empty: the only one present.",
+      "choices": []
+    },
+    {
+      "path": "min_frames",
+      "label": "Minimum frames",
+      "section": "Input",
+      "advanced": true,
+      "widget": "number",
+      "default": "50",
+      "help": "The fewest frames a run must keep after censoring (frames flagged for high motion are dropped before correlating). Runs with fewer are left out of the analysis and named in the log.\n\n50 (default): with fewer frames the correlations are too noisy to use; with 50 frames the standard error of r is about 0.15. Lowest allowed: 2.\n\nThis is a hard lower limit. The scientific rule is the QC one: runs keeping less than censor.min_minutes (5 min by default) of data are suggested for exclusion on the QC reports page.",
       "choices": []
     },
     {

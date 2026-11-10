@@ -13,7 +13,8 @@ function result = run_unit(unit, cfg, log)
 % in the run's space, with JSON sidecars of the settings.
 
 maskOnly = strcmp(seecat.conn.mask_mode(cfg), 'given');
-S = seecat.conn.load_series(unit, cfg.mask, true, struct('mask_only', maskOnly));
+S = seecat.conn.load_series(unit, cfg.mask, true, struct('mask_only', maskOnly, ...
+    'min_frames', cfg.min_frames));
 if isfield(unit, 'group_mask') && ~isempty(unit.group_mask)
     log('group mask: %s', unit.group_mask);
 end

@@ -183,6 +183,42 @@ j = jsondecode(fileread(fullfile(in, 'sub-03', 'func', ...
 tc.verifyEqual(j.MaskMode, 'given');
 end
 
+function testRunsWithFewFramesLeftOut(tc)
+% A run keeping fewer than min_frames (default 50) frames after censoring
+% is left out of the gradients and named in cfg.few_frames; with every run
+% too short the analysis stops
+root = tempname;
+c = onCleanup(@() rmdir(root, 's'));
+in = fullfile(root, 'derivatives', 'seecat');
+for s = 1:3
+    makeRun(in, sprintf('%02d', s));
+end
+tsv = fullfile(in, 'sub-02', 'func', 'sub-02_task-rest_desc-confounds_timeseries.tsv');
+T = seecat.io.read_tsv(tsv);
+T.censor(41:end) = 1;                             % keeps 40 of 120 frames
+seecat.io.write_tsv(T, tsv);
+cfg = seecat.config('gradient');
+cfg.input_dir = in;
+cfg.node_size = 3;
+cfg.mask = fullfile(in, 'sub-01', 'func', 'sub-01_task-rest_space-IXI549Space_res-3_desc-brain_mask.nii.gz');
+[units, cfg2] = seecat.gradient.plan(cfg);
+tc.verifyEqual(cfg2.few_frames, {'sub-02_task-rest'});
+tc.verifyEqual({units.runs.id}, {'sub-01_task-rest', 'sub-03_task-rest'});
+S = quiet(@() seecat.run(cfg));
+tc.verifyEqual(S.status, {'ok'});
+tc.verifyEqual(S.n_runs, 2);
+tc.verifyEmpty(dir(fullfile(in, 'sub-02', 'func', '*grad1Vox3_connectivity.nii.gz')));
+log = dir(fullfile(in, 'logs', 'gradient_*.log'));
+tc.verifySubstring(fileread(fullfile(log(1).folder, log(1).name)), ...
+    'fewer than min_frames (50) frames kept after censoring: sub-02_task-rest');
+cfg.min_frames = 40;                              % 40 kept frames are enough
+[units, cfg3] = seecat.gradient.plan(cfg);
+tc.verifyNumElements(units.runs, 3);
+tc.verifyFalse(isfield(cfg3, 'few_frames'));
+cfg.min_frames = 200;                             % no run keeps 200 frames
+tc.verifyError(@() seecat.gradient.plan(cfg), 'SeeCAT:gradient');
+end
+
 function v = valuesAt(file, mm)
 [g, V] = seecat.io.read_nii(file);
 p = round(V.mat \ [mm'; ones(1, size(mm, 1))]);

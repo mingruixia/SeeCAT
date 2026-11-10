@@ -36,11 +36,13 @@ files = cell(nr, 1);
 maskOnly = strcmp(seecat.conn.mask_mode(cfg), 'given');
 for r = 1:nr
     if maskOnly                                    % the mask or atlas voxels as given
-        S = seecat.conn.load_series(runs(r), N.mask_file, true, struct('mask_only', true));
+        S = seecat.conn.load_series(runs(r), N.mask_file, true, struct('mask_only', true, ...
+            'min_frames', cfg.min_frames));
         log('run %d: mask as given, %d voxels, %d outside its brain mask, %d without signal (left out)', ...
             r, numel(S.index), nnz(~S.brain), nnz(~S.live));
     else
-        S = seecat.conn.load_series(runs(r), 'brain', true);   % brain (and group) mask voxels
+        S = seecat.conn.load_series(runs(r), 'brain', true, ...   % brain (and group) mask voxels
+            struct('min_frames', cfg.min_frames));
     end
     [Yn, present(:, r)] = nodeSeries(S, N);
     frames(r, :) = [S.n_kept, S.n_frames];

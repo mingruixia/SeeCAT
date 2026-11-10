@@ -21,7 +21,8 @@ function S = load_series(unit, maskSpec, only, opt)
 % then usually carry no signal (the denoised series is 0 there); see
 % S.live. OPT.extra, a function of the header giving a logical volume,
 % adds voxels to the base (not to the analysis mask), e.g. the seeds of
-% Seed FC.
+% Seed FC. OPT.min_frames (default 2) is the fewest kept frames accepted
+% (cfg.min_frames of the pipelines).
 %
 % With ONLY true, the columns outside the analysis mask are left out.
 % Fields of S:
@@ -34,7 +35,7 @@ function S = load_series(unit, maskSpec, only, opt)
 %   hdr    spm_vol header of the first volume (the output grid)
 %   n_frames, n_kept
 %
-% Errors when fewer than 2 frames are kept, or when the analysis mask has
+% Errors when fewer than OPT.min_frames frames are kept, or when the analysis mask has
 % no voxel among the base voxels (seed voxels added by OPT.extra do not
 % count), e.g. a mask in another space.
 
@@ -50,9 +51,14 @@ keep = true(height(T), 1);
 if ismember('censor', T.Properties.VariableNames)
     keep = T.censor == 0;
 end
-if nnz(keep) < 2                                   % no correlation from 0 or 1 frame
-    error('SeeCAT:conn', ['%s keeps %d of %d frames (%d censored); at least 2 are needed ' ...
-        'to compute connectivity.'], unit.bold, nnz(keep), numel(keep), nnz(~keep));
+minFrames = 2;                                     % no correlation from 0 or 1 frame
+if isfield(opt, 'min_frames') && ~isempty(opt.min_frames)
+    minFrames = max(2, opt.min_frames);
+end
+if nnz(keep) < minFrames
+    error('SeeCAT:conn', ['%s keeps %d of %d frames (%d censored); at least %d are needed ' ...
+        '(min_frames). Exclude this run, or lower min_frames.'], unit.bold, nnz(keep), numel(keep), ...
+        nnz(~keep), minFrames);
 end
 [Y, V] = seecat.io.read_nii(unit.bold, 'Class', 'single');
 if size(Y, 4) ~= height(T)

@@ -80,7 +80,11 @@ end
 if isfield(cfg, 'qc_excluded') && ~isempty(cfg.qc_excluded)
     log('Left out by QC (reports/qc_exclusions.tsv): %s', strjoin(cfg.qc_excluded, ', '));
 end
-hashCfg = rmfield(cfg, intersect(fieldnames(cfg), {'n_workers', 'overwrite', 'keep_work', 'qc_excluded'}));
+if isfield(cfg, 'few_frames') && ~isempty(cfg.few_frames)
+    log('Left out: fewer than min_frames (%d) frames kept after censoring: %s', cfg.min_frames, ...
+        strjoin(cfg.few_frames, ', '));
+end
+hashCfg = rmfield(cfg, intersect(fieldnames(cfg), {'n_workers', 'overwrite', 'keep_work', 'qc_excluded', 'few_frames'}));
 cfgHash = seecat.util.hash(hashCfg);
 codeHash = seecat.util.code_fingerprint();
 n = numel(units);

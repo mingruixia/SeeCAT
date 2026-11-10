@@ -16,7 +16,7 @@ if isfield(cfg, 'mask')
     mask = cfg.mask;
 end
 maskOnly = strcmp(seecat.conn.mask_mode(cfg), 'given');
-opt = struct('mask_only', maskOnly);
+opt = struct('mask_only', maskOnly, 'min_frames', cfg.min_frames);
 if maskOnly
     opt.extra = @(hdr) seedVolume(cfg.seeds, hdr);
 end

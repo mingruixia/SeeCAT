@@ -61,6 +61,13 @@
   also `VoxelsWithSignal`). The flags `group_mask` and `mask_only` of
   earlier 2.1 development builds are read as `mask_mode`. Choice fields can
   show labels (`seecat.gui.field` option `labels`).
+- **Seed FC, Degree and Gradients: Minimum frames** (`min_frames`, default
+  50, at least 2; advanced option). A run keeping fewer frames after
+  censoring fails without maps in Seed FC and Degree; Gradients leaves it
+  out (`seecat.gradient.plan`, before the group mask is built) and the log
+  names it. With 50 frames the standard error of r is about 0.15. It is a
+  hard lower limit; the QC rule `censor.min_minutes` (5 min) stays the one
+  that suggests exclusions. `seecat.conn.kept_frames` counts kept frames.
 - Tests: tests/unit/test_nifti.m on synthetic exports
   (tests/data/make_nifti_demo.m); test_dicom covers auto naming and dry runs.
 
@@ -83,7 +90,8 @@
   in the base. A seed outside a non-empty mask is still valid.
 - *Runs with 0 or 1 frame left after censoring gave maps of zeros with
   status ok.* `seecat.conn.load_series` now stops when fewer than 2 frames
-  are kept, giving the frames kept, total and censored.
+  are kept (now `min_frames`, default 50), giving the frames kept, total
+  and censored.
 
 ### Fixed (2026-11-09 review; tests in tests/unit/test_conn.m and test_nifti.m)
 - *A group mask was reused on the wrong grid.* `seecat.conn.group_mask`

@@ -22,6 +22,7 @@ cfg.res = '';                % res label, needed only when there are several
 cfg.seeds = struct('name', {}, 'center', {}, 'radius', {}, 'file', {});
 cfg.mask = 'brain';          % voxels of the maps: 'brain' (subject), 'gm' or a mask file
 cfg.mask_mode = 'run';       % mask within: 'run' brain mask, 'group' mask, or 'given' as is
+cfg.min_frames = 50;            % fewest frames kept after censoring; runs with fewer fail (Gradients: left out)
 
 cfg.qc_exclusions = true;         % leave out runs excluded in reports/qc_exclusions.tsv
 v = seecat.util.validators;
@@ -35,6 +36,7 @@ spec = [
     'seeds',     @validSeeds,                                     'a non-empty struct array of seeds: name + center + radius, or name + file'
     'mask',      @(x) v.text(x) && (any(strcmp(x, {'gm', 'brain'})) || exist(x, 'file') == 2), '''brain'', ''gm'' or a mask file'
     'mask_mode', @(x) ischar(x) && any(strcmp(x, {'run', 'group', 'given'})), '''run'', ''group'' or ''given'''
+    'min_frames', @(x) v.count(x) && x >= 2, 'an integer >= 2 (frames)'
     'qc_exclusions', v.flag, 'true or false'
     }
     spec];

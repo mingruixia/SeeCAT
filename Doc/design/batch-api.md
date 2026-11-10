@@ -250,6 +250,9 @@ table; frames with `censor = 1` are dropped (D3).
   left out of node means. The flags `group_mask` / `mask_only` of earlier
   2.1 builds are mapped to `mask_mode` by `seecat.config`. Sidecars record
   `Mask`, `MaskMode`, `GroupMask` (and for degree `VoxelsWithSignal`).
+- `min_frames` (all three, default 50, at least 2): runs keeping fewer
+  frames after censoring fail in `fc` / `degree` (`load_series`) and are
+  left out by `gradient`'s plan (`cfg.few_frames`, logged by `seecat.run`).
 - Degree z maps are z-scored over the voxels with signal; a map with one
   value there gets z = 0, `ZScoreDefined` false and is counted in
   `n_constant_maps`.

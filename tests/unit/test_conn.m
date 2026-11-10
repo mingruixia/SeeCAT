@@ -59,6 +59,7 @@ in = fullfile(root, 'derivatives', 'seecat');
 makeRun(in, '01');
 makeRun(in, '02');
 cfg = seecat.config('fc');
+cfg.min_frames = 10;              % the test runs keep 45 frames
 cfg.input_dir = in;
 cfg.seeds = struct('name', {'A', 'B'}, 'center', {[-6 -6 -6], [6 6 6]}, 'radius', 4);
 S = quiet(@() seecat.run(cfg));
@@ -71,6 +72,8 @@ tc.verifyEqual(j.FramesUsed, 45);
 tc.verifyEqual(j.Seed.RadiusMM, 4);
 
 cfg = seecat.config('degree');
+
+cfg.min_frames = 10;              % the test runs keep 45 frames
 cfg.input_dir = in;
 cfg.mask = 'brain';
 cfg.sign = {'positive', 'negative'};
@@ -100,6 +103,7 @@ f = fullfile(in, 'sub-02', 'func', 'sub-02_task-rest_space-IXI549Space_res-3_des
 m(5, :, :) = 0;
 seecat.io.write_nii(uint8(m), V(1), f, 'DataType', 'uint8');
 cfg = seecat.config('degree');
+cfg.min_frames = 10;              % the test runs keep 45 frames
 cfg.input_dir = in;
 cfg.mask = 'brain';
 cfg.weight = {'binary'};
@@ -144,6 +148,7 @@ f = fullfile(in, 'sub-02', 'func', 'sub-02_task-rest_space-IXI549Space_res-3_des
 m(5, :, :) = 0;
 seecat.io.write_nii(uint8(m), V(1), f, 'DataType', 'uint8');
 cfg = seecat.config('fc');
+cfg.min_frames = 10;              % the test runs keep 45 frames
 cfg.input_dir = in;
 cfg.seeds = struct('name', 'A', 'center', [0 0 0], 'radius', 6);
 map = @(s) seecat.io.read_nii(fullfile(in, ['sub-' s], 'func', ...
@@ -170,6 +175,7 @@ function testDegreeMaskAsGiven(tc)
 % sub-02 has signal there (as fMRIPrep data can), sub-01 has not
 [in, mf, c] = maskAsGivenData(); %#ok<ASGLU>
 cfg = seecat.config('degree');
+cfg.min_frames = 10;              % the test runs keep 45 frames
 cfg.input_dir = in;
 cfg.mask = mf;
 cfg.weight = {'binary'};
@@ -215,6 +221,7 @@ function testSeedFcMaskAsGiven(tc)
 % it is empty unless the mask is used as given
 [in, mf, c] = maskAsGivenData(); %#ok<ASGLU>
 cfg = seecat.config('fc');
+cfg.min_frames = 10;              % the test runs keep 45 frames
 cfg.input_dir = in;
 cfg.mask = mf;
 cfg.seeds = struct('name', 'A', 'center', [-9 0 0], 'radius', 1);   % voxel (6, 3, 3)
@@ -272,6 +279,7 @@ c = onCleanup(@() rmdir(in, 's'));
 makeRun(in, '01');
 makeRun(in, '02');
 cfg = seecat.config('fc');
+cfg.min_frames = 10;              % the test runs keep 45 frames
 cfg.input_dir = in;
 cfg.mask_mode = 'group';
 cfg.seeds = struct('name', 'A', 'center', [0 0 0], 'radius', 6);
@@ -314,6 +322,7 @@ in = tempname;
 c = onCleanup(@() rmdir(in, 's'));
 makeRun(in, '01');
 cfg = seecat.config('degree');
+cfg.min_frames = 10;              % the test runs keep 45 frames
 cfg.input_dir = in;
 cfg.mask = 'brain';
 cfg.threshold = 0.9999;
@@ -349,6 +358,7 @@ seecat.io.write_nii(uint8(ones(6, 6, 6)), struct('dim', [6 6 6], 'mat', M), far,
 for p = {'degree', 'fc'}
     for mode = {'run', 'group', 'given'}
         cfg = seecat.config(p{1});
+        cfg.min_frames = 10;              % the test runs keep 45 frames
         cfg.input_dir = in;
         cfg.output_dir = fullfile(root, [p{1} '-' mode{1}]);
         cfg.mask = far;
@@ -371,6 +381,7 @@ small(2:3, 2:5, 2:5) = true;
 mf = fullfile(root, 'small_mask.nii');
 seecat.io.write_nii(uint8(small), V(1), mf, 'DataType', 'uint8');
 cfg = seecat.config('fc');
+cfg.min_frames = 10;              % the test runs keep 45 frames
 cfg.input_dir = in;
 cfg.output_dir = fullfile(root, 'small');
 cfg.mask = mf;
@@ -384,23 +395,31 @@ end
 end
 
 function testTooFewFramesFail(tc)
-% With 0 or 1 frame left after censoring no correlation can be computed:
-% the run fails without maps; 2 frames are the minimum (review C05)
+% Runs keeping fewer than min_frames frames after censoring fail without
+% maps (review C05); the default is 50, the lowest allowed 2. The test run
+% has 50 frames, 5 censored.
 root = tempname;
 c = onCleanup(@() rmdir(root, 's'));
 in = fullfile(root, 'in');
 makeRun(in, '01');
 tsv = fullfile(in, 'sub-01', 'func', 'sub-01_task-rest_desc-confounds_timeseries.tsv');
 T0 = seecat.io.read_tsv(tsv);
-for kept = [0 1 2]
+% kept frames, min_frames (empty: the default), expected status
+cases = {45, [], 'failed'; 45, 45, 'ok'; 1, 2, 'failed'; 0, 2, 'failed'; 2, 2, 'ok'};
+for i = 1:size(cases, 1)
+    [kept, minF, want] = cases{i, :};
     T = T0;
     T.censor = ones(height(T), 1);
     T.censor(1:kept) = 0;
     seecat.io.write_tsv(T, tsv);
     for p = {'degree', 'fc'}
         cfg = seecat.config(p{1});
+        tc.verifyEqual(cfg.min_frames, 50);
+        if ~isempty(minF)
+            cfg.min_frames = minF;
+        end
         cfg.input_dir = in;
-        cfg.output_dir = fullfile(root, sprintf('%s-%d', p{1}, kept));
+        cfg.output_dir = fullfile(root, sprintf('%s-%d', p{1}, i));
         cfg.mask = 'brain';
         if strcmp(p{1}, 'degree')
             cfg.smooth_fwhm = 0;
@@ -409,16 +428,21 @@ for kept = [0 1 2]
         end
         S = quiet(@() seecat.run(cfg));
         out = dir(fullfile(cfg.output_dir, 'sub-01', 'func', '*_connectivity.nii.gz'));
-        if kept < 2
-            tc.verifyEqual(S.status, {'failed'}, sprintf('%s %d', p{1}, kept));
-            tc.verifyTrue(contains(S.message{1}, sprintf('keeps %d of 50 frames', kept)));
-            tc.verifyEmpty(out);
+        what = sprintf('%s, %d kept, case %d', p{1}, kept, i);
+        tc.verifyEqual(S.status, {want}, what);
+        if strcmp(want, 'failed')
+            tc.verifyTrue(contains(S.message{1}, sprintf('keeps %d of 50 frames', kept)), what);
+            tc.verifyTrue(contains(S.message{1}, sprintf('at least %d', cfg.min_frames)), what);
+            tc.verifyEmpty(out, what);
         else
-            tc.verifyEqual(S.status, {'ok'}, sprintf('%s %d', p{1}, kept));
-            tc.verifyNotEmpty(out);
+            tc.verifyNotEmpty(out, what);
         end
     end
 end
+cfg = seecat.config('degree');
+cfg.input_dir = in;
+cfg.min_frames = 1;
+tc.verifyError(@() seecat.check_config(cfg), 'SeeCAT:config');
 end
 
 function testSeedsFromJsonConfig(tc)
@@ -428,6 +452,7 @@ fid = fopen(f, 'w');
 fprintf(fid, '{"pipeline": "fc", "seeds": [{"name": "PCC", "center": [0, -53, 26], "radius": 6}, {"name": "ROI", "file": "x.nii"}]}');
 fclose(fid);
 cfg = seecat.config(f);
+cfg.min_frames = 10;              % the test runs keep 45 frames
 tc.verifySize(cfg.seeds, [1 2]);
 tc.verifyEqual(cfg.seeds(1).center, [0 -53 26]);
 tc.verifyEqual(cfg.seeds(2).file, 'x.nii');
