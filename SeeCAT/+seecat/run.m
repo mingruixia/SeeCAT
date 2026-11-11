@@ -85,6 +85,10 @@ if isfield(cfg, 'few_frames') && ~isempty(cfg.few_frames)
     log('Left out: fewer than min_frames (%d) frames kept after censoring: %s', cfg.min_frames, ...
         strjoin(cfg.few_frames, ', '));
 end
+if isfield(cfg, 'empty_mask') && ~isempty(cfg.empty_mask)
+    log('Left out: no voxel of the mask or atlas in the run (check its space and coverage): %s', ...
+        strjoin(cfg.empty_mask, ', '));
+end
 hashCfg = rmfield(cfg, intersect(fieldnames(cfg), [{'n_workers', 'overwrite', 'keep_work'}, planned]));
 cfgHash = seecat.util.hash(hashCfg);
 codeHash = seecat.util.code_fingerprint();

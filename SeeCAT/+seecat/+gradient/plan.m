@@ -6,7 +6,9 @@ function [units, cfg] = plan(cfg)
 % (seecat.conn.group_mask) as group_mask: node series then come from the
 % same voxels in every run. With mask_mode 'given', the voxels of cfg.mask (voxel
 % nodes) or of the atlas are used as given, without the brain masks. Runs that
-% keep fewer than cfg.min_frames frames after censoring are left out.
+% keep fewer than cfg.min_frames frames after censoring are left out, and so
+% are runs without a voxel of the mask or atlas (seecat.gradient.covered),
+% e.g. a run in another space.
 if strcmp(cfg.nodes, 'atlas') && isempty(cfg.atlas)
     error('SeeCAT:gradient', 'nodes = ''atlas'' needs "atlas" (an integer label image).');
 end
@@ -18,7 +20,7 @@ mode = seecat.conn.mask_mode(cfg);           % mask 'brain' here is the template
 % Runs with fewer kept frames than min_frames are left out (listed in
 % cfg.few_frames and in the log), before the group mask is built. The list
 % is this plan's: one left in cfg by an earlier plan is dropped
-cfg = rmfield(cfg, intersect(fieldnames(cfg), {'few_frames'}));
+cfg = rmfield(cfg, intersect(fieldnames(cfg), {'few_frames', 'empty_mask'}));
 few = false(size(runs));
 for r = 1:numel(runs)
     few(r) = seecat.conn.kept_frames(runs(r)) < cfg.min_frames;
@@ -31,6 +33,19 @@ end
 if isempty(runs)
     error('SeeCAT:gradient', 'No run keeps at least min_frames (%d) frames after censoring.', cfg.min_frames);
 end
+% Runs without a voxel of the mask or atlas are left out too (listed in
+% cfg.empty_mask and in the log); the others go on
+N = seecat.gradient.nodes(cfg);
+ok = seecat.gradient.covered(runs, N, mode);
+if ~all(ok)
+    cfg.empty_mask = arrayfun(@(u) u.id, runs(~ok), 'UniformOutput', false);
+    cfg.empty_mask = cfg.empty_mask(:)';
+    runs = runs(ok);
+end
+if isempty(runs)
+    error('SeeCAT:gradient', ['No run has a voxel of the mask or atlas %s; check its space and ' ...
+        'coverage.'], N.mask_file);
+end
 if numel(runs) < 2 && ~strcmp(cfg.align, 'none')
     error('SeeCAT:gradient', 'Alignment needs at least 2 runs; set align = ''none'' for one.');
 end
@@ -38,6 +53,5 @@ if strcmp(mode, 'group')
     f = seecat.conn.group_mask(runs, cfg);
     [runs.group_mask] = deal(f);
 end
-N = seecat.gradient.nodes(cfg);
 units = struct('id', ['gradients' N.tag], 'runs', {runs}, 'nodes', N);
 end

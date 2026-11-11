@@ -1,8 +1,8 @@
 function tests = test_review4
 % Regression tests for the findings of the 2026-11-11 review: a config that
 % a plan added its left-out runs to runs again (C06), Gradients leaves out
-% short runs but fails on an empty analysis mask (C07, the behaviour the
-% manual describes), and count options refuse Inf (C08).
+% short runs and runs without a voxel of the mask (C07, as decided on
+% 2026-11-11), and count options refuse Inf (C08).
 %   results = runtests('tests/unit/test_review4.m')
 tests = functiontests(localfunctions);
 end
@@ -110,29 +110,48 @@ S = quiet(@() seecat.run(planned));
 tc.verifyEqual(S.unit', {'sub-01_task-rest', 'sub-02_task-rest', 'sub-03_task-rest'});
 end
 
-function testGradientsShortRunLeftOutEmptyMaskFails(tc)
-% C07: the two cases of the manual. A run below min_frames is left out and
-% the others give gradients; an analysis mask that is empty on one run's
-% grid stops the analysis, and no map is written
+function testGradientsLeavesOutShortAndUncoveredRuns(tc)
+% C07 and the decision of 2026-11-11: Gradients leaves out a run below
+% min_frames and a run without a voxel of the mask (here sub-02, 1 m away),
+% names them in the log, and gives the gradients of the other runs
 in = tc.TestData.in;
-cfg = gradientConfig(in);
-cfg.mask_mode = 'given';
-d = fullfile(in, 'sub-02', 'func');
-for suffix = {'desc-denoised_bold', 'desc-brain_mask'}
-    f = fullfile(d, ['sub-02_task-rest_space-IXI549Space_res-3_' suffix{1} '.nii.gz']);
-    [data, V] = seecat.io.read_nii(f);
-    V = V(1);
-    V.mat(1, 4) = V.mat(1, 4) + 1000;             % sub-02 lies 1 m from the mask
-    seecat.io.write_nii(data, V, f);
+shiftRun(in, '02');
+for mode = {'given', 'run', 'group'}
+    cfg = gradientConfig(in);
+    cfg.mask_mode = mode{1};
+    [units, planned] = seecat.gradient.plan(cfg);
+    tc.verifyEqual(planned.empty_mask, {'sub-02_task-rest'}, mode{1});
+    tc.verifyEqual({units.runs.id}, {'sub-01_task-rest', 'sub-03_task-rest'}, mode{1});
+    S = quiet(@() seecat.run(cfg));
+    tc.verifyEqual(S.status, {'ok'}, [mode{1} ': ' S.message{1}]);
+    tc.verifyEqual(S.n_runs, 2, mode{1});
+    tc.verifySubstring(fileread(newest(fullfile(in, 'logs', 'gradient_*.log'))), ...
+        'no voxel of the mask or atlas in the run (check its space and coverage): sub-02_task-rest');
+    j = jsondecode(fileread(newest(fullfile(in, 'logs', 'gradient_*_config.json'))));
+    tc.verifyFalse(isfield(j, 'empty_mask'), mode{1});         % a result of the plan, not an option
 end
-S = quiet(@() seecat.run(cfg));
-tc.verifyEqual(S.status, {'failed'});
-tc.verifySubstring(S.message{1}, 'analysis mask');
-tc.verifyEmpty(dir(fullfile(in, 'sub-*', 'func', '*_connectivity.nii.gz')));
-censorFrom(in, '02', 41);                         % now also too short: left out before it is read
-S = quiet(@() seecat.run(cfg));
-tc.verifyEqual(S.status, {'ok'}, S.message{1});
-tc.verifyEqual(S.n_runs, 2);
+tc.verifyEmpty(dir(fullfile(in, 'sub-02', 'func', '*_connectivity.nii.gz')));
+tc.verifyNotEmpty(dir(fullfile(in, 'sub-01', 'func', '*_connectivity.nii.gz')));
+tc.verifyNotEmpty(dir(fullfile(in, 'sub-03', 'func', '*_connectivity.nii.gz')));
+
+cfg = gradientConfig(in);
+censorFrom(in, '03', 41);                         % sub-03 is now too short: one run is left
+[~, planned] = seecat.gradient.plan(setfield(cfg, 'align', 'none')); %#ok<SFLD>
+tc.verifyEqual(planned.few_frames, {'sub-03_task-rest'});
+tc.verifyEqual(planned.empty_mask, {'sub-02_task-rest'});
+tc.verifySubstring(errorMessage(@() seecat.gradient.plan(cfg)), 'at least 2 runs');
+
+shiftRun(in, '01');                               % no run reaches the mask
+shiftRun(in, '03');
+cfg.mask = fullfile(tc.TestData.root, 'mask.nii');
+seecat.io.write_nii(uint8(true(6, 6, 6)), struct('dim', [6 6 6], 'mat', ...
+    [3 0 0 -9; 0 3 0 -9; 0 0 3 -9; 0 0 0 1]), cfg.mask, 'DataType', 'uint8');
+cfg.min_frames = 40;
+tc.verifySubstring(errorMessage(@() seecat.gradient.plan(cfg)), 'No run has a voxel of the mask');
+shiftRun(in, '02', -1000);                        % sub-02 is back: the list is this plan's
+[units, planned] = seecat.gradient.plan(setfield(cfg, 'align', 'none')); %#ok<SFLD>
+tc.verifyEqual({units.runs.id}, {'sub-02_task-rest'});
+tc.verifyEqual(planned.empty_mask, {'sub-01_task-rest', 'sub-03_task-rest'});
 end
 
 function testCountOptionsRefuseInf(tc)
@@ -177,6 +196,21 @@ tsv = fullfile(in, ['sub-' sub], 'func', ['sub-' sub '_task-rest_desc-confounds_
 T = seecat.io.read_tsv(tsv);
 T.censor(first:end) = 1;
 seecat.io.write_tsv(T, tsv);
+end
+
+function shiftRun(in, sub, mm)
+% Move a run's BOLD and brain mask MM mm (default 1000) along x
+if nargin < 3
+    mm = 1000;
+end
+d = fullfile(in, ['sub-' sub], 'func');
+for suffix = {'desc-denoised_bold', 'desc-brain_mask'}
+    f = fullfile(d, ['sub-' sub '_task-rest_space-IXI549Space_res-3_' suffix{1} '.nii.gz']);
+    [data, V] = seecat.io.read_nii(f);
+    V = V(1);
+    V.mat(1, 4) = V.mat(1, 4) + mm;
+    seecat.io.write_nii(data, V, f);
+end
 end
 
 function f = newest(pattern)

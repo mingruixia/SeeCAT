@@ -80,6 +80,16 @@
   labels (`rest, nback` in the window, `{'rest', 'nback'}` in a config). The
   analysis pages still take one task.
 
+- **Gradients leaves out runs without a voxel of the mask or atlas**, e.g. a
+  run in another space, as it does runs below Minimum frames: the run gets
+  no gradient map, the log names it with the reason, and the other runs are
+  analysed (it used to stop the whole analysis, or with Mask mode `group`
+  empty the group mask). The check (`seecat.gradient.covered`) reads only the
+  brain masks, in the plan, before the group mask is built; the list is
+  `cfg.empty_mask`, a result of the plan like `few_frames`. Seed FC and
+  Degree are unchanged: there the run fails. Test:
+  testGradientsLeavesOutShortAndUncoveredRuns in tests/unit/test_review4.m.
+
 ### Fixed (2026-11-11 review; tests in tests/unit/test_review4.m)
 - *The config saved by a run could not be run again.* When a plan left
   runs out, it added their names to the config (`few_frames`, Gradients
@@ -92,9 +102,10 @@
   when `min_frames` or the QC table changes. Misspelt options are refused
   as before.
 - *The manual said Gradients leaves out a run whose analysis mask is
-  empty.* Only runs below `min_frames` are left out; an empty analysis mask
-  in any run stops the gradient analysis with the message and writes no
-  map. The Masks note (English and Chinese) now says so.
+  empty.* At the time only runs below `min_frames` were left out and an
+  empty analysis mask in any run stopped the gradient analysis; the Masks
+  note (English and Chinese) was corrected. Since then such runs are left
+  out (the entry above), and the note says that.
 - *Count options accepted Inf.* `min_frames = Inf` passed "an integer >=
   2" (Inf equals its rounded value). The `count` check of
   `seecat.util.validators` now needs a real, finite number, for every
