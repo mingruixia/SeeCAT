@@ -85,10 +85,28 @@
   no gradient map, the log names it with the reason, and the other runs are
   analysed (it used to stop the whole analysis, or with Mask mode `group`
   empty the group mask). The check (`seecat.gradient.covered`) reads only the
-  brain masks, in the plan, before the group mask is built; the list is
+  masks and the headers of the series, in the plan, before the group mask is built; the list is
   `cfg.empty_mask`, a result of the plan like `few_frames`. Seed FC and
   Degree are unchanged: there the run fails. Test:
   testGradientsLeavesOutShortAndUncoveredRuns in tests/unit/test_review4.m.
+
+### Fixed (2026-11-12 review; tests in tests/unit/test_review5.m)
+- *Gradients could leave out a run that had data, or keep one that had
+  none.* The coverage check (`seecat.gradient.covered`) resampled the mask
+  or atlas to the grid the run's brain mask is stored on, while the analysis
+  (`seecat.conn.load_series`) works on the grid of the BOLD series. With a
+  brain mask on another grid (e.g. cropped to its voxels), Mask mode `given`
+  left out a run whose BOLD series held every voxel of the mask; padding the
+  same brain mask with zeros brought it back. The other way round, a run
+  whose series did not reach the mask passed the check and stopped the
+  analysis. The check now uses the BOLD grid in all three modes, with the
+  brain mask resampled to it as in `load_series`. Only the header of the
+  series is read (new `seecat.io.nii_grid`, also for .nii.gz).
+- *The manual said Gradients stops "only" when no run is left, or one with
+  alignment on.* Runs that pass the checks can still stop it: with Mask mode
+  `group`, brain masks without a common voxel are an error
+  (`seecat.conn.group_mask`), as before. The paragraph (English and Chinese)
+  now says so and what to look at.
 
 ### Fixed (2026-11-11 review; tests in tests/unit/test_review4.m)
 - *The config saved by a run could not be run again.* When a plan left

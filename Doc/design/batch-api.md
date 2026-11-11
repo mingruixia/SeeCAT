@@ -256,7 +256,11 @@ table; frames with `censor = 1` are dropped (D3).
   `gradient`'s plan also leaves out runs without a voxel of the mask or
   atlas (`seecat.gradient.covered`: within the run's brain mask, or on its
   grid with `mask_mode` `given`; `cfg.empty_mask`, logged), before the group
-  mask is built. In `fc` / `degree` such a run fails.
+  mask is built. The check is made on the grid of the run's BOLD series, as
+  `load_series` works (header only, `seecat.io.nii_grid`); the grid the brain
+  mask is stored on does not matter. Runs that pass can still stop a
+  `group` analysis when their brain masks share no voxel
+  (`seecat.conn.group_mask`). In `fc` / `degree` such a run fails.
   `few_frames`, `empty_mask` and `qc_excluded` are results of a plan, not options
   (`seecat.util.plan_fields`): they are not saved in logs/<run>_config.json,
   `seecat.config` drops them, and every plan works them out again.

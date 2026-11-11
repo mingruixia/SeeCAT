@@ -4,18 +4,19 @@ function ok = covered(runs, N, mode)
 %
 % RUNS are the planned runs (seecat.bids.derivative_units), N the nodes
 % (seecat.gradient.nodes) and MODE the mask mode (seecat.conn.mask_mode).
-% The mask or atlas image (N.mask_file) is resampled to the grid of each
-% run's brain mask. OK(r) is true when it has a voxel there: within the
-% brain mask ('run', 'group'), or anywhere on the grid ('given'). A run in
-% another space, or one that does not reach the mask, has none; without
-% this check it would stop the analysis (seecat.conn.load_series) or empty
-% the group mask. Only the brain masks are read, not the BOLD series.
+% The mask or atlas image (N.mask_file) and the run's brain mask are
+% resampled to the grid of the run's BOLD series, as seecat.conn.load_series
+% does for the analysis: the grid the brain mask is stored on does not
+% matter. OK(r) is true when the mask has a voxel there: within the brain
+% mask ('run', 'group'), or anywhere on the grid ('given'). A run in another
+% space, or one that does not reach the mask, has none; without this check
+% it would stop the analysis (load_series) or empty the group mask. Of the
+% BOLD series only the header is read (seecat.io.nii_grid).
 ok = false(size(runs));
 keys = {};
-masks = {};                                        % the mask on each grid met so far
+masks = {};                                        % the mask on each BOLD grid met so far
 for r = 1:numel(runs)
-    [B, V] = seecat.io.read_nii(runs(r).mask);
-    V = V(1);
+    V = seecat.io.nii_grid(runs(r).bold);
     key = sprintf('%d,', V.dim(1:3), round(V.mat(:) * 1e4));
     k = find(strcmp(keys, key), 1);
     if isempty(k)
@@ -27,7 +28,8 @@ for r = 1:numel(runs)
     if strcmp(mode, 'given')
         ok(r) = any(masks{k}(:));
     else
-        B = B(:, :, :, 1) > 0;
+        B = logical(seecat.io.read_nii(runs(r).mask, 'Ref', V));
+        B = B(:, :, :, 1);
         ok(r) = any(masks{k}(:) & B(:));
     end
 end

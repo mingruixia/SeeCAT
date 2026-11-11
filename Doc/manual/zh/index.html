@@ -623,7 +623,7 @@ sub-CSUHC0002_T1w         T1w   0                           cnr outlier         
 <li><b>按原样</b>（<code>given</code>）：使用 mask 的全部体素，不与任何脑 mask 求交集，例如为全组制作的 mask。Mask 须为灰质或 mask 文件（不能是脑 mask）。在某个 run 的脑 mask 或视野之外，去噪后的序列为 0：这些体素在结果图中为 0（Gradients 不把它们计入节点平均），每个 run 的日志会给出其数量。</li>
 </ul>
 <p>JSON sidecar 记录所做的选择：<code>Mask</code>、<code>MaskMode</code>、<code>GroupMask</code>（使用组 mask 时为其文件），Degree 另有 <code>VoxelsWithSignal</code>。</p>
-<p>当分析 mask 在计算图的范围内没有任何体素（例如 mask 文件处于另一空间；种子体素不计入），或剔除后剩余帧数少于“最少帧数”（<code>min_frames</code>，默认 50）时，该 run 失败，不写出任何图；错误信息给出体素数或帧数。Gradients 把所有 run 放在一起分析，遇到这样的 run 时改为排除：帧数不足的 run，以及 mask 或图谱在其中没有任何体素的 run（例如处于另一空间的 run），不写出梯度图，并连同原因在日志中列出，其余 run 照常分析。只有当没有 run 剩下，或只剩一个 run 而又要求对齐时，分析才会终止。最少帧数是硬性下限；哪些 run 被建议排除，仍由 QC 的有效数据时长规则（<code>censor.min_minutes</code>，5 分钟）决定。</p>
+<p>当分析 mask 在计算图的范围内没有任何体素（例如 mask 文件处于另一空间；种子体素不计入），或剔除后剩余帧数少于“最少帧数”（<code>min_frames</code>，默认 50）时，该 run 失败，不写出任何图；错误信息给出体素数或帧数。Gradients 把所有 run 放在一起分析，遇到这样的 run 时改为排除：帧数不足的 run，以及 mask 或图谱在其中没有任何体素的 run（例如处于另一空间的 run），不写出梯度图，并连同原因在日志中列出，其余 run 照常分析。排除后没有 run 剩下，或只剩一个 run 而又要求对齐时，分析终止。其他检查仍可能使分析终止：例如 mask 模式为 <code>group</code> 时，剩余 run 的脑 mask 必须至少有一个共同体素；没有时，请在 QC 报告中查看各 run 的覆盖范围，或调整所选的 run 或 mask 模式。最少帧数是硬性下限；哪些 run 被建议排除，仍由 QC 的有效数据时长规则（<code>censor.min_minutes</code>，5 分钟）决定。</p>
 <h4>输出文件</h4>
 <pre><code>sub-01/func/sub-01_task-rest_space-IXI549Space_res-3_desc-PCC_stat-r_connectivity.nii.gz（及 .json）
 sub-01/func/sub-01_task-rest_space-IXI549Space_res-3_desc-PCC_stat-z_connectivity.nii.gz（及 .json）</code></pre>
